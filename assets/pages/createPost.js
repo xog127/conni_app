@@ -10,10 +10,11 @@ import {
 } from "react-native";
 import { Switch } from "react-native";
 import { addRef } from "../firebase/queries";
+import {addDoc, collection, db} from "../firebase/firebaseConfig";
 
 const CreatePostForm = () => {
   const [title, setTitle] = useState("");
-  const [details, setDetails] = useState("");
+  const [description, setDescription] = useState("");
   const [selectedForum, setSelectedForum] = useState("Choose Forum");
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [addChat, setAddChat] = useState(false);
@@ -23,14 +24,14 @@ const CreatePostForm = () => {
   const forums = ["General", "Events", "Announcements", "Discussions"];
 
   const addPost = async () => {
-    if (!title || !details || selectedForum === "Choose Forum") {
+    if (!title || !description || selectedForum === "Choose Forum" ) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
 
     const postData = {
       title,
-      details,
+      description,
       forum: selectedForum,
       addChat,
       addPoll,
@@ -38,8 +39,13 @@ const CreatePostForm = () => {
       createdAt: new Date().toISOString(),
     };
 
-    addRef({ collectionName: "posts", data: postData });
-}
+    console.log("Post Data:", postData);
+    addRef({collectionName: "posts", data: postData});
+    setTitle("");
+    setDescription("");
+    setSelectedForum("Choose Forum");
+
+    }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -57,10 +63,10 @@ const CreatePostForm = () => {
 
         {/* Details Input */}
         <TextInput
-          style={[styles.descriptionInput, { height: Math.max(100, details.length / 2) }]}
+          style={[styles.descriptionInput, { height: Math.max(100, description.length / 2) }]}
           placeholder="Enter post details"
-          value={details}
-          onChangeText={setDetails}
+          value={description}
+          onChangeText={setDescription}
           multiline
         />
 

@@ -1,5 +1,6 @@
-import { db } from "./firebaseConfig";
-import { doc, getDoc, updateDoc, addDoc } from "firebase/firestore";
+import { db, collection } from "./firebaseConfig";
+import { doc, getDoc, updateDoc, addDoc, getDocs } from "firebase/firestore";
+
 
 const getRef = async ({ id, collectionName }) => {
   try {
@@ -13,7 +14,7 @@ const getRef = async ({ id, collectionName }) => {
     
     if (docSnap.exists()) {
       
-      return docSnap.data(); // Return document fields
+      return { id: docSnap.id, ...docSnap.data() };
     } else {
       console.log("No such document!");
       return null;
@@ -21,6 +22,29 @@ const getRef = async ({ id, collectionName }) => {
   } catch (error) {
     console.error("Error fetching document:", error);
     return null;
+  }
+};
+
+const getSubRefAll = async ({ id, collectionName, subCollectionName }) => {
+  try {
+    console.log("Fetching all documents from subcollection:", subCollectionName, "under document:", id, "in collection:", collectionName);
+
+    // Reference the subcollection
+    const subCollectionRef = collection(db, collectionName, id, subCollectionName);
+
+    // Fetch all documents in the subcollection
+    const querySnapshot = await getDocs(subCollectionRef);
+
+    // Map through the snapshot and return all documents
+    const documents = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    return documents;
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    return [];
   }
 };
 
@@ -63,17 +87,33 @@ const getSubRef = async ({ id, subCollectionID , collectionName, subCollectionNa
     }
   }
 
-const updateRef = async ({ id, collectionName, updateData, updateField }) => {
-  const documentRef = doc(db, collectionName, id);
-  updateDoc(documentRef, {
-    [updateField] : updateData
-  })
+  const updateRef = async ({ id, collectionName, updateFields }) => {
+    try {
+      const documentRef = doc(db, collectionName, id);
+      
+      // Dynamically creating the update object from updateFields
+      const updateData = {};
+      for (const field in updateFields) {
+        updateData[field] = updateFields[field];
+      }
+  
+      // Updating the document with multiple fields
+      await updateDoc(documentRef, updateData);
+    } catch (error) {
+      console.error('Error updating document:', error);
+      throw error; // Re-throw to handle in the calling function
+    }
+  };
 
-}
+const addRef = async ({ collectionName, data }) => {
+    try {
+      const docRef = await addDoc(collection(db, collectionName), data);
+      console.log("Document written with ID: ", docRef.id);
+      return docRef;
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      throw error;
+    }
+  };
 
-const addRef = async ({ collectionName, data}) => {
-    const documentRef = doc(db, collectionName);
-    addDoc(documentRef, data);
-}
-
-export {getRef, getSubRef, fetchReferenceData, updateRef, addRef};
+export {getRef, getSubRef, fetchReferenceData, updateRef, addRef, getSubRefAll};
