@@ -87,23 +87,41 @@ const getSubRef = async ({ id, subCollectionID , collectionName, subCollectionNa
     }
   }
 
-  const updateRef = async ({ id, collectionName, updateFields }) => {
-    try {
-      const documentRef = doc(db, collectionName, id);
-      
-      // Dynamically creating the update object from updateFields
-      const updateData = {};
-      for (const field in updateFields) {
-        updateData[field] = updateFields[field];
-      }
-  
-      // Updating the document with multiple fields
-      await updateDoc(documentRef, updateData);
-    } catch (error) {
-      console.error('Error updating document:', error);
-      throw error; // Re-throw to handle in the calling function
+const updateRef = async ({ id, collectionName, updateFields }) => {
+  try {
+    const documentRef = doc(db, collectionName, id);
+    
+    // Dynamically creating the update object from updateFields
+    const updateData = {};
+    for (const field in updateFields) {
+      updateData[field] = updateFields[field];
     }
-  };
+
+    // Updating the document with multiple fields
+    await updateDoc(documentRef, updateData);
+  } catch (error) {
+    console.error('Error updating document:', error);
+    throw error; // Re-throw to handle in the calling function
+  }
+};
+
+const updateSubRef = async ({ id, subID, collectionName, subCollectionName, updateFields }) => {
+  try {
+    const documentRef = doc(db, collectionName, id, subCollectionName, subID);
+    
+    // Dynamically creating the update object from updateFields
+    const updateData = {};
+    for (const field in updateFields) {
+      updateData[field] = updateFields[field];
+    }
+
+    // Updating the document with multiple fields
+    await updateDoc(documentRef, updateData);
+  } catch (error) {
+    console.error('Error updating document:', error);
+    throw error; // Re-throw to handle in the calling function
+  }
+};
 
 const addRef = async ({ collectionName, data }) => {
     try {
@@ -116,4 +134,4 @@ const addRef = async ({ collectionName, data }) => {
     }
   };
 
-export {getRef, getSubRef, fetchReferenceData, updateRef, addRef, getSubRefAll};
+export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, getSubRefAll};

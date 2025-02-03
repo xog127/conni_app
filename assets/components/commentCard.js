@@ -11,7 +11,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import UserInfoRowComment from './userInfoRowComment';
 
-const CommentCard = ({ anonymous, comment, userRef, onReply, onDelete }) => {
+const CommentCard = ({ postData, comment, userRef, onReply, onDelete }) => {
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
 
@@ -26,7 +26,7 @@ const CommentCard = ({ anonymous, comment, userRef, onReply, onDelete }) => {
   return (
     <View style={styles.container}>
       <UserInfoRowComment 
-        anonymous={anonymous}
+        postData={postData}
         commentData={comment}
       />
       

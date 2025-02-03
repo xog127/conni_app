@@ -1,3 +1,5 @@
+//once authenticated user done, change like function so their ref is edited not comment users
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -11,12 +13,13 @@ import {
 import { Feather, AntDesign } from '@expo/vector-icons';
 import { fetchReferenceData } from '../firebase/queries';
 import { timeAgo } from '../customFunctions/time';
-import { increment, arrayRemove, arrayUnion } from '@firebase/firestore';
-import { updateRef } from '../firebase/queries';
+import { increment, arrayRemove, arrayUnion } from 'firebase/firestore';
+import { updateSubRef } from '../firebase/queries';
+import { db } from '../firebase/firebaseConfig';
 
 
 const UserInfoRowComment = ({ 
-  commentData, anonymous
+  commentData, postData
 }) => {
   const [user, setUser] = useState(null);
   const [optionsVisible, setOptionsVisible] = useState(false);
@@ -26,41 +29,45 @@ const UserInfoRowComment = ({
   const [relativeTime, setRelativeTime] = useState('');
 
 const handleLike = async () => {
-//   try {
-//     if (isLiked) {
-//       // Unlike: Remove the user reference from likes array
-//       await updateRef({
-//         id: postData.id,  // Consistent use of postData.id
-//         collectionName: "posts",
-//         updateFields: {
-//           "num_likes": increment(-1),
-//           "like_userref": arrayRemove(userRef)
-//         },
-//       }).then(() => {;
-//       setLiked(false); 
-//       }) // Use setLiked instead of isLiked()
-//     } else {
-//       // Like: Add the user reference to likes array
-//       await updateRef({
-//         id: postData.id,  // Consistent use of postData.id
-//         collectionName: "posts",
-//         updateFields: {
-//           "num_likes": increment(1),
-//           "like_userref": arrayUnion(userRef)
-//         },
-//       }).then(() => {
-//         setLiked(true);  // Use setLiked instead of isLiked()
-//       });
+  try {
+    console.log
+    if (isLiked) {
+      // Unlike: Remove the user reference from likes array
+
+      await updateSubRef({
+        id: postData.id,  
+        collectionName: "posts",
+        subID: commentData.id,
+        subCollectionName: "comments",
+        updateFields: {
+          "liked_user_ref": arrayRemove(commentData.createdby_ref)
+        },
+      }).then(() => {;
+      setLiked(false); 
+      }) 
+    } else {
+      // Like: Add the user reference to likes array
+      await updateSubRef({
+        id: postData.id,
+        collectionName: "posts",
+        subID: commentData.id,
+        subCollectionName: "comments",
+        updateFields: {
+          "liked_user_ref": arrayUnion(commentData.createdby_ref)
+        },
+      }).then(() => {
+        setLiked(true);  // Use setLiked instead of isLiked()
+      });
       
-//     }
-//   } catch (error) {
-//     console.error('Error updating like:', error);
-//     // Optionally add error handling UI feedback here
-//   }
+    }
+  } catch (error) {
+    console.error('Error updating like:', error);
+    // Optionally add error handling UI feedback here
+  }
 };
 
   const handleProfilePress = () => {
-    if (!anonymous) {
+    if (!postData.anonymous) {
       onProfilePress?.();
     }
   };
@@ -74,8 +81,7 @@ const handleLike = async () => {
             // Pass the entire reference object
             fetchReferenceData(commentData.createdby_ref).then((data) => {
                 setUser(data);
-                console.log('User is now for comment:', data);
-                if (anonymous) {
+                if (postData.anonymous) {
                   setUserName(data.first_name + ' ' + data.last_name);
                 }
                 else {
@@ -85,14 +91,7 @@ const handleLike = async () => {
                 if (commentData.liked_user_ref.includes(userRef)) {
                   setLiked(true);
                 }
-                
-          
               });
-       
-            
-            
-           
-    
         } catch (error) {
             console.error('Error fetching user:', error);
         } finally {
@@ -103,15 +102,12 @@ const handleLike = async () => {
     fetchUserData();
   }, []);
 
-  
-  
-
   return (
     <View style={styles.container}>
       <View style={styles.userInfoLeft}>
         <TouchableOpacity 
           onPress={handleProfilePress}
-          disabled={anonymous}
+          disabled={postData.anonymous}
           style={styles.imageContainer}
         >
           

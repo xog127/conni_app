@@ -11,7 +11,7 @@ import {
 import { Feather, AntDesign } from '@expo/vector-icons';
 import { fetchReferenceData } from '../firebase/queries';
 import { timeAgo } from '../customFunctions/time';
-import { increment, arrayRemove, arrayUnion } from '@firebase/firestore';
+import { increment, arrayRemove, arrayUnion } from 'firebase/firestore';
 import { updateRef } from '../firebase/queries';
 
 
@@ -33,8 +33,8 @@ const handleLike = async () => {
         id: postData.id,  // Consistent use of postData.id
         collectionName: "posts",
         updateFields: {
-          "num_likes": increment(-1),
-          "like_userref": arrayRemove(userRef)
+          "num_likes": increment(-1),  
+          "liked_user_ref": arrayRemove(userRef)
         },
       }).then(() => {;
       setLiked(false); 
@@ -71,14 +71,13 @@ const handleLike = async () => {
             // Pass the entire reference object
             fetchReferenceData(userRef).then((data) => {
                 setUser(data);
-                console.log('User is now:', postData);
                 if (postData.anonymous) {
                   setUserName(data.first_name + ' ' + data.last_name);
                 }
                 else {
                   setUserName(data.display_name);
                 }
-                console.log('User Name:', userName);
+             
                 if (postData.like_userref.includes(userRef)) {
                   setLiked(true);
                 }

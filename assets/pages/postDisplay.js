@@ -98,7 +98,7 @@ const PostDisplay = () => {
             <Text style={styles.commentsHeader}>Comments</Text>
           </>
         }
-        renderItem={({ item }) => <CommentCard comment={item} userRef={item.createdby_ref} anonymous={post.anonymous} />}
+        renderItem={({ item }) => <CommentCard comment={item} userRef={item.createdby_ref} postData={post} />}
         contentContainerStyle={styles.flatListContent}
       />
     </SafeAreaView>
