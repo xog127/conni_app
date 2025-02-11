@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,16 @@ import {
   SafeAreaView,
   ActivityIndicator,
   FlatList,
+  KeyboardAvoidingView,
+  TextInput,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import UserInfoRow from '../components/userInfoRow';
-import { getRef, fetchReferenceData, getSubRefAll } from '../firebase/queries';
+import { getRef, fetchReferenceData, getSubRefAll, addRef } from '../firebase/queries';
 import CommentCard from '../components/commentCard.js';
+import { addDoc, collection, db } from '../firebase/firebaseConfig';
+import { Timestamp, doc } from 'firebase/firestore';
+import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry.js';
 
 const PostDisplay = () => {
   const [post, setPost] = useState(null);
@@ -20,6 +25,41 @@ const PostDisplay = () => {
   const [loading, setLoading] = useState(true);
   const [genre, setGenre] = useState(null);
   const postRef = '2u4ga9gghwilkMbq8HW1';
+  const [newComment, setNewComment] = useState('');
+  const inputRef = useRef(null);
+
+  
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+
+    try {
+      const commentsRef = collection(db, 'posts', postRef, 'comments');
+      await addDoc(commentsRef, {
+        content: newComment,
+        date_created: Timestamp.now(),
+        createdby_ref: doc(db, 'users', 'ErtsKCM5RFbcMAxiyCsz4sbjZxe2'),
+      });
+      setNewComment('');
+      inputRef.current?.clear();
+      getComments();
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
+  };
+
+  const getComments = async () => {
+    try {
+      const commentsData = await getSubRefAll({ id: postRef, collectionName: 'posts', subCollectionName: 'comments' });
+      console.log('Comments:', commentsData);
+      setComments(commentsData);
+  
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     const fetchPostData = async () => {
@@ -31,6 +71,7 @@ const PostDisplay = () => {
         setGenre(genreData);
 
         const commentsData = await getSubRefAll({ id: postRef, collectionName: 'posts', subCollectionName: 'comments' });
+        console.log('Comments:', commentsData);
         setComments(commentsData);
     
       } catch (error) {
@@ -52,6 +93,7 @@ const PostDisplay = () => {
   }
 
   return (
+    <KeyboardAvoidingView behavior="padding" style={styles.safeArea}>
     <SafeAreaView style={styles.safeArea}>
       {/* Header with Genre and Back Button */}
       <View style={styles.header}>
@@ -98,10 +140,27 @@ const PostDisplay = () => {
             <Text style={styles.commentsHeader}>Comments</Text>
           </>
         }
-        renderItem={({ item }) => <CommentCard comment={item} userRef={item.createdby_ref} postData={post} />}
+        renderItem={({ item }) => <CommentCard comment={item} userRef={item.createdby_ref} postData={post} onTrigger = {getComments}/>}
         contentContainerStyle={styles.flatListContent}
       />
+      <View style={styles.commentInputContainer}>
+        <TextInput
+          ref={inputRef}
+          style={styles.input}
+          placeholder="Add a comment..."
+          value={newComment}
+          onChangeText={setNewComment}
+          multiline
+        />
+        <TouchableOpacity 
+          style={styles.sendButton}
+          onPress={handleAddComment}
+        >
+          <Feather name="send" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -181,6 +240,33 @@ const styles = StyleSheet.create({
   flatListContent: {
     paddingBottom: 50,
   },
+  commentInputContainer: {
+    flexDirection: 'row',
+    padding: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff'
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginRight: 10,
+    maxHeight: 100
+  },
+  sendButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#836fff',
+    borderRadius: 10,
+    paddingHorizontal: 10
+  },
+  sendButtonText: {
+    color: '#fff',
+    fontWeight: '600'
+  }
 });
 
 export default PostDisplay;

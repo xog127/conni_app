@@ -1,6 +1,28 @@
 import { db, collection } from "./firebaseConfig";
 import { doc, getDoc, updateDoc, addDoc, getDocs } from "firebase/firestore";
 
+const getCollections = async ({ collectionName }) => {
+  try {
+    console.log("Fetching all documents from collection:", collectionName);
+
+    // Reference the collection
+    const collectionRef = collection(db, collectionName);
+
+    // Fetch all documents in the collection
+    const querySnapshot = await getDocs(collectionRef);
+
+    // Map through the snapshot and return all documents
+    const documents = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    return documents;
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    return [];
+  }
+};
 
 const getRef = async ({ id, collectionName }) => {
   try {
@@ -123,6 +145,15 @@ const updateSubRef = async ({ id, subID, collectionName, subCollectionName, upda
   }
 };
 
+const deleteDocument = async (docId) => {
+  try {
+    await deleteDoc(docId);
+    console.log(`Document ${docId} deleted successfully!`);
+  } catch (error) {
+    console.error("Error deleting document:", error);
+  }
+};
+
 const addRef = async ({ collectionName, data }) => {
     try {
       const docRef = await addDoc(collection(db, collectionName), data);
@@ -134,4 +165,4 @@ const addRef = async ({ collectionName, data }) => {
     }
   };
 
-export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, getSubRefAll};
+export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections};

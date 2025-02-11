@@ -2,14 +2,18 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { initializeApp } from 'firebase/app';
+import { auth } from './assets/firebase/firebaseConfig';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { createContext, useState, useEffect, useContext } from 'react';
 import LoginScreen from './assets/pages/login';
 import SignupScreen from './assets/pages/signup';
 import PostDisplay from './assets/pages/postDisplay';
 import CreatePostForm from './assets/pages/createPost';
+import ForumsPage from './assets/pages/forum';
+import OnboardingPage from './assets/pages/onboarding';
 import { Feather } from '@expo/vector-icons';
+
 
 // Create navigation stacks
 const Stack = createStackNavigator();
@@ -66,16 +70,26 @@ const TabNavigator = () => (
         ),
       }}
     />
-    {/* <Tab.Screen 
-      name="Profile" 
-      component={ProfileScreen}
+    <Tab.Screen 
+      name="Forums" 
+      component={ForumsPage}
       options={{
         headerShown: false,
         tabBarIcon: ({ color, size }) => (
-          <Ionicons name="person" size={size} color={color} />
+          <Feather name="person" size={size} color={color} />
         ),
       }}
-    /> */}
+    /> 
+    <Tab.Screen 
+      name="user" 
+      component={OnboardingPage}
+      options={{
+        headerShown: false,
+        tabBarIcon: ({ color, size }) => (
+          <Feather name="heart" size={size} color={color} />
+        ),
+      }}
+    /> 
   </Tab.Navigator>
 );
 
@@ -98,15 +112,18 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    const auth = getAuth();
     // Listen for authentication state changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setState({
-        user,
-        loading: false,
-      });
+    const loadUser = async () => {
+      const storedUser = await AsyncStorage.getItem('user');
+      if (storedUser) setState({ user: JSON.parse(storedUser), loading: false });
+    };
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) await AsyncStorage.setItem('user', JSON.stringify(user));
+      else await AsyncStorage.removeItem('user');
+      setState({ user, loading: false });
     });
 
+    loadUser();
     // Cleanup subscription
     return unsubscribe;
   }, []);
