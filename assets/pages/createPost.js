@@ -11,6 +11,7 @@ import {
 import { Switch } from "react-native";
 import { addRef } from "../firebase/queries";
 import {addDoc, collection, db} from "../firebase/firebaseConfig";
+import { NativeBaseProvider } from "native-base";
 
 const CreatePostForm = () => {
   const [title, setTitle] = useState("");
@@ -48,6 +49,7 @@ const CreatePostForm = () => {
     }
 
   return (
+    <NativeBaseProvider>
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.header}>Create Post</Text>
@@ -139,6 +141,7 @@ const CreatePostForm = () => {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
+    </NativeBaseProvider>
   );
 };
 

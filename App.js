@@ -9,7 +9,8 @@ import LoginScreen from './assets/pages/login';
 import SignupScreen from './assets/pages/signup';
 import PostDisplay from './assets/pages/postDisplay';
 import CreatePostForm from './assets/pages/createPost';
-import { Feather } from '@expo/vector-icons';
+import MainPage from './assets/pages/mainPage';
+import {Ionicons, FontAwesome, Feather } from '@expo/vector-icons';
 
 // Create navigation stacks
 const Stack = createStackNavigator();
@@ -46,6 +47,16 @@ const AuthNavigator = () => (
 // Main Tab Navigator
 const TabNavigator = () => (
   <Tab.Navigator>
+        <Tab.Screen 
+      name="MainPage" 
+      component={MainPage}
+      options={{
+        headerShown: false,
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name="home" size={size} color={color} />
+        ),
+      }}
+    />
     <Tab.Screen 
       name="CreatePost" 
       component={CreatePostForm}
@@ -161,4 +172,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-
