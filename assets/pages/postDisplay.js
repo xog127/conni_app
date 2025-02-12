@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   TextInput,
 } from 'react-native';
@@ -15,9 +16,11 @@ import { Feather } from '@expo/vector-icons';
 import UserInfoRow from '../components/userInfoRow';
 import { getRef, fetchReferenceData, getSubRefAll, addRef } from '../firebase/queries';
 import CommentCard from '../components/commentCard.js';
-import { addDoc, collection, db } from '../firebase/firebaseConfig';
-import { Timestamp, doc } from 'firebase/firestore';
-import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry.js';
+import { addDoc, db } from '../firebase/firebaseConfig';
+import { Timestamp, doc, collection} from 'firebase/firestore';
+import { TouchableWithoutFeedback } from 'react-native-gesture-handler';
+
+const authUser = "Psycholoy 1st Year";
 
 const PostDisplay = () => {
   const [post, setPost] = useState(null);
@@ -27,22 +30,72 @@ const PostDisplay = () => {
   const postRef = '2u4ga9gghwilkMbq8HW1';
   const [newComment, setNewComment] = useState('');
   const inputRef = useRef(null);
-
+  const [replyingTo, setReplyingTo] = useState(null);
   
+  const handleReply = (comment) => {
+    setReplyingTo(comment);
+    inputRef.current?.focus();
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
+  };
+  
+  const renderCommentInput = () => (
+    
+    <View style={styles.commentInputWrapper}>
+      {replyingTo && (
+        <View style={styles.replyingToContainer}>
+          <Text style={styles.replyingToText}>
+            Replying to <Text style={styles.replyingToName}>{authUser}</Text>
+          </Text>
+          <TouchableOpacity onPress={cancelReply} style={styles.cancelReplyButton}>
+            <Feather name="x" size={16} color="#666" />
+          </TouchableOpacity>
+        </View>
+      )}
+      <View style={styles.commentInputContainer}>
+        <TextInput
+          ref={inputRef}
+          style={styles.input}
+          placeholder={replyingTo ? "Write a reply..." : "Add a comment..."}
+          value={newComment}
+          onChangeText={setNewComment}
+          multiline
+        />
+        <TouchableOpacity 
+          style={styles.sendButton}
+          onPress={handleAddComment}
+        >
+          <Feather name="send" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </View>
+
+  );
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
 
     try {
-      const commentsRef = collection(db, 'posts', postRef, 'comments');
-      await addDoc(commentsRef, {
+      let commentsRef = collection(db, 'posts', postRef, 'comments');
+      const commentData = {
         content: newComment,
         date_created: Timestamp.now(),
         createdby_ref: doc(db, 'users', 'ErtsKCM5RFbcMAxiyCsz4sbjZxe2'),
-      });
+      };
+
+      // If replying to a comment, add the reply_to field
+      if (replyingTo) {
+        commentsRef = collection(db, 'posts', postRef, 'comments', replyingTo.id, 'reply');
+      }
+
+      await addDoc(commentsRef, commentData);
       setNewComment('');
+      setReplyingTo(null);
       inputRef.current?.clear();
       getComments();
+      Keyboard.dismiss();
     } catch (error) {
       console.error('Error adding comment:', error);
     }
@@ -50,7 +103,7 @@ const PostDisplay = () => {
 
   const getComments = async () => {
     try {
-      const commentsData = await getSubRefAll({ id: postRef, collectionName: 'posts', subCollectionName: 'comments' });
+      const commentsData = await getSubRefAll({collection: collection(db, 'posts', postRef, 'comments')});
       console.log('Comments:', commentsData);
       setComments(commentsData);
   
@@ -70,9 +123,7 @@ const PostDisplay = () => {
         const genreData = await fetchReferenceData(postData.post_genre_ref);
         setGenre(genreData);
 
-        const commentsData = await getSubRefAll({ id: postRef, collectionName: 'posts', subCollectionName: 'comments' });
-        console.log('Comments:', commentsData);
-        setComments(commentsData);
+        getComments();
     
       } catch (error) {
         console.error('Error fetching post:', error);
@@ -140,25 +191,12 @@ const PostDisplay = () => {
             <Text style={styles.commentsHeader}>Comments</Text>
           </>
         }
-        renderItem={({ item }) => <CommentCard comment={item} userRef={item.createdby_ref} postData={post} onTrigger = {getComments}/>}
+        renderItem={({ item }) => <CommentCard onReply={handleReply} comment={item} userRef={item.createdby_ref} postData={post} onTrigger = {getComments} docu={doc(db, 'posts', post.id, 'comments', item.id)}/>}
         contentContainerStyle={styles.flatListContent}
       />
-      <View style={styles.commentInputContainer}>
-        <TextInput
-          ref={inputRef}
-          style={styles.input}
-          placeholder="Add a comment..."
-          value={newComment}
-          onChangeText={setNewComment}
-          multiline
-        />
-        <TouchableOpacity 
-          style={styles.sendButton}
-          onPress={handleAddComment}
-        >
-          <Feather name="send" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      
+      {renderCommentInput()}
+
     </SafeAreaView>
     </KeyboardAvoidingView>
   );
@@ -266,7 +304,32 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: '#fff',
     fontWeight: '600'
-  }
+  },
+  commentInputWrapper: {
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  replyingToContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: '#f5f5f5',
+  },
+  replyingToText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  replyingToName: {
+    fontWeight: '600',
+    color: '#333',
+  },
+  cancelReplyButton: {
+    padding: 4,
+  },
 });
+
 
 export default PostDisplay;

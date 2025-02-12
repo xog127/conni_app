@@ -47,12 +47,11 @@ const getRef = async ({ id, collectionName }) => {
   }
 };
 
-const getSubRefAll = async ({ id, collectionName, subCollectionName }) => {
+const getSubRefAll = async ({ collection }) => {
   try {
-    console.log("Fetching all documents from subcollection:", subCollectionName, "under document:", id, "in collection:", collectionName);
-
+  
     // Reference the subcollection
-    const subCollectionRef = collection(db, collectionName, id, subCollectionName);
+    const subCollectionRef = collection;
 
     // Fetch all documents in the subcollection
     const querySnapshot = await getDocs(subCollectionRef);
@@ -127,9 +126,9 @@ const updateRef = async ({ id, collectionName, updateFields }) => {
   }
 };
 
-const updateSubRef = async ({ id, subID, collectionName, subCollectionName, updateFields }) => {
+const updateSubRef = async ({ docu, updateFields }) => {
   try {
-    const documentRef = doc(db, collectionName, id, subCollectionName, subID);
+    const documentRef = docu;
     
     // Dynamically creating the update object from updateFields
     const updateData = {};

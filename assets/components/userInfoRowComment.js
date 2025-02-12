@@ -16,7 +16,7 @@ import { db } from '../firebase/firebaseConfig';
 
 
 const UserInfoRowComment = ({ 
-  commentData, postData, onDeletePress
+  commentData, postData, onDeletePress, docu
 }) => {
   const [user, setUser] = useState(null);
   const [optionsVisible, setOptionsVisible] = useState(false);
@@ -30,10 +30,7 @@ const handleLike = async () => {
     if (isLiked) {
       // Unlike: Remove the user reference from likes array
       await updateSubRef({
-        id: postData.id, 
-        subID: commentData.id,
-        subCollectionName: "comments",
-        collectionName: "posts",
+        docu: docu,
         updateFields: {
           "liked_user_ref": arrayRemove(commentData.createdby_ref)
         },
@@ -43,10 +40,7 @@ const handleLike = async () => {
     } else {
       // Like: Add the user reference to likes array
       await updateSubRef({
-        id: postData.id, 
-        subID: commentData.id,
-        subCollectionName: "comments",
-        collectionName: "posts",
+        docu: docu,
         updateFields: {
           "liked_user_ref": arrayUnion(commentData.createdby_ref)
         },
@@ -57,14 +51,13 @@ const handleLike = async () => {
     }
   } catch (error) {
     console.error('Error updating like:', error);
-    // Optionally add error handling UI feedback here
   }
 };
 
 handleDelete = async () => {
   try {
     setOptionsVisible(false);
-    await deleteDoc(doc(db, 'posts', postData.id, 'comments', commentData.id));
+    await deleteDoc(docu);
     onDeletePress();
     console.log('Deleting comment:', deleteDoc);
     
