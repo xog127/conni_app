@@ -1,7 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, getDocs, getDoc, updateDoc , deleteDoc} from 'firebase/firestore';
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 // Optionally import the services that you want to use
@@ -25,10 +24,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app); 
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
-});
-// For more information on how to access Firebase in your project,
-// see the Firebase documentation: https://firebase.google.com/docs/web/setup#access-firebase
+const auth = initializeAuth(app);
 
 export {app, db, getFirestore, collection, addDoc, getDocs, auth, getDoc, updateDoc, deleteDoc };

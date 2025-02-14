@@ -185,39 +185,40 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Changed from 'center' to allow vertical expansion
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   userInfoLeft: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Changed from 'center' to align with top
+    flex: 1, // Added to allow proper space distribution
+    marginRight: 12, // Added to maintain space from action buttons
   },
   imageContainer: {
     marginRight: 12,
-  },
-  userImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    flexShrink: 0, // Prevent image from shrinking
   },
   userTextInfo: {
     justifyContent: 'center',
+    flex: 1, // Added to allow text container to take remaining space
   },
   userName: {
     fontSize: 16,
     fontWeight: '500',
     color: '#000',
+    flexWrap: 'wrap', // Allow text to wrap
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 0, // Prevent action buttons from shrinking
   },
   postDate: {
     fontSize: 12,
     color: '#666',
     marginTop: 2,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   actionButton: {
     marginLeft: 16,

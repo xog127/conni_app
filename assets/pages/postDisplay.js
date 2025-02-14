@@ -14,20 +14,21 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import UserInfoRow from '../components/userInfoRow';
-import { getRef, fetchReferenceData, getSubRefAll, addRef } from '../firebase/queries';
+import { getRef, fetchReferenceData, getSubRefAll, addRef, updateRef } from '../firebase/queries';
 import CommentCard from '../components/commentCard.js';
 import { addDoc, db } from '../firebase/firebaseConfig';
-import { Timestamp, doc, collection} from 'firebase/firestore';
+import { Timestamp, doc, collection, arrayUnion, increment} from 'firebase/firestore';
 import { TouchableWithoutFeedback } from 'react-native-gesture-handler';
+import PollOption from '../components/pollOption.js';
 
-const authUser = "Psycholoy 1st Year";
+const authUser = "Psychology 1st Year";
 
 const PostDisplay = () => {
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [genre, setGenre] = useState(null);
-  const postRef = '2u4ga9gghwilkMbq8HW1';
+  const postRef = 'GqNKGQJJcPtDA6G7OgZb';
   const [newComment, setNewComment] = useState('');
   const inputRef = useRef(null);
   const [replyingTo, setReplyingTo] = useState(null);
@@ -114,6 +115,22 @@ const PostDisplay = () => {
     }
   }
 
+  const handleSelectPoll = async (index) => {
+    try {
+      await updateRef({
+        id: post.id,
+        collectionName: "posts",
+        updateFields: {
+          [`pollOptions.pollOptions.${index}.votes`]: increment(1),
+          "pollOptions.voters": arrayUnion(post.user_ref)
+        }
+      });
+      useEffect();
+    } catch (error) {
+      console.error('Error updating poll:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchPostData = async () => {
       try {
@@ -173,6 +190,20 @@ const PostDisplay = () => {
                 />
               )}
             </View>
+            {/* Polls Content */}
+           
+            {post.addPoll && post.pollOptions.pollOptions.map((pollOption, index) => (
+              <PollOption
+                key={index}
+                pollOption={pollOption}
+                hasVoted={pollOption.voters?.includes(authUser)}
+                onChoose={() => {
+                  // Handle vote logic here
+                  console.log('Voted for:', pollOption.option);
+                  handleSelectPoll(index);
+                }}
+              />
+            ))}
 
             {/* Post Stats */}
             <View style={styles.statsContainer}>

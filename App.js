@@ -4,7 +4,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { auth } from './assets/firebase/firebaseConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { createContext, useState, useEffect, useContext } from 'react';
 import LoginScreen from './assets/pages/login';
 import SignupScreen from './assets/pages/signup';
@@ -13,6 +12,8 @@ import CreatePostForm from './assets/pages/createPost';
 import ForumsPage from './assets/pages/forum';
 import OnboardingPage from './assets/pages/onboarding';
 import { Feather } from '@expo/vector-icons';
+import { AuthProvider } from './assets/services/authContext';
+import { AuthContext } from './assets/services/authContext';
 
 
 // Create navigation stacks
@@ -20,11 +21,6 @@ const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const AuthStack = createStackNavigator();
 
-// Create Authentication Context
-const AuthContext = createContext({
-  user: null,
-  loading: true,
-});
 
 // Auth Stack Navigator
 const AuthNavigator = () => (
@@ -104,58 +100,11 @@ const MainStackNavigator = () => (
   </Stack.Navigator>
 );
 
-// Auth Provider Component
-export const AuthProvider = ({ children }) => {
-  const [state, setState] = useState({
-    user: null,
-    loading: true,
-  });
 
-  useEffect(() => {
-    // Listen for authentication state changes
-    const loadUser = async () => {
-      const storedUser = await AsyncStorage.getItem('user');
-      if (storedUser) setState({ user: JSON.parse(storedUser), loading: false });
-    };
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) await AsyncStorage.setItem('user', JSON.stringify(user));
-      else await AsyncStorage.removeItem('user');
-      setState({ user, loading: false });
-    });
-
-    loadUser();
-    // Cleanup subscription
-    return unsubscribe;
-  }, []);
-
-  return (
-    <AuthContext.Provider value={state}>
-      {!state.loading && children}
-    </AuthContext.Provider>
-  );
-};
-
-// Custom hook to use auth context
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
 
 // Root Navigator - Handles authentication flow
 const RootNavigator = () => {
-  const { user, loading } = useAuth();
-
-  // Option 1: Show loading indicator directly in the navigator
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
-      </View>
-    );
-  }
+  const { user} = useContext(AuthContext);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
