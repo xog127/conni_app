@@ -31,6 +31,9 @@ const handleLike = async () => {
       // Unlike: Remove the user reference from likes array
       await updateSubRef({
         docu: docu,
+
+        
+
         updateFields: {
           "liked_user_ref": arrayRemove(commentData.createdby_ref)
         },
@@ -58,6 +61,7 @@ handleDelete = async () => {
   try {
     setOptionsVisible(false);
     await deleteDoc(docu);
+
     onDeletePress();
     console.log('Deleting comment:', deleteDoc);
     
