@@ -86,6 +86,7 @@ const ForumsPage = ({}) => {
           </View>
         ) : (
           forums.map(forum => (
+            
             <ForumCard
               forumData={forum}
             />

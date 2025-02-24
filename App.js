@@ -72,7 +72,7 @@ const TabNavigator = () => (
       options={{
         headerShown: false,
         tabBarIcon: ({ color, size }) => (
-          <Feather name="person" size={size} color={color} />
+          <Feather name="bell" size={size} color={color} />
         ),
       }}
     /> 
