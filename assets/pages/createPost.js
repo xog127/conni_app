@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,18 @@ import {
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
+import { AuthContext } from "../services/authContext";
 import { Switch } from "react-native";
+import { Feather } from '@expo/vector-icons';
 import { addRef } from "../firebase/queries";
 import {addDoc, collection, db} from "../firebase/firebaseConfig";
 import { NativeBaseProvider } from "native-base";
+import { Timestamp } from "firebase/firestore";
+
 
 const CreatePostForm = () => {
   const [title, setTitle] = useState("");
@@ -21,131 +28,253 @@ const CreatePostForm = () => {
   const [addChat, setAddChat] = useState(false);
   const [addPoll, setAddPoll] = useState(false);
   const [anonymous, setAnonymous] = useState(false);
+  
+  // Poll state with correct structure
+  const [pollOptions, setPollOptions] = useState([]);
+  const [newOption, setNewOption] = useState("");
 
   const forums = ["General", "Events", "Announcements", "Discussions"];
 
+  const addPollOption = () => {
+    if (newOption.trim()) {
+      const newPollOptions = { option: newOption.trim(), votes: 0};
+      setPollOptions([...pollOptions, newPollOptions]);
+      setNewOption("");
+    }
+  };
+
+  const removePollOption = (index) => {
+    setPollOptions(pollOptions.filter((_, i) => i !== index));
+  };
+
   const addPost = async () => {
-    if (!title || !description || selectedForum === "Choose Forum" ) {
+    if (!title || !description || selectedForum === "Choose Forum") {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
 
+    if (addPoll && pollOptions.length < 2) {
+      Alert.alert("Error", "Please add at least 2 poll options.");
+      return;
+    }
+
     const postData = {
-      title,
-      description,
-      forum: selectedForum,
+      post_title : title,
+      post_data : description,
+      post_genre_ref: selectedForum,
       addChat,
       addPoll,
+      pollOptions: addPoll ? {pollOptions, voters : []} : [],
       anonymous,
-      createdAt: new Date().toISOString(),
+      time_posted: Timestamp.now(),
     };
 
     console.log("Post Data:", postData);
-    addRef({collectionName: "posts", data: postData});
+    
+    addRef({ collectionName: "posts", data: postData });
     setTitle("");
     setDescription("");
     setSelectedForum("Choose Forum");
-
-    }
+    setPollOptions([]);
+    setAddPoll(false);
+    setAddChat(false);
+    setAnonymous(false);
+  };
 
   return (
     <NativeBaseProvider>
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.header}>Create Post</Text>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.header}>Create Post</Text>
 
-        {/* Title Input */}
-        <TextInput
-          style={styles.titleInput}
-          placeholder="Enter title"
-          value={title}
-          onChangeText={setTitle}
-          multiline
-        />
+          <TextInput
+            style={styles.titleInput}
+            placeholder="Enter title"
+            value={title}
+            onChangeText={setTitle}
+            multiline
+          />
 
-        {/* Details Input */}
-        <TextInput
-          style={[styles.descriptionInput, { height: Math.max(100, description.length / 2) }]}
-          placeholder="Enter post details"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-        />
+          <TextInput
+            style={[styles.descriptionInput, { height: Math.max(100, description.length / 2) }]}
+            placeholder="Enter post details"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+          />
 
-        {/* Custom Dropdown */}
-        <View style={styles.dropdown}>
-          <TouchableOpacity
-            style={styles.dropdownButton}
-            onPress={() => setDropdownVisible(!dropdownVisible)}
-          >
-            <Text style={styles.dropdownButtonText}>{selectedForum}</Text>
-          </TouchableOpacity>
-          {dropdownVisible && (
-            <View style={styles.dropdownList}>
-              {forums.map((forum, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setSelectedForum(forum);
-                    setDropdownVisible(false);
-                  }}
+          <View style={styles.dropdown}>
+            <TouchableOpacity
+              style={styles.dropdownButton}
+              onPress={() => setDropdownVisible(!dropdownVisible)}
+            >
+              <Text style={styles.dropdownButtonText}>{selectedForum}</Text>
+            </TouchableOpacity>
+            {dropdownVisible && (
+              <View style={styles.dropdownList}>
+                {forums.map((forum, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setSelectedForum(forum);
+                      setDropdownVisible(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{forum}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.switchRow}>
+            <Text style={styles.switchText}>Add Chat</Text>
+            <Switch
+              value={addChat}
+              onValueChange={setAddChat}
+              trackColor={{ false: "#E0E3E7", true: "#E0E3E7" }}
+              thumbColor={addChat ? "#836fff" : "#f4f3f4"}
+            />
+          </View>
+
+          <View style={styles.switchRow}>
+            <Text style={styles.switchText}>Add Poll</Text>
+            <Switch
+              value={addPoll}
+              onValueChange={setAddPoll}
+              trackColor={{ false: "#E0E3E7", true: "#E0E3E7" }}
+              thumbColor={addPoll ? "#836fff" : "#f4f3f4"}
+            />
+          </View>
+
+          {addPoll && (
+            <View style={styles.pollSection}>
+              <View style={styles.pollInputContainer}>
+                <TextInput
+                  style={styles.pollInput}
+                  placeholder="Add poll option"
+                  value={newOption}
+                  onChangeText={setNewOption}
+                />
+                <TouchableOpacity 
+                  style={styles.addOptionButton}
+                  onPress={addPollOption}
                 >
-                  <Text style={styles.dropdownItemText}>{forum}</Text>
+                  <Feather name="plus" size={24} color="#fff" />
                 </TouchableOpacity>
-              ))}
+              </View>
+              
+              <View style={styles.pollOptionsContainer}>
+                {pollOptions.map((pollOption, index) => (
+                  <View key={index} style={styles.pollOption}>
+                    <Text style={styles.pollOptionText}>{pollOption.option}</Text>
+                    <TouchableOpacity
+                      onPress={() => removePollOption(index)}
+                      style={styles.removeOptionButton}
+                    >
+                      <Feather name="x" size={20} color="#666" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
             </View>
           )}
-        </View>
 
-        {/* Switches */}
-        <View style={styles.switchRow}>
-          <Text style={styles.switchText}>Add Chat</Text>
-          <Switch
-            value={addChat}
-            onValueChange={setAddChat}
-            trackColor={{ false: "#E0E3E7", true: "#E0E3E7" }}
-            thumbColor={addChat ? "#836fff" : "#f4f3f4"}
-          />
-        </View>
-
-        <View style={styles.switchRow}>
-          <Text style={styles.switchText}>Add Poll</Text>
-          <Switch
-            value={addPoll}
-            onValueChange={setAddPoll}
-            trackColor={{ false: "#E0E3E7", true: "#E0E3E7" }}
-            thumbColor={addPoll ? "#836fff" : "#f4f3f4"}
-          />
-        </View>
-
-        <View style={styles.switchRow}>
-          <View style={{flexDirection: "row", justifyContent: "center", alignItems: "flex-end"}}>
-            <Text style={styles.switchText}>Anonymous </Text>
-            <Text style={[styles.switchText, {fontSize: 10}]}>(Display Course Year)</Text>
+          <View style={styles.switchRow}>
+            <View style={{flexDirection: "row", justifyContent: "center", alignItems: "flex-end"}}>
+              <Text style={styles.switchText}>Anonymous </Text>
+              <Text style={[styles.switchText, {fontSize: 10}]}>(Display Course Year)</Text>
+            </View>
+            <Switch
+              value={anonymous}
+              onValueChange={setAnonymous}
+              trackColor={{ false: "#E0E3E7", true: "#E0E3E7" }}
+              thumbColor={anonymous ? "#836fff" : "#f4f3f4"}
+            />
           </View>
-          <Switch
-            value={anonymous}
-            onValueChange={setAnonymous}
-            trackColor={{ false: "#E0E3E7", true: "#E0E3E7" }}
-            thumbColor={anonymous ? "#836fff" : "#f4f3f4"}
-          />
-        </View>
 
-        {/* Submit Button */}
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={addPost}
-        >
-          <Text style={styles.submitButtonText}>Submit Post</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <TouchableOpacity
+            style={styles.submitButton}
+            onPress={addPost}
+          >
+            <Text style={styles.submitButtonText}>Submit Post</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
     </NativeBaseProvider>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  container: {
+    flexGrow: 1,
+    padding: 16,
+  },
+  pollSection: {
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+  },
+  pollInputContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  pollInput: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    fontSize: 14,
+  },
+  addOptionButton: {
+    backgroundColor: '#836fff',
+    borderRadius: 8,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pollOptionsContainer: {
+    gap: 8,
+  },
+  pollOption: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pollOptionText: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+  },
+  removeOptionButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: "#fff",

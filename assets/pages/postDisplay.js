@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,18 +8,128 @@ import {
   SafeAreaView,
   ActivityIndicator,
   FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
+  TextInput,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import UserInfoRow from '../components/userInfoRow';
-import { getRef, fetchReferenceData, getSubRefAll } from '../firebase/queries';
+import { getRef, fetchReferenceData, getSubRefAll, addRef, updateRef } from '../firebase/queries';
 import CommentCard from '../components/commentCard.js';
+import { addDoc, db } from '../firebase/firebaseConfig';
+import { Timestamp, doc, collection, arrayUnion, increment} from 'firebase/firestore';
+import { TouchableWithoutFeedback } from 'react-native-gesture-handler';
+import PollOption from '../components/pollOption.js';
+
+const authUser = "Psychology 1st Year";
 
 const PostDisplay = () => {
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [genre, setGenre] = useState(null);
-  const postRef = '2u4ga9gghwilkMbq8HW1';
+  const postRef = 'GqNKGQJJcPtDA6G7OgZb';
+  const [newComment, setNewComment] = useState('');
+  const inputRef = useRef(null);
+  const [replyingTo, setReplyingTo] = useState(null);
+  
+  const handleReply = (comment) => {
+    setReplyingTo(comment);
+    inputRef.current?.focus();
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
+  };
+  
+  const renderCommentInput = () => (
+    
+    <View style={styles.commentInputWrapper}>
+      {replyingTo && (
+        <View style={styles.replyingToContainer}>
+          <Text style={styles.replyingToText}>
+            Replying to <Text style={styles.replyingToName}>{authUser}</Text>
+          </Text>
+          <TouchableOpacity onPress={cancelReply} style={styles.cancelReplyButton}>
+            <Feather name="x" size={16} color="#666" />
+          </TouchableOpacity>
+        </View>
+      )}
+      <View style={styles.commentInputContainer}>
+        <TextInput
+          ref={inputRef}
+          style={styles.input}
+          placeholder={replyingTo ? "Write a reply..." : "Add a comment..."}
+          value={newComment}
+          onChangeText={setNewComment}
+          multiline
+        />
+        <TouchableOpacity 
+          style={styles.sendButton}
+          onPress={handleAddComment}
+        >
+          <Feather name="send" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </View>
+
+  );
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+
+    try {
+      let commentsRef = collection(db, 'posts', postRef, 'comments');
+      const commentData = {
+        content: newComment,
+        date_created: Timestamp.now(),
+        createdby_ref: doc(db, 'users', 'ErtsKCM5RFbcMAxiyCsz4sbjZxe2'),
+      };
+
+      // If replying to a comment, add the reply_to field
+      if (replyingTo) {
+        commentsRef = collection(db, 'posts', postRef, 'comments', replyingTo.id, 'reply');
+      }
+
+      await addDoc(commentsRef, commentData);
+      setNewComment('');
+      setReplyingTo(null);
+      inputRef.current?.clear();
+      getComments();
+      Keyboard.dismiss();
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
+  };
+
+  const getComments = async () => {
+    try {
+      const commentsData = await getSubRefAll({collection: collection(db, 'posts', postRef, 'comments')});
+      console.log('Comments:', commentsData);
+      setComments(commentsData);
+  
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleSelectPoll = async (index) => {
+    try {
+      await updateRef({
+        id: post.id,
+        collectionName: "posts",
+        updateFields: {
+          [`pollOptions.pollOptions.${index}.votes`]: increment(1),
+          "pollOptions.voters": arrayUnion(post.user_ref)
+        }
+      });
+      useEffect();
+    } catch (error) {
+      console.error('Error updating poll:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchPostData = async () => {
@@ -30,8 +140,7 @@ const PostDisplay = () => {
         const genreData = await fetchReferenceData(postData.post_genre_ref);
         setGenre(genreData);
 
-        const commentsData = await getSubRefAll({ id: postRef, collectionName: 'posts', subCollectionName: 'comments' });
-        setComments(commentsData);
+        getComments();
     
       } catch (error) {
         console.error('Error fetching post:', error);
@@ -52,6 +161,7 @@ const PostDisplay = () => {
   }
 
   return (
+    <KeyboardAvoidingView behavior="padding" style={styles.safeArea}>
     <SafeAreaView style={styles.safeArea}>
       {/* Header with Genre and Back Button */}
       <View style={styles.header}>
@@ -80,6 +190,20 @@ const PostDisplay = () => {
                 />
               )}
             </View>
+            {/* Polls Content */}
+           
+            {post.addPoll && post.pollOptions.pollOptions.map((pollOption, index) => (
+              <PollOption
+                key={index}
+                pollOption={pollOption}
+                hasVoted={pollOption.voters?.includes(authUser)}
+                onChoose={() => {
+                  // Handle vote logic here
+                  console.log('Voted for:', pollOption.option);
+                  handleSelectPoll(index);
+                }}
+              />
+            ))}
 
             {/* Post Stats */}
             <View style={styles.statsContainer}>
@@ -98,10 +222,14 @@ const PostDisplay = () => {
             <Text style={styles.commentsHeader}>Comments</Text>
           </>
         }
-        renderItem={({ item }) => <CommentCard comment={item} userRef={item.createdby_ref} postData={post} />}
+        renderItem={({ item }) => <CommentCard onReply={handleReply} comment={item} userRef={item.createdby_ref} postData={post} onTrigger = {getComments} docu={doc(db, 'posts', post.id, 'comments', item.id)}/>}
         contentContainerStyle={styles.flatListContent}
       />
+      
+      {renderCommentInput()}
+
     </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -181,6 +309,58 @@ const styles = StyleSheet.create({
   flatListContent: {
     paddingBottom: 50,
   },
+  commentInputContainer: {
+    flexDirection: 'row',
+    padding: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff'
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginRight: 10,
+    maxHeight: 100
+  },
+  sendButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#836fff',
+    borderRadius: 10,
+    paddingHorizontal: 10
+  },
+  sendButtonText: {
+    color: '#fff',
+    fontWeight: '600'
+  },
+  commentInputWrapper: {
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  replyingToContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: '#f5f5f5',
+  },
+  replyingToText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  replyingToName: {
+    fontWeight: '600',
+    color: '#333',
+  },
+  cancelReplyButton: {
+    padding: 4,
+  },
 });
+
 
 export default PostDisplay;

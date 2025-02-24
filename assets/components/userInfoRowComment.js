@@ -1,5 +1,3 @@
-//once authenticated user done, change like function so their ref is edited not comment users
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -11,15 +9,14 @@ import {
   Pressable,
 } from 'react-native';
 import { Feather, AntDesign } from '@expo/vector-icons';
-import { fetchReferenceData } from '../firebase/queries';
 import { timeAgo } from '../customFunctions/time';
-import { increment, arrayRemove, arrayUnion } from 'firebase/firestore';
-import { updateSubRef } from '../firebase/queries';
+import { arrayRemove, arrayUnion, doc, deleteDoc } from 'firebase/firestore';
+import { updateSubRef, deleteDocument, fetchReferenceData} from '../firebase/queries';
 import { db } from '../firebase/firebaseConfig';
 
 
 const UserInfoRowComment = ({ 
-  commentData, postData
+  commentData, postData, onDeletePress, docu
 }) => {
   const [user, setUser] = useState(null);
   const [optionsVisible, setOptionsVisible] = useState(false);
@@ -30,28 +27,20 @@ const UserInfoRowComment = ({
 
 const handleLike = async () => {
   try {
-    console.log
     if (isLiked) {
       // Unlike: Remove the user reference from likes array
-
       await updateSubRef({
-        id: postData.id,  
-        collectionName: "posts",
-        subID: commentData.id,
-        subCollectionName: "comments",
+        docu: docu,
         updateFields: {
           "liked_user_ref": arrayRemove(commentData.createdby_ref)
         },
       }).then(() => {;
       setLiked(false); 
-      }) 
+      }) // Use setLiked instead of isLiked()
     } else {
       // Like: Add the user reference to likes array
       await updateSubRef({
-        id: postData.id,
-        collectionName: "posts",
-        subID: commentData.id,
-        subCollectionName: "comments",
+        docu: docu,
         updateFields: {
           "liked_user_ref": arrayUnion(commentData.createdby_ref)
         },
@@ -62,9 +51,21 @@ const handleLike = async () => {
     }
   } catch (error) {
     console.error('Error updating like:', error);
-    // Optionally add error handling UI feedback here
   }
 };
+
+handleDelete = async () => {
+  try {
+    setOptionsVisible(false);
+    await deleteDoc(docu);
+
+    onDeletePress();
+    console.log('Deleting comment:', deleteDoc);
+    
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+  }
+}
 
   const handleProfilePress = () => {
     if (!postData.anonymous) {
@@ -81,14 +82,14 @@ const handleLike = async () => {
             // Pass the entire reference object
             fetchReferenceData(commentData.createdby_ref).then((data) => {
                 setUser(data);
+                console.log('User is now for comment:', data);
                 if (postData.anonymous) {
                   setUserName(data.first_name + ' ' + data.last_name);
                 }
                 else {
                   setUserName(data.display_name);
                 }
-           
-                if (commentData.liked_user_ref.includes(userRef)) {
+                if (commentData.liked_user_ref.includes(commentData.createdby_ref)) {
                   setLiked(true);
                 }
               });
@@ -101,6 +102,9 @@ const handleLike = async () => {
 
     fetchUserData();
   }, []);
+
+  
+  
 
   return (
     <View style={styles.container}>
@@ -160,18 +164,15 @@ const handleLike = async () => {
                 <Text style={styles.optionText}>Report</Text>
               </TouchableOpacity>
 
-              {/* {isOwnPost && (
+              {(commentData.createdby_ref == commentData.createdby_ref) && (
                 <TouchableOpacity 
                   style={[styles.optionItem, styles.deleteOption]}
-                  onPress={() => {
-                    onDelete?.();
-                    setOptionsVisible(false);
-                  }}
+                  onPress={ handleDelete }
                 >
                   <Feather name="trash-2" size={20} color="#ff4444" />
                   <Text style={[styles.optionText, styles.deleteText]}>Delete</Text>
                 </TouchableOpacity>
-              )} */}
+              )}
             </View>
           </Pressable>
         </Modal>

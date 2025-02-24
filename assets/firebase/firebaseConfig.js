@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, getDocs, getDoc, updateDoc } from 'firebase/firestore';
-import { initializeAuth} from 'firebase/auth';
+import { getFirestore, collection, addDoc, getDocs, getDoc, updateDoc , deleteDoc} from 'firebase/firestore';
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+
 
 // Optionally import the services that you want to use
 import {getAuth} from "firebase/auth";
@@ -24,7 +25,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app); 
 const auth = initializeAuth(app);
-// For more information on how to access Firebase in your project,
-// see the Firebase documentation: https://firebase.google.com/docs/web/setup#access-firebase
 
-export {app, db, getFirestore, collection, addDoc, getDocs, auth, getDoc, updateDoc, getAuth};
+
+export {app, db, getFirestore, collection, addDoc, getDocs, auth, getDoc, updateDoc, deleteDoc };
+

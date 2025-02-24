@@ -1,88 +1,75 @@
-import React, { useState } from 'react';
+// CommentCard.js
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
   StyleSheet,
-  Modal,
-  Pressable,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import UserInfoRowComment from './userInfoRowComment';
+import { getSubRefAll } from '../firebase/queries'; // Import your query function
+import { collection, doc } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
 
-const CommentCard = ({ postData, comment, userRef, onReply, onDelete }) => {
-  const [isReplying, setIsReplying] = useState(false);
-  const [replyText, setReplyText] = useState('');
+const CommentCard = ({ postData, comment, userRef, onReply, onDelete, onTrigger, isReply = false, docu }) => {
+  const [replies, setReplies] = useState([]);
 
-  const handleReply = () => {
-    if (replyText.trim()) {
-      onReply(comment.id, replyText);
-      setReplyText('');
-      setIsReplying(false);
+  const fetchReplies = async () => {
+    try {
+      const repliesData = await getSubRefAll({ 
+        collection : collection(db, 'posts', postData.id, 'comments', comment.id, 'reply')
+      });
+      setReplies(repliesData);
+    } catch (error) {
+      console.error('Error fetching replies:', error);
     }
   };
 
+  useEffect(() => {
+    fetchReplies();
+  }, [comment.id, onTrigger]);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isReply && styles.replyContainer]}>
       <UserInfoRowComment 
         postData={postData}
         commentData={comment}
+        onDeletePress={() => {
+          onTrigger();
+          fetchReplies();
+        }}
+        docu={docu}
       />
-      
-      <View style={styles.contentContainer}>
+
+        
+      <View style={[styles.contentContainer, isReply && styles.replyContentContainer]}>
         <Text style={styles.commentText}>{comment.content}</Text>
         
-        <TouchableOpacity 
-          onPress={() => setIsReplying(true)}
-          style={styles.replyButton}
-        >
+        {!isReply && (
+          <TouchableOpacity 
+            onPress={() => onReply(comment)}
+            style={styles.replyButton}
+          >
           <Feather name="message-circle" size={16} color="#666" />
           <Text style={styles.replyButtonText}>Reply</Text>
         </TouchableOpacity>
-      </View>
+      )}
 
-      {/* Reply Modal */}
-      <Modal
-        visible={isReplying}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsReplying(false)}
-      >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => setIsReplying(false)}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Reply to comment</Text>
-              <TouchableOpacity onPress={() => setIsReplying(false)}>
-                <Feather name="x" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            
-            <TextInput
-              style={styles.replyInput}
-              placeholder="Write your reply..."
-              value={replyText}
-              onChangeText={setReplyText}
-              multiline
-              autoFocus
-            />
-            
-            <TouchableOpacity 
-              style={[
-                styles.submitButton,
-                !replyText.trim() && styles.submitButtonDisabled
-              ]}
-              onPress={handleReply}
-              disabled={!replyText.trim()}
-            >
-              <Text style={styles.submitButtonText}>Reply</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
+        {/* Render replies */}
+        {replies.map((reply) => (
+          <CommentCard
+            key={reply.id}
+            postData={postData}
+            comment={reply}
+            userRef={reply.createdby_ref}
+            onReply={onReply}
+            onTrigger={onTrigger}
+            isReply={true}
+            docu={doc(db, 'posts', postData.id, 'comments', comment.id, 'reply', reply.id)}
+          />
+        ))}
+      </View>
     </View>
   );
 };
@@ -91,11 +78,19 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
     marginVertical: 1,
-
+  },
+  replyContainer: {
+    marginLeft: 20, // Indent replies
+    width: '95%', // Make replies slightly narrower
+    borderLeftWidth: 1,
+    borderLeftColor: '#e0e0e0',
   },
   contentContainer: {
     paddingHorizontal: 28,
     paddingBottom: 12,
+  },
+  replyContentContainer: {
+    paddingHorizontal: 20,
   },
   commentText: {
     fontSize: 14,
@@ -112,50 +107,6 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 12,
     color: '#666',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 16,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  replyInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    minHeight: 100,
-    marginBottom: 16,
-    fontSize: 14,
-  },
-  submitButton: {
-    backgroundColor: '#007AFF',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  submitButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontWeight: '600',
   },
 });
 

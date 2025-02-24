@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SignupScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -34,7 +35,9 @@ const SignupScreen = ({ navigation }) => {
     try {
       setLoading(true);
       const auth = getAuth();
-      const { user } = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await AsyncStorage.setItem('user', JSON.stringify(userCredential.user));
+ 
         // You can also store additional user data in Firestore here
       // const userDoc = doc(db, 'users', user.uid);
       // await setDoc(userDoc, {

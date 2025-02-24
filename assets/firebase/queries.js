@@ -1,6 +1,28 @@
 import { db, collection } from "./firebaseConfig";
 import { doc, getDoc, updateDoc, addDoc, getDocs } from "firebase/firestore";
 
+const getCollections = async ({ collectionName }) => {
+  try {
+    console.log("Fetching all documents from collection:", collectionName);
+
+    // Reference the collection
+    const collectionRef = collection(db, collectionName);
+
+    // Fetch all documents in the collection
+    const querySnapshot = await getDocs(collectionRef);
+
+    // Map through the snapshot and return all documents
+    const documents = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    return documents;
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    return [];
+  }
+};
 
 const getRef = async ({ id, collectionName }) => {
   try {
@@ -25,12 +47,12 @@ const getRef = async ({ id, collectionName }) => {
   }
 };
 
-const getSubRefAll = async ({ id, collectionName, subCollectionName }) => {
+const getSubRefAll = async ({ collection }) => {
   try {
     //console.log("Fetching all documents from subcollection:", subCollectionName, "under document:", id, "in collection:", collectionName);
 
     // Reference the subcollection
-    const subCollectionRef = collection(db, collectionName, id, subCollectionName);
+    const subCollectionRef = collection;
 
     // Fetch all documents in the subcollection
     const querySnapshot = await getDocs(subCollectionRef);
@@ -105,9 +127,9 @@ const updateRef = async ({ id, collectionName, updateFields }) => {
   }
 };
 
-const updateSubRef = async ({ id, subID, collectionName, subCollectionName, updateFields }) => {
+const updateSubRef = async ({ docu, updateFields }) => {
   try {
-    const documentRef = doc(db, collectionName, id, subCollectionName, subID);
+    const documentRef = docu;
     
     // Dynamically creating the update object from updateFields
     const updateData = {};
@@ -120,6 +142,15 @@ const updateSubRef = async ({ id, subID, collectionName, subCollectionName, upda
   } catch (error) {
     console.error('Error updating document:', error);
     throw error; // Re-throw to handle in the calling function
+  }
+};
+
+const deleteDocument = async (docId) => {
+  try {
+    await deleteDoc(docId);
+    console.log(`Document ${docId} deleted successfully!`);
+  } catch (error) {
+    console.error("Error deleting document:", error);
   }
 };
 
@@ -149,4 +180,6 @@ const addRef = async ({ collectionName, data }) => {
   };
   
 
-export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, getSubRefAll,getAnyCollection  };
+
+export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections};
+

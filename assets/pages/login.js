@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -27,7 +28,9 @@ const LoginScreen = ({ navigation }) => {
     try {
       setLoading(true);
       const auth = getAuth();
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await AsyncStorage.setItem('user', JSON.stringify(userCredential.user));
+  
       // No need to navigate - AuthProvider will handle it
     } catch (error) {
       Alert.alert('Error', error.message);
