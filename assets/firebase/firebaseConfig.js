@@ -4,7 +4,7 @@ import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 
 
 // Optionally import the services that you want to use
-// import {...} from "firebase/auth";
+import {getAuth} from "firebase/auth";
 // import {...} from "firebase/database";
 // import {...} from "firebase/firestore";
 // import {...} from "firebase/functions";
@@ -26,4 +26,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app); 
 const auth = initializeAuth(app);
 
+
 export {app, db, getFirestore, collection, addDoc, getDocs, auth, getDoc, updateDoc, deleteDoc };
+

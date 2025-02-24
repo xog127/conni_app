@@ -9,6 +9,9 @@ import LoginScreen from './assets/pages/login';
 import SignupScreen from './assets/pages/signup';
 import PostDisplay from './assets/pages/postDisplay';
 import CreatePostForm from './assets/pages/createPost';
+import MainPage from './assets/pages/mainPage';
+import {Ionicons, FontAwesome, Feather } from '@expo/vector-icons';
+import ProfileScreen from './assets/pages/profile';
 import ForumsPage from './assets/pages/forum';
 import OnboardingPage from './assets/pages/onboarding';
 import { Feather } from '@expo/vector-icons';
@@ -46,6 +49,16 @@ const AuthNavigator = () => (
 // Main Tab Navigator
 const TabNavigator = () => (
   <Tab.Navigator>
+        <Tab.Screen 
+      name="MainPage" 
+      component={MainPage}
+      options={{
+        headerShown: false,
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name="home" size={size} color={color} />
+        ),
+      }}
+    />
     <Tab.Screen 
       name="CreatePost" 
       component={CreatePostForm}
@@ -66,6 +79,7 @@ const TabNavigator = () => (
         ),
       }}
     />
+
     <Tab.Screen 
       name="Forums" 
       component={ForumsPage}
@@ -76,6 +90,7 @@ const TabNavigator = () => (
         ),
       }}
     /> 
+
     <Tab.Screen 
       name="user" 
       component={OnboardingPage}
@@ -127,4 +142,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-

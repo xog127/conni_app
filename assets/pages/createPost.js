@@ -15,8 +15,10 @@ import { AuthContext } from "../services/authContext";
 import { Switch } from "react-native";
 import { Feather } from '@expo/vector-icons';
 import { addRef } from "../firebase/queries";
-import { addDoc, collection, db } from "../firebase/firebaseConfig";
+import {addDoc, collection, db} from "../firebase/firebaseConfig";
+import { NativeBaseProvider } from "native-base";
 import { Timestamp } from "firebase/firestore";
+
 
 const CreatePostForm = () => {
   const [title, setTitle] = useState("");
@@ -80,6 +82,7 @@ const CreatePostForm = () => {
   };
 
   return (
+    <NativeBaseProvider>
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -208,6 +211,7 @@ const CreatePostForm = () => {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </NativeBaseProvider>
   );
 };
 

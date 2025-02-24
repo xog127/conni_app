@@ -26,7 +26,7 @@ const getCollections = async ({ collectionName }) => {
 
 const getRef = async ({ id, collectionName }) => {
   try {
-    console.log("Fetching document:", id, "from collection:", collectionName);
+    //console.log("Fetching document:", id, "from collection:", collectionName);
 
     // Reference the specific document
     const docRef = doc(db, collectionName, id);
@@ -49,7 +49,8 @@ const getRef = async ({ id, collectionName }) => {
 
 const getSubRefAll = async ({ collection }) => {
   try {
-  
+    //console.log("Fetching all documents from subcollection:", subCollectionName, "under document:", id, "in collection:", collectionName);
+
     // Reference the subcollection
     const subCollectionRef = collection;
 
@@ -72,7 +73,7 @@ const getSubRefAll = async ({ collection }) => {
 
 const getSubRef = async ({ id, subCollectionID , collectionName, subCollectionName }) => {
     try {
-      console.log("Fetching document:", id, "from collection:", collectionName, subCollectionName);
+      //console.log("Fetching document:", id, "from collection:", collectionName, subCollectionName);
   
       // Reference the specific document
       const docRef = doc(db, collectionName, id, subCollectionName, subCollectionID);
@@ -164,4 +165,21 @@ const addRef = async ({ collectionName, data }) => {
     }
   };
 
+  const getAnyCollection = async (collectionName) => {
+    try {
+      const querySnapshot = await getDocs(collection(db, collectionName));
+      const documents = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      return documents;
+    } catch (error) {
+      console.error(`Error fetching documents from collection ${collectionName}:`, error);
+      return [];
+    }
+  };
+  
+
+
 export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections};
+
