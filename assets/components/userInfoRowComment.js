@@ -31,9 +31,6 @@ const handleLike = async () => {
       // Unlike: Remove the user reference from likes array
       await updateSubRef({
         docu: docu,
-
-        
-
         updateFields: {
           "liked_user_ref": arrayRemove(commentData.createdby_ref)
         },
