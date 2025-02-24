@@ -11,6 +11,7 @@ import PostDisplay from './assets/pages/postDisplay';
 import CreatePostForm from './assets/pages/createPost';
 import MainPage from './assets/pages/mainPage';
 import {Ionicons, FontAwesome, Feather } from '@expo/vector-icons';
+import ProfileScreen from './assets/pages/profile';
 
 // Create navigation stacks
 const Stack = createStackNavigator();
@@ -77,7 +78,7 @@ const TabNavigator = () => (
         ),
       }}
     />
-    {/* <Tab.Screen 
+     <Tab.Screen 
       name="Profile" 
       component={ProfileScreen}
       options={{
@@ -86,7 +87,7 @@ const TabNavigator = () => (
           <Ionicons name="person" size={size} color={color} />
         ),
       }}
-    /> */}
+    /> 
   </Tab.Navigator>
 );
 

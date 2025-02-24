@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   NativeBaseProvider,
   Box,
@@ -11,26 +11,35 @@ import {
   Pressable,
   Image,
 } from "native-base";
-import { Ionicons } from "@expo/vector-icons";
 import { AnimatePresence, MotiView } from "moti";
 import PostWidget from "../components/postwidget";
-import { getAnyCollection } from "../firebase/queries";
+import { Ionicons } from "@expo/vector-icons";
+import { getRef, getAnyCollection } from "../firebase/queries";
+import { getAuth } from "../firebase/firebaseConfig.js";
+import { fetchReferenceData } from "../firebase/queries";
 
-export default function MainPage() {
+export default function ProfileScreen() {
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+  const [user, setUser] = useState(null);
   const [postRefs, setPostRefs] = useState([]);
+  const [filteredPosts, setFilteredPosts] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("Latest");
-  const options = ["Latest", "Most Liked", "Most Commented", "Most Viewed"];
+  const [selectedOption, setSelectedOption] = useState("Your Posts");
+  const options = ["Your Posts", "Liked Posts", "Commented Posts"];
 
   useEffect(() => {
     const fetchPostRefs = async () => {
       try {
-        const posts = await getAnyCollection("posts");
-
-        // Sort posts based on the selected option
-        const sortedPosts = sortPosts(posts, selectedOption);
-
-        setPostRefs(sortedPosts);
+        if (currentUser) {
+          // Fetch the current user's data
+          const userData = await getRef({
+            id: currentUser.uid, // Use the current user's UID
+            collectionName: "users",
+          });
+          setUser(userData);
+          filterPosts(userData, selectedOption);
+        }
       } catch (error) {
         console.error("Error fetching post references:", error.message);
       }
@@ -39,25 +48,40 @@ export default function MainPage() {
     fetchPostRefs();
   }, [selectedOption]);
 
-  const sortPosts = (posts, option) => {
-    switch (option) {
-      case "Latest":
-        return posts.sort((a, b) => b.time_posted - a.time_posted);
-      case "Most Liked":
-        return posts.sort((a, b) => b.num_likes - a.num_likes);
-      case "Most Commented":
-        return posts.sort((a, b) => b.num_comments - a.num_comments);
-      case "Most Viewed":
-        return posts.sort((a, b) => b.views - a.views);
-      default:
-        return posts;
+  const filterPosts = async (userData, option) => {
+    try {
+      let postIds = [];
+
+      switch (option) {
+        case "Your Posts":
+          postIds = userData.postsRef.map((ref) => ref.id) || [];
+          break;
+
+        case "Liked Posts":
+          postIds = userData.postsRef.map((ref) => ref.id) || [];
+          break;
+
+        case "Commented Posts":
+          postIds = userData.postsRef.map((ref) => ref.id) || [];
+          break;
+
+        default:
+          postIds = [];
+          break;
+      }
+      console.log("Post IDs:", postIds);
+      // Fetch only the posts referenced in the user's attributes
+      const posts = await fetchReferenceData(postIds);
+      setFilteredPosts(posts);
+    } catch (error) {
+      console.error("Error filtering posts:", error.message);
     }
   };
 
   return (
     <NativeBaseProvider>
       <Box
-        bg="#836fff"
+        bg="white"
         h={"12%"}
         justifyContent="space-between"
         alignItems="center"
@@ -65,73 +89,37 @@ export default function MainPage() {
         px={4}
         pt={"10%"}
       >
-        <Image
-          source={require("../images/iconreverse.png")}
-          style={{ width: 48, height: 48 }}
-        />
-        <Text fontSize="30" fontWeight="bold" color="white">
+        <Text fontSize="30" fontWeight="bold" color="#836fff">
           UCL
         </Text>
-        <Icon
-          as={Ionicons}
-          name="notifications-outline"
-          size={28}
-          color="white"
-        />
+        <Icon as={Ionicons} name="settings-outline" size={28} color="gray" />
+      </Box>
+      <Box>
+        <HStack justifyContent="space-between" px={4} py={4}>
+          <Image
+            source={
+              user?.photo_url
+                ? { uri: user.photo_url }
+                : require("../images/Blankprofile.png")
+            }
+            style={{ width: 80, height: 80, borderRadius: 40 }}
+          />
+          <VStack space={2} flex={1} justifyContent="center">
+            <Text fontSize="lg" fontWeight="bold">
+              {user?.display_name}
+            </Text>
+            <Text fontSize="sm" color="gray.500">
+              Course : {user?.course}
+            </Text>
+            <Text fontSize="sm" color="gray.500">
+              Year : {user?.graduation_year}
+            </Text>
+          </VStack>
+        </HStack>
       </Box>
 
       <ScrollView flex={1}>
-        <Box flex={1} bg="gray.100">
-          <Box bg="white" pt={5} py={3} px={4} shadow={2}>
-            <Input
-              placeholder="Find Posts..."
-              variant="rounded"
-              bg="gray.200"
-              fontSize="md"
-              InputLeftElement={
-                <Icon
-                  as={Ionicons}
-                  name="search"
-                  size={5}
-                  ml={3}
-                  color="gray.500"
-                />
-              }
-            />
-          </Box>
-          <Box bg="white" py={4}>
-            <HStack justifyContent="space-evenly" bg="white">
-              <VStack alignItems="center">
-                <Image
-                  source={require("../images/School.jpeg")}
-                  style={{ width: 24, height: 24 }}
-                />
-                <Text fontSize="12">Portico</Text>
-              </VStack>
-              <VStack alignItems="center">
-                <Image
-                  source={require("../images/Notification.jpeg")}
-                  style={{ width: 24, height: 24 }}
-                />
-                <Text fontSize="12">Notice</Text>
-              </VStack>
-              <VStack alignItems="center">
-                <Image
-                  source={require("../images/library_2.jpeg")}
-                  style={{ width: 24, height: 24 }}
-                />
-                <Text fontSize="12">Library</Text>
-              </VStack>
-              <VStack alignItems="center">
-                <Image
-                  source={require("../images/Calendar.jpeg")}
-                  style={{ width: 24, height: 24 }}
-                />
-                <Text fontSize="12">Calendar</Text>
-              </VStack>
-            </HStack>
-          </Box>
-
+        <Box>
           <Box
             bg="gray.200"
             py={2}
@@ -197,7 +185,7 @@ export default function MainPage() {
           </Box>
         </Box>
 
-        {postRefs.map((post) => (
+        {filteredPosts.map((post) => (
           <PostWidget key={post.id} postRef={post.id} />
         ))}
       </ScrollView>

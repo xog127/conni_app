@@ -3,7 +3,7 @@ import { getFirestore, collection, addDoc, getDocs, getDoc, updateDoc } from 'fi
 import { initializeAuth} from 'firebase/auth';
 
 // Optionally import the services that you want to use
-// import {...} from "firebase/auth";
+import {getAuth} from "firebase/auth";
 // import {...} from "firebase/database";
 // import {...} from "firebase/firestore";
 // import {...} from "firebase/functions";
@@ -27,4 +27,4 @@ const auth = initializeAuth(app);
 // For more information on how to access Firebase in your project,
 // see the Firebase documentation: https://firebase.google.com/docs/web/setup#access-firebase
 
-export {app, db, getFirestore, collection, addDoc, getDocs, auth, getDoc, updateDoc };
+export {app, db, getFirestore, collection, addDoc, getDocs, auth, getDoc, updateDoc, getAuth};
