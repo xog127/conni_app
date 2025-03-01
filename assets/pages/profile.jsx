@@ -19,9 +19,9 @@ import { useAuth } from "../services/authContext";
 import { useNavigation } from "@react-navigation/native";
 
 export default function ProfileScreen() {
-  const {user} = useAuth();
+  const { user } = useAuth();
   const currentUser = user;
-  const [user, setUser] = useState(null);
+  const [users, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [likedPosts, setLikedPosts] = useState([]);
   const [commentedPosts, setCommentedPosts] = useState([]);

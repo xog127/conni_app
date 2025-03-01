@@ -163,16 +163,7 @@ const MainStackNavigator = () => (
       name="Feedback" 
       component={Feedback} 
       options={{ headerShown: true, title: "Settings" }} // Show header for Settings
-    {/* <Stack.Screen 
-      name="Notifications" 
-      component={NotificationsScreen}
-      options={{ title: 'Notifications' }}
-    /> */}
-    {/* <Stack.Screen 
-      name="UserProfile" 
-      component={UserProfileScreen}
-      options={({ route }) => ({ title: route.params?.username || 'Profile' })}
-    /> */}
+  />
     <Stack.Screen 
       name="Onboarding" 
       component={OnboardingPage}
