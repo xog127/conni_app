@@ -15,13 +15,14 @@ import { AnimatePresence, MotiView } from "moti";
 import PostWidget from "../components/postwidget";
 import { Ionicons } from "@expo/vector-icons";
 import { getRef, getAnyCollection } from "../firebase/queries";
-import { getAuth } from "../firebase/firebaseConfig.js";
+import { useAuth } from "../services/authContext";
 import { fetchReferenceData } from "../firebase/queries";
 
 export default function ProfileScreen() {
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
-  const [user, setUser] = useState(null);
+  const {user} = useAuth();
+  //const auth = getAuth();
+  const currentUser = user;
+  const [users, setUser] = useState(null);
   const [postRefs, setPostRefs] = useState([]);
   const [filteredPosts, setFilteredPosts] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -30,6 +31,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     const fetchPostRefs = async () => {
+      console.log("current user is", currentUser);
       try {
         if (currentUser) {
           // Fetch the current user's data

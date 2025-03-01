@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useContext } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import CustomDropdown from '../components/dropdown';
+import { useAuth} from '../services/authContext';
+
 
 
 const SECONDARY_COLOR = "#836FFF";
@@ -33,6 +35,7 @@ const countryOptions = [
 ];
 
 const OnboardingPage = ({ navigation }) => {
+  const { user, updateProfile, completeOnboarding } = useAuth();
   const scrollViewRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [profileImage, setProfileImage] = useState(null);
@@ -64,9 +67,7 @@ const OnboardingPage = ({ navigation }) => {
         if (!formData.course.trim()) newErrors.course = 'Course is required';
         if (!formData.graduationYear.trim()) newErrors.graduationYear = 'Graduation year is required';
         break;
-      case 2:
-        if (!profileImage) newErrors.profileImage = 'Profile picture is required';
-        break;
+    
     }
 
     setErrors(newErrors);
@@ -104,6 +105,10 @@ const OnboardingPage = ({ navigation }) => {
   const handleSubmit = async () => {
     console.log('Form Data:', formData);
     console.log('Profile Image:', profileImage);
+    const updateUser = await updateProfile(formData)
+    const onboardingResult = await completeOnboarding();
+    // console.log(user);
+    // navigation.Navigate('MainPage');
   };
 
   const pickImage = async () => {
@@ -184,8 +189,8 @@ const OnboardingPage = ({ navigation }) => {
             {/* Page 1: Basic Info */}
             <View style={styles.page}>
               <ScrollView>
-                {renderInputField('firstName', 'First Name', 'Enter your first name')}
-                {renderInputField('lastName', 'Last Name', 'Enter your last name')}
+                {renderInputField('first_name', 'First Name', 'Enter your first name')}
+                {renderInputField('last_name', 'Last Name', 'Enter your last name')}
                 <CustomDropdown
                   label="Gender"
                   data={genderOptions}
@@ -215,9 +220,9 @@ const OnboardingPage = ({ navigation }) => {
             {/* Page 2: University Details */}
             <View style={styles.page}>
               <ScrollView>
-                {renderInputField('universityName', 'University Name', 'Enter your university name')}
+                {renderInputField('university', 'University Name', 'Enter your university name')}
                 {renderInputField('course', 'Course', 'Enter your course name')}
-                {renderInputField('graduationYear', 'Graduation Year', 'YYYY', 'numeric')}
+                {renderInputField('graduation_year', 'Graduation Year', 'YYYY', 'numeric')}
               </ScrollView>
             </View>
 
