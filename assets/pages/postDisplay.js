@@ -20,6 +20,7 @@ import { addDoc, db } from '../firebase/firebaseConfig';
 import { Timestamp, doc, collection, arrayUnion, increment} from 'firebase/firestore';
 import { TouchableWithoutFeedback } from 'react-native-gesture-handler';
 import PollOption from '../components/pollOption.js';
+import { useRoute } from '@react-navigation/native';
 
 const authUser = "Psychology 1st Year";
 
@@ -28,11 +29,12 @@ const PostDisplay = () => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [genre, setGenre] = useState(null);
-  const postRef = 'GqNKGQJJcPtDA6G7OgZb';
   const [newComment, setNewComment] = useState('');
   const inputRef = useRef(null);
   const [replyingTo, setReplyingTo] = useState(null);
-  
+  const route = useRoute();
+  console.log(route.params)
+  const { postRef, navigation } = route.params || {};
   const handleReply = (comment) => {
     setReplyingTo(comment);
     inputRef.current?.focus();
@@ -134,7 +136,7 @@ const PostDisplay = () => {
   useEffect(() => {
     const fetchPostData = async () => {
       try {
-        const postData = await getRef({ id: postRef, collectionName: 'posts' });
+        const postData = await getRef({ id: postRef, collectionName: "posts" });
         setPost(postData);
     
         const genreData = await fetchReferenceData(postData.post_genre_ref);
@@ -165,7 +167,7 @@ const PostDisplay = () => {
     <SafeAreaView style={styles.safeArea}>
       {/* Header with Genre and Back Button */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => console.log('back pressed')} style={styles.backButton}>
+        <TouchableOpacity onPress={navigation.goBack} style={styles.backButton}>
           <Feather name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.genreText}>{genre?.name || 'Loading...'}</Text>

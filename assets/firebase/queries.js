@@ -96,9 +96,13 @@ const getSubRef = async ({ id, subCollectionID , collectionName, subCollectionNa
 
   async function fetchReferenceData(reference) {
     try {
+      if (!reference) {
+        throw new Error("Invalid Firestore reference: reference is null or undefined.");
+      }
+  
       const docSnapshot = await getDoc(reference);
+  
       if (docSnapshot.exists()) {
-        //console.log("Fetched Data:", docSnapshot.data());
         return docSnapshot.data();
       } else {
         console.log("No document found for this reference");
@@ -181,5 +185,5 @@ const addRef = async ({ collectionName, data }) => {
   
 
 
-export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections};
+export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections, getAnyCollection};
 

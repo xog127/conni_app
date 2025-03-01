@@ -88,6 +88,7 @@ const ForumsPage = ({}) => {
           forums.map(forum => (
             
             <ForumCard
+              key={forum.id}
               forumData={forum}
             />
           ))
