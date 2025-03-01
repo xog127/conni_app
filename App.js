@@ -14,6 +14,8 @@ import {Ionicons, FontAwesome, Feather } from '@expo/vector-icons';
 import ProfileScreen from './assets/pages/profile';
 import ForumsPage from './assets/pages/forum';
 import OnboardingPage from './assets/pages/onboarding';
+import Setting from './assets/pages/setting';
+import Feedback from './assets/pages/feedback';
 import { AuthProvider, AuthContext, useAuth } from './assets/services/authContext';
 
 // Create navigation stacks
@@ -152,6 +154,15 @@ const MainStackNavigator = () => (
       component={TabNavigator}
       options={{ headerShown: false }}
     />
+        <Stack.Screen 
+      name="Setting" 
+      component={Setting} 
+      options={{ headerShown: true, title: "Settings" }} // Show header for Settings
+    />
+    <Stack.Screen 
+      name="Feedback" 
+      component={Feedback} 
+      options={{ headerShown: true, title: "Settings" }} // Show header for Settings
     {/* <Stack.Screen 
       name="Notifications" 
       component={NotificationsScreen}

@@ -31,6 +31,7 @@ export default function MainPage({navigation}) {
         const sortedPosts = sortPosts(posts, selectedOption);
 
         setPostRefs(sortedPosts);
+        console.log("Posts:", sortedPosts);
       } catch (error) {
         console.error("Error fetching post references:", error.message);
       }
