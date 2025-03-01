@@ -14,17 +14,70 @@ import {Ionicons, FontAwesome, Feather } from '@expo/vector-icons';
 import ProfileScreen from './assets/pages/profile';
 import ForumsPage from './assets/pages/forum';
 import OnboardingPage from './assets/pages/onboarding';
-import { AuthProvider } from './assets/services/authContext';
-import { AuthContext } from './assets/services/authContext';
 import Setting from './assets/pages/setting';
 import Feedback from './assets/pages/feedback';
-
+import { AuthProvider, AuthContext, useAuth } from './assets/services/authContext';
 
 // Create navigation stacks
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const AuthStack = createStackNavigator();
+const ProfileStack = createStackNavigator();
+const ForumStack = createStackNavigator();
+const PostStack = createStackNavigator();
 
+// Profile Stack Navigator (for nested profile screens)
+const ProfileStackNavigator = () => (
+  <ProfileStack.Navigator>
+    <ProfileStack.Screen 
+      name="ProfileMain" 
+      component={ProfileScreen} 
+      options={{ headerShown: false }}
+    />
+    {/* <ProfileStack.Screen 
+      name="EditProfile" 
+      component={ProfileEditScreen}
+      options={{ title: 'Edit Profile' }}
+    />
+    <ProfileStack.Screen 
+      name="UserSettings" 
+      component={UserSettingsScreen}
+      options={{ title: 'Settings' }}
+    /> */}
+  </ProfileStack.Navigator>
+);
+
+// Forum Stack Navigator (for forum-related screens)
+const ForumStackNavigator = () => (
+  <ForumStack.Navigator>
+    <ForumStack.Screen 
+      name="ForumsList" 
+      component={ForumsPage} 
+      options={{ headerShown: false }}
+    />
+    <ForumStack.Screen 
+      name="Forums" 
+      component={ForumsPage}
+      options={({ route }) => ({ title: route.params?.forumName || 'Forum' })}
+    />
+  </ForumStack.Navigator>
+);
+
+// Post Stack Navigator (for post-related screens)
+const PostStackNavigator = () => (
+  <PostStack.Navigator>
+    <PostStack.Screen 
+      name="Home" 
+      component={MainPage} 
+      options={{ headerShown: false }}
+    />
+    <PostStack.Screen 
+      name="PostDisplay" 
+      component={PostDisplay}
+      options={{ headerShown: false }}
+    />
+  </PostStack.Navigator>
+);
 
 // Auth Stack Navigator
 const AuthNavigator = () => (
@@ -50,9 +103,9 @@ const AuthNavigator = () => (
 // Main Tab Navigator
 const TabNavigator = () => (
   <Tab.Navigator>
-        <Tab.Screen 
-      name="MainPage" 
-      component={MainPage}
+    <Tab.Screen 
+      name="Posts" 
+      component={PostStackNavigator}
       options={{
         headerShown: false,
         tabBarIcon: ({ color, size }) => (
@@ -71,34 +124,22 @@ const TabNavigator = () => (
       }}
     />
     <Tab.Screen 
-      name="Display" 
-      component={PostDisplay}
-      options={{
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => (
-          <Feather name="home" size={size} color={color} />
-        ),
-      }}
-    />
-
-    <Tab.Screen 
       name="Forums" 
-      component={ForumsPage}
+      component={ForumStackNavigator}
       options={{
         headerShown: false,
         tabBarIcon: ({ color, size }) => (
-          <Feather name="bell" size={size} color={color} />
+          <Feather name="message-circle" size={size} color={color} />
         ),
       }}
     /> 
-
     <Tab.Screen 
       name="Profile" 
-      component={ProfileScreen}
+      component={ProfileStackNavigator}
       options={{
         headerShown: false,
         tabBarIcon: ({ color, size }) => (
-          <Feather name="heart" size={size} color={color} />
+          <Feather name="user" size={size} color={color} />
         ),
       }}
     /> 
@@ -122,20 +163,44 @@ const MainStackNavigator = () => (
       name="Feedback" 
       component={Feedback} 
       options={{ headerShown: true, title: "Settings" }} // Show header for Settings
+    {/* <Stack.Screen 
+      name="Notifications" 
+      component={NotificationsScreen}
+      options={{ title: 'Notifications' }}
+    /> */}
+    {/* <Stack.Screen 
+      name="UserProfile" 
+      component={UserProfileScreen}
+      options={({ route }) => ({ title: route.params?.username || 'Profile' })}
+    /> */}
+    <Stack.Screen 
+      name="Onboarding" 
+      component={OnboardingPage}
+      options={{ headerShown: false, gestureEnabled: false }}
     />
   </Stack.Navigator>
 );
 
 
-
 // Root Navigator - Handles authentication flow
 const RootNavigator = () => {
-  const { user} = useContext(AuthContext);
+  const { login, user, isAuthenticated } = useAuth();
+
+  // Show loading screen while checking authentication
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {user ? (
-        <Stack.Screen name="Main" component={MainStackNavigator} />
+      {isAuthenticated && user ? (
+        // Check if user needs onboarding
+        user.isOnboarded ? (
+          <Stack.Screen name="Main" component={MainStackNavigator} />
+        ) : (
+          <Stack.Screen 
+            name="Onboarding" 
+            component={OnboardingPage} 
+            options={{ gestureEnabled: false }}
+          />
+        )
       ) : (
         <Stack.Screen name="Auth" component={AuthNavigator} />
       )}

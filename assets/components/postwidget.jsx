@@ -5,8 +5,9 @@ import { getRef, fetchReferenceData } from "../firebase/queries";
 import { Image } from "expo-image";
 import PostUserInfo from "./postuserinfo.jsx";
 import { timeAgo } from "../customFunctions/time.js";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-const postwidget = ({ postRef }) => {
+const postwidget = ({ postRef, navigation }) => {
   const [post, setPost] = useState(null);
   const [genre, setGenre] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +38,9 @@ const postwidget = ({ postRef }) => {
   }
 
   return (
+    <SafeAreaProvider>
+    <SafeAreaView>
+    <Pressable onPress={() => navigation.navigate("PostDisplay", { postRef, navigation })}>
     <Box bg="white" shadow={1} p={4}>
       <PostUserInfo
         userRef={post?.post_user}
@@ -106,6 +110,7 @@ const postwidget = ({ postRef }) => {
         </HStack>
         <Image
           source={{ uri: genre?.photo }}
+          alt="post image"
           style={{
             alignSelf: "center",
             width: 18,
@@ -118,6 +123,9 @@ const postwidget = ({ postRef }) => {
         />
       </HStack>
     </Box>
+    </Pressable>
+    </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 

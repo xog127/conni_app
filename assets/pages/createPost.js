@@ -33,7 +33,7 @@ const CreatePostForm = () => {
   const [pollOptions, setPollOptions] = useState([]);
   const [newOption, setNewOption] = useState("");
 
-  const forums = ["General", "Events", "Announcements", "Discussions"];
+  const forums = ["General", "Events", "Market", "Announcements", "Discussions"];
 
   const addPollOption = () => {
     if (newOption.trim()) {

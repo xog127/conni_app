@@ -16,7 +16,7 @@ import { AnimatePresence, MotiView } from "moti";
 import PostWidget from "../components/postwidget";
 import { getAnyCollection } from "../firebase/queries";
 
-export default function MainPage() {
+export default function MainPage({navigation}) {
   const [postRefs, setPostRefs] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState("Latest");
@@ -69,6 +69,7 @@ export default function MainPage() {
         <Image
           source={require("../images/iconreverse.png")}
           style={{ width: 48, height: 48 }}
+          alt="UCL Logo"
         />
         <Text fontSize="30" fontWeight="bold" color="white">
           UCL
@@ -106,6 +107,7 @@ export default function MainPage() {
                 <Image
                   source={require("../images/School.jpeg")}
                   style={{ width: 24, height: 24 }}
+                  alt = "School"
                 />
                 <Text fontSize="12">Portico</Text>
               </VStack>
@@ -113,6 +115,7 @@ export default function MainPage() {
                 <Image
                   source={require("../images/Notification.jpeg")}
                   style={{ width: 24, height: 24 }}
+                  alt = "Notification"
                 />
                 <Text fontSize="12">Notice</Text>
               </VStack>
@@ -120,6 +123,7 @@ export default function MainPage() {
                 <Image
                   source={require("../images/library_2.jpeg")}
                   style={{ width: 24, height: 24 }}
+                  alt="Library"
                 />
                 <Text fontSize="12">Library</Text>
               </VStack>
@@ -127,6 +131,7 @@ export default function MainPage() {
                 <Image
                   source={require("../images/Calendar.jpeg")}
                   style={{ width: 24, height: 24 }}
+                  alt="Calendar"
                 />
                 <Text fontSize="12">Calendar</Text>
               </VStack>
@@ -199,7 +204,7 @@ export default function MainPage() {
         </Box>
 
         {postRefs.map((post) => (
-          <PostWidget key={post.id} postRef={post.id} />
+          <PostWidget key={post.id} postRef={post.id} navigation = {navigation} />
         ))}
       </ScrollView>
     </NativeBaseProvider>

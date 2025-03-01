@@ -1,5 +1,5 @@
 // LoginScreen.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,29 +11,33 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthContext, useAuth } from '../../assets/services/authContext';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const { login, user, isAuthenticated } = useAuth();
+  
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
+    
     try {
       setLoading(true);
-      const auth = getAuth();
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      await AsyncStorage.setItem('user', JSON.stringify(userCredential.user));
-  
-      // No need to navigate - AuthProvider will handle it
+      const result = await login(email, password);
+      
+      if (!result.success) {
+        Alert.alert('Error', result.error);
+      } else {
+        console.log('Login successful, user:', user);
+        // Navigation will be handled by the useEffect
+      }
     } catch (error) {
-      Alert.alert('Error', error.message);
+      console.error('Login error:', error);
+      Alert.alert('Error', error.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
