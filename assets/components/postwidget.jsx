@@ -15,6 +15,7 @@ const postwidget = ({ postRef }) => {
   useEffect(() => {
     const fetchPostData = async () => {
       try {
+        console.log(postRef);
         const postData = await getRef({ id: postRef, collectionName: "posts" });
         setPost(postData);
         if (postData?.post_genre_ref) {

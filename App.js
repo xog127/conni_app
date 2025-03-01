@@ -14,9 +14,10 @@ import {Ionicons, FontAwesome, Feather } from '@expo/vector-icons';
 import ProfileScreen from './assets/pages/profile';
 import ForumsPage from './assets/pages/forum';
 import OnboardingPage from './assets/pages/onboarding';
-import { Feather } from '@expo/vector-icons';
 import { AuthProvider } from './assets/services/authContext';
 import { AuthContext } from './assets/services/authContext';
+import Setting from './assets/pages/setting';
+import Feedback from './assets/pages/feedback';
 
 
 // Create navigation stacks
@@ -92,8 +93,8 @@ const TabNavigator = () => (
     /> 
 
     <Tab.Screen 
-      name="user" 
-      component={OnboardingPage}
+      name="Profile" 
+      component={ProfileScreen}
       options={{
         headerShown: false,
         tabBarIcon: ({ color, size }) => (
@@ -111,6 +112,16 @@ const MainStackNavigator = () => (
       name="MainTabs" 
       component={TabNavigator}
       options={{ headerShown: false }}
+    />
+        <Stack.Screen 
+      name="Setting" 
+      component={Setting} 
+      options={{ headerShown: true, title: "Settings" }} // Show header for Settings
+    />
+    <Stack.Screen 
+      name="Feedback" 
+      component={Feedback} 
+      options={{ headerShown: true, title: "Settings" }} // Show header for Settings
     />
   </Stack.Navigator>
 );

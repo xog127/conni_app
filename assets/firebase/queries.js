@@ -167,7 +167,7 @@ const addRef = async ({ collectionName, data }) => {
 
   const getAnyCollection = async (collectionName) => {
     try {
-      const querySnapshot = await getDocs(collection(db, collectionName));
+      const querySnapshot = await getDocs(collection(db, collectionName), { source: 'server' });
       const documents = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -178,8 +178,63 @@ const addRef = async ({ collectionName, data }) => {
       return [];
     }
   };
+
+  const fetchUserPostList = async (userId, refField) => {
+    try {
+      const userDocRef = doc(db, "users", userId);
+      const userSnapshot = await getDoc(userDocRef);
+  
+      if (!userSnapshot.exists()) {
+        console.log(`User with ID ${userId} not found.`);
+        return [];
+      }
+  
+      const userData = userSnapshot.data();
+      const postRefs = userData[refField] || []; // Get the list of post references
+  
+      // Fetch posts data by document references (this is where the change happens)
+      return fetchPostsData(postRefs);
+    } catch (error) {
+      console.error(`Error fetching ${refField} for user ${userId}:`, error);
+      return [];
+    }
+  };
+  
+  const fetchPostsData = async (postRefs) => {
+    try {
+      console.log("Fetching post data for:", postRefs);
+  
+      // Convert the postRefs to document references if they are just paths
+      const postPromises = postRefs.map(async (postRef) => {
+        const postPath = postRef.path || postRef; // Get path from DocumentReference or use the path directly
+        const postDocRef = doc(db, postPath); // Convert path to document reference
+        const postSnapshot = await getDoc(postDocRef);
+        return postSnapshot.exists() ? { id: postSnapshot.id, ...postSnapshot.data() } : null;
+      });
+  
+      const posts = await Promise.all(postPromises);
+      return posts.filter(post => post !== null); // Remove null values
+    } catch (error) {
+      console.error("Error fetching post data:", error);
+      return [];
+    }
+  };
+  
+  const fetchUserPosts = async (userId) => {
+    console.log("Fetching posts for user:", userId);
+    const posts = await fetchUserPostList(userId, "postsRef");
+    const likedPosts = await fetchUserPostList(userId, "likedPostsRef");
+    const commentedPosts = await fetchUserPostList(userId, "commentedPostsRef");
+    return {
+      posts,
+      likedPosts,
+      commentedPosts
+    };
+  
+  };
+  
   
 
 
-export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections};
+export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections, getAnyCollection, fetchUserPosts};
 

@@ -14,19 +14,21 @@ import {
 import { AnimatePresence, MotiView } from "moti";
 import PostWidget from "../components/postwidget";
 import { Ionicons } from "@expo/vector-icons";
-import { getRef, getAnyCollection } from "../firebase/queries";
+import { getRef, fetchUserPosts } from "../firebase/queries";
 import { getAuth } from "../firebase/firebaseConfig.js";
-import { fetchReferenceData } from "../firebase/queries";
+import { useNavigation } from "@react-navigation/native";
 
 export default function ProfileScreen() {
   const auth = getAuth();
   const currentUser = auth.currentUser;
   const [user, setUser] = useState(null);
-  const [postRefs, setPostRefs] = useState([]);
-  const [filteredPosts, setFilteredPosts] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [likedPosts, setLikedPosts] = useState([]);
+  const [commentedPosts, setCommentedPosts] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState("Your Posts");
   const options = ["Your Posts", "Liked Posts", "Commented Posts"];
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchPostRefs = async () => {
@@ -38,7 +40,10 @@ export default function ProfileScreen() {
             collectionName: "users",
           });
           setUser(userData);
-          filterPosts(userData, selectedOption);
+          const userPosts = await fetchUserPosts(currentUser.uid);
+          setPosts(userPosts.posts);
+          setLikedPosts(userPosts.likedPosts);
+          setCommentedPosts(userPosts.commentedPosts);
         }
       } catch (error) {
         console.error("Error fetching post references:", error.message);
@@ -48,35 +53,12 @@ export default function ProfileScreen() {
     fetchPostRefs();
   }, [selectedOption]);
 
-  const filterPosts = async (userData, option) => {
-    try {
-      let postIds = [];
-
-      switch (option) {
-        case "Your Posts":
-          postIds = userData.postsRef.map((ref) => ref.id) || [];
-          break;
-
-        case "Liked Posts":
-          postIds = userData.postsRef.map((ref) => ref.id) || [];
-          break;
-
-        case "Commented Posts":
-          postIds = userData.postsRef.map((ref) => ref.id) || [];
-          break;
-
-        default:
-          postIds = [];
-          break;
-      }
-      console.log("Post IDs:", postIds);
-      // Fetch only the posts referenced in the user's attributes
-      const posts = await fetchReferenceData(postIds);
-      setFilteredPosts(posts);
-    } catch (error) {
-      console.error("Error filtering posts:", error.message);
-    }
-  };
+  const displayedPosts =
+    selectedOption === "Your Posts"
+      ? posts
+      : selectedOption === "Liked Posts"
+      ? likedPosts
+      : commentedPosts;
 
   return (
     <NativeBaseProvider>
@@ -92,7 +74,9 @@ export default function ProfileScreen() {
         <Text fontSize="30" fontWeight="bold" color="#836fff">
           UCL
         </Text>
-        <Icon as={Ionicons} name="settings-outline" size={28} color="gray" />
+        <Pressable onPress={() => navigation.navigate("Setting")}>
+          <Icon as={Ionicons} name="settings-outline" size={28} color="gray" />
+        </Pressable>
       </Box>
       <Box>
         <HStack justifyContent="space-between" px={4} py={4}>
@@ -185,9 +169,15 @@ export default function ProfileScreen() {
           </Box>
         </Box>
 
-        {filteredPosts.map((post) => (
-          <PostWidget key={post.id} postRef={post.id} />
-        ))}
+        {displayedPosts.length > 0 ? (
+          displayedPosts.map((post) => (
+            <PostWidget key={post.id} postRef={post.id} />
+          ))
+        ) : (
+          <Text textAlign="center" mt={4} color="gray.500">
+            No posts found.
+          </Text>
+        )}
       </ScrollView>
     </NativeBaseProvider>
   );
