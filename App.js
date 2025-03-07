@@ -1,6 +1,7 @@
 // Import necessary components and Firebase
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { auth } from './assets/firebase/firebaseConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,6 +18,7 @@ import OnboardingPage from './assets/pages/onboarding';
 import Setting from './assets/pages/setting';
 import Feedback from './assets/pages/feedback';
 import { AuthProvider, AuthContext, useAuth } from './assets/services/authContext';
+import CustomDrawerContent from './assets/customFunctions/CustomDrawerContent';
 
 // Create navigation stacks
 const Stack = createStackNavigator();
@@ -25,6 +27,7 @@ const AuthStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 const ForumStack = createStackNavigator();
 const PostStack = createStackNavigator();
+const Drawer = createDrawerNavigator();
 
 // Profile Stack Navigator (for nested profile screens)
 const ProfileStackNavigator = () => (
@@ -46,6 +49,11 @@ const ProfileStackNavigator = () => (
     /> */}
   </ProfileStack.Navigator>
 );
+const DrawerNavigator = () => (
+  <Drawer.Navigator drawerContent={(props) => <CustomDrawerContent {...props} />}>
+      <Drawer.Screen name="MainPage" component={MainPage} options={{ headerShown: false }}  />
+</Drawer.Navigator>
+);
 
 // Forum Stack Navigator (for forum-related screens)
 const ForumStackNavigator = () => (
@@ -66,16 +74,18 @@ const ForumStackNavigator = () => (
 // Post Stack Navigator (for post-related screens)
 const PostStackNavigator = () => (
   <PostStack.Navigator>
-    <PostStack.Screen 
-      name="Home" 
-      component={MainPage} 
+                <PostStack.Screen 
+      name="Drawer" 
+      component={DrawerNavigator} 
       options={{ headerShown: false }}
     />
+
     <PostStack.Screen 
       name="PostDisplay" 
       component={PostDisplay}
       options={{ headerShown: false }}
     />
+
   </PostStack.Navigator>
 );
 
@@ -162,7 +172,7 @@ const MainStackNavigator = () => (
     <Stack.Screen 
       name="Feedback" 
       component={Feedback} 
-      options={{ headerShown: true, title: "Settings" }} // Show header for Settings
+      options={{ headerShown: true, title: "Feedback" }} // Show header for Settings
   />
     <Stack.Screen 
       name="Onboarding" 
@@ -202,10 +212,12 @@ const RootNavigator = () => {
 // Main App component
 export default function App() {
   return (
+
     <AuthProvider>
       <NavigationContainer>
         <RootNavigator />
       </NavigationContainer>
     </AuthProvider>
+
   );
 }
