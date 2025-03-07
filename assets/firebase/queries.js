@@ -189,7 +189,6 @@ const addRef = async ({ collectionName, data }) => {
       const userSnapshot = await getDoc(userDocRef);
   
       if (!userSnapshot.exists()) {
-        console.log(`User with ID ${userId} not found.`);
         return [];
       }
   
@@ -206,7 +205,6 @@ const addRef = async ({ collectionName, data }) => {
   
   const fetchPostsData = async (postRefs) => {
     try {
-      console.log("Fetching post data for:", postRefs);
   
       // Convert the postRefs to document references if they are just paths
       const postPromises = postRefs.map(async (postRef) => {
@@ -225,7 +223,6 @@ const addRef = async ({ collectionName, data }) => {
   };
   
   const fetchUserPosts = async (userId) => {
-    console.log("Fetching posts for user:", userId);
     const posts = await fetchUserPostList(userId, "postsRef");
     const likedPosts = await fetchUserPostList(userId, "likedPostsRef");
     const commentedPosts = await fetchUserPostList(userId, "commentedPostsRef");
