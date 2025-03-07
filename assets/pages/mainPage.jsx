@@ -79,6 +79,12 @@ export default function MainPage({navigation}) {
           size={28}
           color="white"
         />
+        <Icon
+          as={Ionicons}
+          name="search"
+          size={28}
+          color="white"
+        />
       </Box>
 
       <ScrollView flex={1}>

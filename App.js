@@ -1,10 +1,9 @@
 // Import necessary components and Firebase
 import { NavigationContainer } from '@react-navigation/native';
+import "@/global.css";
+import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { auth } from './assets/firebase/firebaseConfig';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useState, useEffect, useContext } from 'react';
 import LoginScreen from './assets/pages/login';
 import SignupScreen from './assets/pages/signup';
 import PostDisplay from './assets/pages/postDisplay';
@@ -15,6 +14,10 @@ import ProfileScreen from './assets/pages/profile';
 import ForumsPage from './assets/pages/forum';
 import OnboardingPage from './assets/pages/onboarding';
 import { AuthProvider, AuthContext, useAuth } from './assets/services/authContext';
+import { TouchableOpacity } from 'react-native';
+import createPostNew from './assets/pages/createPostNew';
+import CreatePostNew from './assets/pages/createPostNew';
+
 
 // Create navigation stacks
 const Stack = createStackNavigator();
@@ -67,11 +70,16 @@ const PostStackNavigator = () => (
     <PostStack.Screen 
       name="Home" 
       component={MainPage} 
-      options={{ headerShown: false }}
+      options={{ headerShown: false, unmountOnBlur: true }}
     />
     <PostStack.Screen 
       name="PostDisplay" 
       component={PostDisplay}
+      options={{ headerShown: false }}
+    />
+    <PostStack.Screen 
+      name="createPost" 
+      component={CreatePostForm}
       options={{ headerShown: false }}
     />
   </PostStack.Navigator>
@@ -98,6 +106,8 @@ const AuthNavigator = () => (
   </AuthStack.Navigator>
 );
 
+const EmptyComponent = () => null;
+
 // Main Tab Navigator
 const TabNavigator = () => (
   <Tab.Navigator>
@@ -112,15 +122,24 @@ const TabNavigator = () => (
       }}
     />
     <Tab.Screen 
-      name="CreatePost" 
-      component={CreatePostForm}
-      options={{
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => (
-          <Feather name="plus" size={size} color={color} />
-        ),
-      }}
-    />
+        name="CreatePost" 
+        component={EmptyComponent} // This is just a placeholder
+        options={({ navigation }) => ({
+          tabBarLabel: 'Create',
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="plus" size={size} color={color} />
+          ),
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => {
+                // Navigate to CreatePost screen which is defined in another navigator
+                navigation.navigate('Posts', { screen: 'createPost' });
+              }}
+            />
+          ),
+        })}
+      />
     <Tab.Screen 
       name="Forums" 
       component={ForumStackNavigator}
@@ -178,32 +197,28 @@ const RootNavigator = () => {
   // Show loading screen while checking authentication
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isAuthenticated && user ? (
-        // Check if user needs onboarding
-        user.isOnboarded ? (
-          <Stack.Screen name="Main" component={MainStackNavigator} />
-        ) : (
-          <Stack.Screen 
+    <GluestackUIProvider mode="light"><Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated && user ? (
+          // Check if user needs onboarding
+          (user.isOnboarded ? (<Stack.Screen name="Main" component={MainStackNavigator} />) : (<Stack.Screen 
             name="Onboarding" 
             component={OnboardingPage} 
             options={{ gestureEnabled: false }}
-          />
-        )
-      ) : (
-        <Stack.Screen name="Auth" component={AuthNavigator} />
-      )}
-    </Stack.Navigator>
+          />))
+        ) : (
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        )}
+      </Stack.Navigator></GluestackUIProvider>
   );
 };
 
 // Main App component
 export default function App() {
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>
-    </AuthProvider>
+    <GluestackUIProvider mode="light"><AuthProvider>
+        <NavigationContainer>
+          <RootNavigator />
+        </NavigationContainer>
+      </AuthProvider></GluestackUIProvider>
   );
 }
