@@ -17,7 +17,7 @@ import { getRef } from "../firebase/queries";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
-export default function Setting() {
+export default function UserSettingsScreen() {
   const auth = getAuth();
   const currentUser = auth.currentUser;
   const [user, setUser] = useState(null);

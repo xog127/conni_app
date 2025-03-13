@@ -2,49 +2,52 @@ import { useEffect, useState } from "react";
 import {
   NativeBaseProvider,
   Box,
-  Input,
   Text,
   Icon,
   ScrollView,
   HStack,
   VStack,
   Pressable,
-  Image,
 } from "native-base";
 import { AnimatePresence, MotiView } from "moti";
-import PostWidget from "../components/postwidget";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { getRef, fetchUserPosts } from "../firebase/queries";
 import { useAuth } from "../services/authContext";
-import { useNavigation } from "@react-navigation/native";
+import PostPreviews from "../components/postPreviews";
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { user } = useAuth();
   const currentUser = user;
-  const [users, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [likedPosts, setLikedPosts] = useState([]);
   const [commentedPosts, setCommentedPosts] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState("Your Posts");
   const options = ["Your Posts", "Liked Posts", "Commented Posts"];
-  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchPostRefs = async () => {
       console.log("current user is", currentUser);
       try {
         if (currentUser) {
-          // Fetch the current user's data
           const userData = await getRef({
-            id: currentUser.uid, // Use the current user's UID
+            id: currentUser.uid,
             collectionName: "users",
           });
-          setUser(userData);
           const userPosts = await fetchUserPosts(currentUser.uid);
-          setPosts(userPosts.posts);
-          setLikedPosts(userPosts.likedPosts);
-          setCommentedPosts(userPosts.commentedPosts);
+          setPosts(
+            userPosts.posts.sort((a, b) => b.time_posted - a.time_posted)
+          );
+          setLikedPosts(
+            userPosts.likedPosts.sort((a, b) => b.time_posted - a.time_posted)
+          );
+          setCommentedPosts(
+            userPosts.commentedPosts.sort(
+              (a, b) => b.time_posted - a.time_posted
+            )
+          );
+          console.log("ProfileScreen navigation:", navigation);
         }
       } catch (error) {
         console.error("Error fetching post references:", error.message);
@@ -139,16 +142,12 @@ export default function ProfileScreen() {
                   transition={{ type: "timing", duration: 300 }}
                   style={{
                     position: "absolute",
-                    top: 40, // Positioning the dropdown below
+                    top: 40,
                     right: 10,
                     zIndex: 10,
                   }}
                 >
-                  <VStack
-                    bg="gray.200" // Apply the background color directly from NativeBase
-                    borderRadius="8"
-                    width={140}
-                  >
+                  <VStack bg="gray.200" borderRadius="8" width={140}>
                     {options.map((option, index) => (
                       <Pressable
                         key={index}
@@ -171,9 +170,11 @@ export default function ProfileScreen() {
         </Box>
 
         {displayedPosts.length > 0 ? (
-          displayedPosts.map((post) => (
-            <PostWidget key={post.id} postRef={post.id} />
-          ))
+          <PostPreviews
+            data={displayedPosts}
+            navigation={navigation}
+            isMarketView={false}
+          />
         ) : (
           <Text textAlign="center" mt={4} color="gray.500">
             No posts found.
