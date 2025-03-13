@@ -19,6 +19,7 @@ import Setting from './assets/pages/setting';
 import Feedback from './assets/pages/feedback';
 import { AuthProvider, AuthContext, useAuth } from './assets/services/authContext';
 import CustomDrawerContent from './assets/customFunctions/CustomDrawerContent';
+import UserSettingsScreen from './assets/pages/setting';
 
 // Create navigation stacks
 const Stack = createStackNavigator();
@@ -41,12 +42,16 @@ const ProfileStackNavigator = () => (
       name="EditProfile" 
       component={ProfileEditScreen}
       options={{ title: 'Edit Profile' }}
-    />
+    /> */}
     <ProfileStack.Screen 
       name="UserSettings" 
       component={UserSettingsScreen}
-      options={{ title: 'Settings' }}
-    /> */}
+      options={{ title: 'Settings' }}/>
+          <ProfileStack.Screen 
+      name="PostDisplay" 
+      component={PostDisplay}
+      options={{ headerShown: false }}
+    />
   </ProfileStack.Navigator>
 );
 const DrawerNavigator = () => (
