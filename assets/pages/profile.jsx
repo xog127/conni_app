@@ -76,34 +76,96 @@ export default function ProfileScreen({ navigation }) {
         pt={"10%"}
       >
         <Text fontSize="30" fontWeight="bold" color="#836fff">
-          UCL
+          {user?.first_name + " " + user?.last_name}
         </Text>
-        <Pressable onPress={() => navigation.navigate("Setting")}>
-          <Icon as={Ionicons} name="settings-outline" size={28} color="gray" />
-        </Pressable>
       </Box>
-      <Box>
-        <HStack justifyContent="space-between" px={4} py={4}>
-          <Image
-            source={
-              user?.photo_url
-                ? { uri: user.photo_url }
-                : require("../images/Blankprofile.png")
-            }
-            style={{ width: 80, height: 80, borderRadius: 40 }}
-          />
-          <VStack space={2} flex={1} justifyContent="center">
-            <Text fontSize="lg" fontWeight="bold">
-              {user?.display_name}
-            </Text>
-            <Text fontSize="sm" color="gray.500">
-              Course : {user?.course}
-            </Text>
-            <Text fontSize="sm" color="gray.500">
-              Year : {user?.graduation_year}
-            </Text>
-          </VStack>
-        </HStack>
+      <Box bg="white" pt="11px">
+        <VStack>
+          <HStack
+            justifyContent="space-between"
+            space="25px"
+            px="16px"
+            pb="16px"
+          >
+            <Image
+              source={
+                user?.photo_url
+                  ? { uri: user.photo_url }
+                  : require("../images/Blankprofile.png")
+              }
+              style={{ width: 68, height: 68, borderRadius: 68 }}
+            />
+            <VStack flex={1} justifyContent="center">
+              <Text
+                fontSize="16px"
+                fontWeight="500"
+                color="#000"
+                lineHeight="24px"
+                letterSpacing="0.15px"
+              >
+                {user?.first_name + " " + user?.last_name}
+              </Text>
+              <Text
+                fontSize="16px"
+                color="#000"
+                fontWeight="500"
+                lineHeight="24px"
+                letterSpacing="0.15px"
+              >
+                {user?.course}
+              </Text>
+              <Text
+                fontSize="16px"
+                color="#000"
+                fontWeight="500"
+                lineHeight="24px"
+                letterSpacing="0.15px"
+              >
+                Year : {user?.graduation_year}
+              </Text>
+            </VStack>
+          </HStack>
+          <HStack px="24px" justifyContent="center" space="24px" pb="24px">
+            <Pressable onPress={() => navigation.navigate("EditProfile")}>
+              <Box
+                px="36px"
+                py="4px"
+                borderColor="#78767F"
+                borderWidth="1px"
+                borderRadius="8px"
+              >
+                <Text
+                  fontWeight="500"
+                  fontStyle="normal"
+                  lineHeight="20px"
+                  letterSpacing="0.14px"
+                  fontSize="14px"
+                >
+                  Edit Profile
+                </Text>
+              </Box>
+            </Pressable>
+            <Pressable onPress={() => navigation.navigate("Setting")}>
+              <Box
+                px="47px"
+                py="4px"
+                borderColor="#78767F"
+                borderWidth="1px"
+                borderRadius="8px"
+              >
+                <Text
+                  fontWeight="500"
+                  fontStyle="normal"
+                  lineHeight="20px"
+                  letterSpacing="0.14px"
+                  fontSize="14px"
+                >
+                  Setting
+                </Text>
+              </Box>
+            </Pressable>
+          </HStack>
+        </VStack>
       </Box>
 
       <ScrollView flex={1}>
