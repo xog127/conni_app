@@ -11,12 +11,6 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
-    "@gluestack-ui/form-control": "^0.1.19",
-    "@gluestack-ui/icon": "^0.1.25",
-    "@gluestack-ui/nativewind-utils": "^1.0.26",
-    "@gluestack-ui/overlay": "^0.1.21",
-    "@gluestack-ui/textarea": "^0.1.24",
-    "@gluestack-ui/toast": "^1.0.9",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/datetimepicker": "8.2.0",
     "@react-native-firebase/app": "^21.10.0",
@@ -39,11 +33,9 @@
     "lucide-react-native": "^0.471.0",
     "moti": "^0.30.0",
     "native-base": "^3.4.25",
-    "nativewind": "^4.1.23",
     "react": "18.3.1",
     "react-dom": "^18.3.1",
     "react-native": "^0.76.7",
-    "react-native-autogrow-textinput": "^5.4.0",
     "react-native-cached-image": "^1.4.3",
     "react-native-css-interop": "^0.1.22",
     "react-native-expo-cached-image": "^1.3.1",
@@ -57,8 +49,7 @@
     "react-native-screens": "~4.4.0",
     "react-native-svg": "^15.2.0",
     "react-native-vector-icons": "^10.2.0",
-    "react-redux": "^9.2.0",
-    "tailwindcss": "^3.4.17"
+    "react-redux": "^9.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

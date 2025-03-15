@@ -1,7 +1,5 @@
 // Import necessary components and Firebase
 import { NavigationContainer } from '@react-navigation/native';
-import "@/global.css";
-import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -86,8 +84,8 @@ const PostStackNavigator = () => (
     <PostStack.Screen 
       name="Home" 
       component={MainPage} 
-      options={{ headerShown: false, unmountOnBlur: true }}
-                <PostStack.Screen 
+      options={{ headerShown: false, unmountOnBlur: true }}/>
+    <PostStack.Screen 
       name="Drawer" 
       component={DrawerNavigator} 
       options={{ headerShown: false }}
@@ -218,7 +216,7 @@ const RootNavigator = () => {
   // Show loading screen while checking authentication
 
   return (
-    <GluestackUIProvider mode="light"><Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated && user ? (
           // Check if user needs onboarding
           (user.isOnboarded ? (<Stack.Screen name="Main" component={MainStackNavigator} />) : (<Stack.Screen 
@@ -229,7 +227,7 @@ const RootNavigator = () => {
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} />
         )}
-      </Stack.Navigator></GluestackUIProvider>
+      </Stack.Navigator>
   );
 };
 
@@ -237,11 +235,11 @@ const RootNavigator = () => {
 export default function App() {
   return (
 
-    <GluestackUIProvider mode="light"><AuthProvider>
+      <AuthProvider>
         <NavigationContainer>
           <RootNavigator />
         </NavigationContainer>
-      </AuthProvider></GluestackUIProvider>
+      </AuthProvider>
 
   );
 }
