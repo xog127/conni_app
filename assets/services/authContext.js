@@ -7,9 +7,10 @@ import {
   signOut, 
   updateProfile as firebaseUpdateProfile,
   onAuthStateChanged,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  deleteUser
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc,deleteDoc } from 'firebase/firestore';
 
 // Create the authentication context
 export const AuthContext = createContext();
@@ -263,6 +264,36 @@ export const AuthProvider = ({ children }) => {
       };
     }
   };
+
+  const deleteAccount = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        throw new Error('No user is currently logged in');
+      }
+  
+      // First, delete the user document from Firestore
+      await deleteDoc(doc(db, 'users', currentUser.uid));
+  
+      // Then, delete the Firebase Authentication user
+      await deleteUser(currentUser);
+  
+      // Remove user data from AsyncStorage
+      await AsyncStorage.removeItem('user');
+  
+      // Set user state to null
+      setUser(null);
+  
+      return { success: true };
+    } catch (error) {
+      console.error('Delete account error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to delete account. Please try again.'
+      };
+    }
+  };
   
   return (
     <AuthContext.Provider value={{ 
@@ -274,6 +305,7 @@ export const AuthProvider = ({ children }) => {
       updateProfile,
       completeOnboarding,
       resetPassword,
+      deleteAccount,
       isAuthenticated: !!user
     }}>
       {children}

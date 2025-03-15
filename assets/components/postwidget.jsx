@@ -75,7 +75,7 @@ const PostWidget = ({ postRef, navigation }) => {
               {post?.post_data}
             </Text>
 
-            {post?.req && (
+            {post?.requirements && (
               <VStack
                 mt={2}
                 p="12px"
@@ -86,7 +86,7 @@ const PostWidget = ({ postRef, navigation }) => {
                 alignItems="flex-start"
                 space="10px" // NativeBase equivalent of gap
               >
-                {Object.entries(post.req)
+                {Object.entries(post.requirements)
                   .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
                   .map(([key, value]) => (
                     <HStack key={key} flex={1}>
