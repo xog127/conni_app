@@ -16,6 +16,7 @@ import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import CustomDropdown from '../components/dropdown';
 import { useAuth } from '../services/authContext';
+import { getStorage } from 'firebase/storage';
 
 const SECONDARY_COLOR = "#836FFF";
 
@@ -135,20 +136,49 @@ const OnboardingPage = ({ navigation }) => {
 
   const pickImage = async () => {
     try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Sorry, we need camera roll permissions to make this work!');
+        return;
+      }
+      
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8, // Reduced for better performance
+        aspect: [4, 3],
+        quality: 0.8,
       });
-
+      
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setProfileImage(result.assets[0].uri);
-        setErrors({ ...errors, profileImage: null });
+        setIsSubmitting(true);
+        const uri = result.assets[0].uri;
+        const imageUrl = await uploadImageToFirebase(uri);
+        setImage(imageUrl);
+        setAddImage(true);
+        setIsSubmitting(false);
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      alert('Failed to pick image. Please try again.');
+      Alert.alert('Error', 'Failed to process image.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const uploadImageToFirebase = async (uri) => {
+    try {
+      const storage = getStorage();
+      const filename = `user_images/${Date.now()}`;
+      const storageRef = ref(storage, filename);
+      
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      await uploadBytes(storageRef, blob);
+      return await getDownloadURL(storageRef);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      throw error;
     }
   };
 

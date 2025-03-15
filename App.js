@@ -16,11 +16,11 @@ import Setting from './assets/pages/setting';
 import Feedback from './assets/pages/feedback';
 import { AuthProvider, AuthContext, useAuth } from './assets/services/authContext';
 import { TouchableOpacity } from 'react-native';
-import createPostNew from './assets/pages/createPostNew';
-import CreatePostNew from './assets/pages/createPostNew';
 import CustomDrawerContent from './assets/customFunctions/CustomDrawerContent';
 import UserSettingsScreen from './assets/pages/setting';
 import ProfileEditScreen from './assets/pages/editProfile';
+import AllChats from './assets/pages/allChats';
+import CreateChat from './assets/pages/createChat';
 
 
 // Create navigation stacks
@@ -31,6 +31,7 @@ const ProfileStack = createStackNavigator();
 const ForumStack = createStackNavigator();
 const PostStack = createStackNavigator();
 const Drawer = createDrawerNavigator();
+const ChatStack = createStackNavigator();
 
 // Profile Stack Navigator (for nested profile screens)
 const ProfileStackNavigator = () => (
@@ -76,6 +77,21 @@ const ForumStackNavigator = () => (
       options={({ route }) => ({ title: route.params?.forumName || 'Forum' })}
     />
   </ForumStack.Navigator>
+);
+
+const ChatStackNavigator = () => (
+  <ChatStack.Navigator>
+    <ChatStack.Screen 
+      name="Chats" 
+      component={AllChats} 
+      options={{ headerShown: false }}
+    />
+    <ChatStack.Screen 
+      name="CreateChat" 
+      component={CreateChat} 
+      options={{ headerShown: false }}
+    />
+  </ChatStack.Navigator>
 );
 
 // Post Stack Navigator (for post-related screens)
@@ -163,6 +179,16 @@ const TabNavigator = () => (
     <Tab.Screen 
       name="Forums" 
       component={ForumStackNavigator}
+      options={{
+        headerShown: false,
+        tabBarIcon: ({ color, size }) => (
+          <Feather name="message-circle" size={size} color={color} />
+        ),
+      }}
+    /> 
+    <Tab.Screen 
+      name="Chats" 
+      component={ChatStackNavigator}
       options={{
         headerShown: false,
         tabBarIcon: ({ color, size }) => (
