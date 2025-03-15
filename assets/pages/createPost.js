@@ -23,6 +23,7 @@ import { doc, Timestamp } from "firebase/firestore";
 import CreatePostFields from "./createPostFields";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "../firebase/firebaseConfig";
+import { useAuth } from "../services/authContext";
 
 // Forum Selector Component
 export const ForumSelector = ({ forums, selectedForum, onForumSelect }) => {
@@ -134,6 +135,7 @@ const CreatePostForm = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const {user} = useAuth
   
   // Form state
   const [title, setTitle] = useState("");
@@ -309,6 +311,10 @@ const CreatePostForm = ({ navigation }) => {
         anonymous,
         time_posted: Timestamp.now(),
         requirements : formData,
+        num_likes : 0,
+        num_comments : 0,
+        views : 0,
+        post_user : doc(db, 'users', user.id)
       };
       
       await addRef({ collectionName: "posts", data: postData });
