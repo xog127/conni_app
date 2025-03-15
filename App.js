@@ -82,10 +82,6 @@ const ForumStackNavigator = () => (
 const PostStackNavigator = () => (
   <PostStack.Navigator>
     <PostStack.Screen 
-      name="Home" 
-      component={MainPage} 
-      options={{ headerShown: false, unmountOnBlur: true }}/>
-    <PostStack.Screen 
       name="Drawer" 
       component={DrawerNavigator} 
       options={{ headerShown: false }}
