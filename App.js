@@ -1,11 +1,10 @@
 // Import necessary components and Firebase
 import { NavigationContainer } from '@react-navigation/native';
+import "@/global.css";
+import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { auth } from './assets/firebase/firebaseConfig';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useState, useEffect, useContext } from 'react';
 import LoginScreen from './assets/pages/login';
 import SignupScreen from './assets/pages/signup';
 import PostDisplay from './assets/pages/postDisplay';
@@ -18,9 +17,13 @@ import OnboardingPage from './assets/pages/onboarding';
 import Setting from './assets/pages/setting';
 import Feedback from './assets/pages/feedback';
 import { AuthProvider, AuthContext, useAuth } from './assets/services/authContext';
+import { TouchableOpacity } from 'react-native';
+import createPostNew from './assets/pages/createPostNew';
+import CreatePostNew from './assets/pages/createPostNew';
 import CustomDrawerContent from './assets/customFunctions/CustomDrawerContent';
 import UserSettingsScreen from './assets/pages/setting';
 import ProfileEditScreen from './assets/pages/editProfile';
+
 
 // Create navigation stacks
 const Stack = createStackNavigator();
@@ -80,6 +83,10 @@ const ForumStackNavigator = () => (
 // Post Stack Navigator (for post-related screens)
 const PostStackNavigator = () => (
   <PostStack.Navigator>
+    <PostStack.Screen 
+      name="Home" 
+      component={MainPage} 
+      options={{ headerShown: false, unmountOnBlur: true }}
                 <PostStack.Screen 
       name="Drawer" 
       component={DrawerNavigator} 
@@ -91,7 +98,11 @@ const PostStackNavigator = () => (
       component={PostDisplay}
       options={{ headerShown: false }}
     />
-
+    <PostStack.Screen 
+      name="createPost" 
+      component={CreatePostForm}
+      options={{ headerShown: false }}
+    />
   </PostStack.Navigator>
 );
 
@@ -116,6 +127,8 @@ const AuthNavigator = () => (
   </AuthStack.Navigator>
 );
 
+const EmptyComponent = () => null;
+
 // Main Tab Navigator
 const TabNavigator = () => (
   <Tab.Navigator>
@@ -130,15 +143,24 @@ const TabNavigator = () => (
       }}
     />
     <Tab.Screen 
-      name="CreatePost" 
-      component={CreatePostForm}
-      options={{
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => (
-          <Feather name="plus" size={size} color={color} />
-        ),
-      }}
-    />
+        name="CreatePost" 
+        component={EmptyComponent} // This is just a placeholder
+        options={({ navigation }) => ({
+          tabBarLabel: 'Create',
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="plus" size={size} color={color} />
+          ),
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={() => {
+                // Navigate to CreatePost screen which is defined in another navigator
+                navigation.navigate('Posts', { screen: 'createPost' });
+              }}
+            />
+          ),
+        })}
+      />
     <Tab.Screen 
       name="Forums" 
       component={ForumStackNavigator}
@@ -196,22 +218,18 @@ const RootNavigator = () => {
   // Show loading screen while checking authentication
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isAuthenticated && user ? (
-        // Check if user needs onboarding
-        user.isOnboarded ? (
-          <Stack.Screen name="Main" component={MainStackNavigator} />
-        ) : (
-          <Stack.Screen 
+    <GluestackUIProvider mode="light"><Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated && user ? (
+          // Check if user needs onboarding
+          (user.isOnboarded ? (<Stack.Screen name="Main" component={MainStackNavigator} />) : (<Stack.Screen 
             name="Onboarding" 
             component={OnboardingPage} 
             options={{ gestureEnabled: false }}
-          />
-        )
-      ) : (
-        <Stack.Screen name="Auth" component={AuthNavigator} />
-      )}
-    </Stack.Navigator>
+          />))
+        ) : (
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        )}
+      </Stack.Navigator></GluestackUIProvider>
   );
 };
 
@@ -219,11 +237,11 @@ const RootNavigator = () => {
 export default function App() {
   return (
 
-    <AuthProvider>
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>
-    </AuthProvider>
+    <GluestackUIProvider mode="light"><AuthProvider>
+        <NavigationContainer>
+          <RootNavigator />
+        </NavigationContainer>
+      </AuthProvider></GluestackUIProvider>
 
   );
 }

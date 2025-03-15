@@ -1,4 +1,4 @@
-import React, { useState, useRef, useContext } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,13 @@ import {
   Image,
   Dimensions,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import CustomDropdown from '../components/dropdown';
-import { useAuth} from '../services/authContext';
-
-
+import { useAuth } from '../services/authContext';
 
 const SECONDARY_COLOR = "#836FFF";
 
@@ -40,36 +39,52 @@ const OnboardingPage = ({ navigation }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [profileImage, setProfileImage] = useState(null);
   
+  // Fixed property names to match with what's being rendered
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    first_name: '',
+    last_name: '',
     gender: '',
     nationality: '',
-    universityName: '',
+    university: '',
     course: '',
-    graduationYear: '',
+    graduation_year: '',
   });
 
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    // Request permissions on component mount for Android
+    if (Platform.OS === 'android') {
+      (async () => {
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      })();
+    }
+  }, []);
 
   const validatePage = (pageNumber) => {
     const newErrors = {};
 
     switch (pageNumber) {
       case 0:
-        if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-        if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+        if (!formData.first_name.trim()) newErrors.first_name = 'First name is required';
+        if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required';
         if (!formData.gender) newErrors.gender = 'Gender is required';
-        if (!formData.nationality.trim()) newErrors.nationality = 'Nationality is required';
+        if (!formData.nationality) newErrors.nationality = 'Nationality is required';
         break;
       case 1:
-        if (!formData.universityName.trim()) newErrors.universityName = 'University name is required';
+        if (!formData.university.trim()) newErrors.university = 'University name is required';
         if (!formData.course.trim()) newErrors.course = 'Course is required';
-        if (!formData.graduationYear.trim()) newErrors.graduationYear = 'Graduation year is required';
+        if (!formData.graduation_year.trim()) newErrors.graduation_year = 'Graduation year is required';
+        
+        // Validate graduation year format
+        if (formData.graduation_year && !/^\d{4}$/.test(formData.graduation_year)) {
+          newErrors.graduation_year = 'Enter a valid 4-digit year';
+        }
         break;
-    
+      case 2:
+        break;
     }
-
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -87,8 +102,9 @@ const OnboardingPage = ({ navigation }) => {
   const handleNext = () => {
     if (validatePage(currentPage)) {
       if (currentPage < 2) {
-        scrollViewRef.current?.scrollTo({ x: width * (currentPage + 1), animated: true });
-        setCurrentPage(currentPage + 1);
+        const nextPage = currentPage + 1;
+        scrollViewRef.current?.scrollTo({ x: width * nextPage, animated: true });
+        setCurrentPage(nextPage);
       } else {
         handleSubmit();
       }
@@ -97,38 +113,42 @@ const OnboardingPage = ({ navigation }) => {
 
   const handleBack = () => {
     if (currentPage > 0) {
-      scrollViewRef.current?.scrollTo({ x: width * (currentPage - 1), animated: true });
-      setCurrentPage(currentPage - 1);
+      const prevPage = currentPage - 1;
+      scrollViewRef.current?.scrollTo({ x: width * prevPage, animated: true });
+      setCurrentPage(prevPage);
     }
   };
 
   const handleSubmit = async () => {
-    console.log('Form Data:', formData);
-    console.log('Profile Image:', profileImage);
-    const updateUser = await updateProfile(formData)
-    const onboardingResult = await completeOnboarding();
-    // console.log(user);
-    // navigation.Navigate('MainPage');
+    try {
+      await updateProfile({
+        ...formData,
+        profileImage: profileImage,
+      });
+      await completeOnboarding();
+      navigation.navigate('MainPage');
+    } catch (error) {
+      console.error('Error submitting profile:', error);
+      alert('Failed to submit profile. Please try again.');
+    }
   };
 
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (status !== 'granted') {
-      alert('Sorry, we need camera roll permissions to make this work!');
-      return;
-    }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8, // Reduced for better performance
+      });
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setProfileImage(result.assets[0].uri);
-      setErrors({ ...errors, profileImage: null });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setProfileImage(result.assets[0].uri);
+        setErrors({ ...errors, profileImage: null });
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      alert('Failed to pick image. Please try again.');
     }
   };
 
@@ -165,99 +185,111 @@ const OnboardingPage = ({ navigation }) => {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.container}>
-          {/* Header */}
-          <View style={styles.header}>
-            {currentPage > 0 && (
-              <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                <Feather name="arrow-left" size={24} color="#111827" />
-              </TouchableOpacity>
-            )}
-            <Text style={styles.headerTitle}>Create Profile</Text>
-          </View>
-
-          {renderProgressBar()}
-
-          <ScrollView
-            ref={scrollViewRef}
-            horizontal
-            pagingEnabled
-            scrollEnabled={false}
-            showsHorizontalScrollIndicator={false}
-          >
-            {/* Page 1: Basic Info */}
-            <View style={styles.page}>
-              <ScrollView>
-                {renderInputField('first_name', 'First Name', 'Enter your first name')}
-                {renderInputField('last_name', 'Last Name', 'Enter your last name')}
-                <CustomDropdown
-                  label="Gender"
-                  data={genderOptions}
-                  value={formData.gender}
-                  onSelect={handleGenderSelect}
-                  placeholder="Select gender"
-                  required={true}
-                  errorText={errors.gender}
-                  containerStyle={styles.dropdownContainer}
-                  labelStyle={styles.label}
-                />
-                <CustomDropdown
-                  label="Nationality"
-                  data={countryOptions}
-                  value={formData.nationality}
-                  onSelect={handleCountrySelect}
-                  placeholder="Select Nationality"
-                  required={true}
-                  errorText={errors.nationality}
-                  containerStyle={styles.dropdownContainer}
-                  labelStyle={styles.label}
-                />
-                
-              </ScrollView>
-            </View>
-
-            {/* Page 2: University Details */}
-            <View style={styles.page}>
-              <ScrollView>
-                {renderInputField('university', 'University Name', 'Enter your university name')}
-                {renderInputField('course', 'Course', 'Enter your course name')}
-                {renderInputField('graduation_year', 'Graduation Year', 'YYYY', 'numeric')}
-              </ScrollView>
-            </View>
-
-            {/* Page 3: Profile Picture */}
-            <View style={styles.page}>
-              <View style={styles.profileImageContainer}>
-                <TouchableOpacity onPress={pickImage} style={styles.imagePickerButton}>
-                  {profileImage ? (
-                    <Image source={{ uri: profileImage }} style={styles.profileImage} />
-                  ) : (
-                    <View style={styles.placeholderContainer}>
-                      <Feather name="camera" size={40} color="#9CA3AF" />
-                      <Text style={styles.placeholderText}>Add Profile Picture</Text>
-                    </View>
-                  )}
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.container}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        >
+          <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.header}>
+              {currentPage > 0 && (
+                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                  <Feather name="arrow-left" size={24} color="#111827" />
                 </TouchableOpacity>
-                {errors.profileImage && (
-                  <Text style={styles.errorText}>{errors.profileImage}</Text>
-                )}
-              </View>
+              )}
+              <Text style={styles.headerTitle}>Create Profile</Text>
             </View>
-          </ScrollView>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: SECONDARY_COLOR }]}
-              onPress={handleNext}
+            {renderProgressBar()}
+
+            <ScrollView
+              ref={scrollViewRef}
+              horizontal
+              pagingEnabled
+              scrollEnabled={false}
+              showsHorizontalScrollIndicator={false}
+              scrollEventThrottle={16}
             >
-              <Text style={styles.buttonText}>
-                {currentPage === 2 ? 'Submit' : 'Next'}
-              </Text>
-            </TouchableOpacity>
+              {/* Page 1: Basic Info */}
+              <View style={styles.page}>
+                <ScrollView 
+                  nestedScrollEnabled={true}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {renderInputField('first_name', 'First Name', 'Enter your first name')}
+                  {renderInputField('last_name', 'Last Name', 'Enter your last name')}
+                  <CustomDropdown
+                    label="Gender"
+                    data={genderOptions}
+                    value={formData.gender}
+                    onSelect={handleGenderSelect}
+                    placeholder="Select gender"
+                    required={true}
+                    errorText={errors.gender}
+                    containerStyle={styles.dropdownContainer}
+                    labelStyle={styles.label}
+                  />
+                  <CustomDropdown
+                    label="Nationality"
+                    data={countryOptions}
+                    value={formData.nationality}
+                    onSelect={handleCountrySelect}
+                    placeholder="Select Nationality"
+                    required={true}
+                    errorText={errors.nationality}
+                    containerStyle={styles.dropdownContainer}
+                    labelStyle={styles.label}
+                  />
+                </ScrollView>
+              </View>
+
+              {/* Page 2: University Details */}
+              <View style={styles.page}>
+                <ScrollView 
+                  nestedScrollEnabled={true}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {renderInputField('university', 'University Name', 'Enter your university name')}
+                  {renderInputField('course', 'Course', 'Enter your course name')}
+                  {renderInputField('graduation_year', 'Graduation Year', 'YYYY', 'numeric')}
+                </ScrollView>
+              </View>
+
+              {/* Page 3: Profile Picture */}
+              <View style={styles.page}>
+                <View style={styles.profileImageContainer}>
+                  <TouchableOpacity onPress={pickImage} style={styles.imagePickerButton}>
+                    {profileImage ? (
+                      <Image source={{ uri: profileImage }} style={styles.profileImage} />
+                    ) : (
+                      <View style={styles.placeholderContainer}>
+                        <Feather name="camera" size={40} color="#9CA3AF" />
+                        <Text style={styles.placeholderText}>Add Profile Picture</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  {errors.profileImage && (
+                    <Text style={styles.errorText}>{errors.profileImage}</Text>
+                  )}
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: SECONDARY_COLOR }]}
+                onPress={handleNext}
+              >
+                <Text style={styles.buttonText}>
+                  {currentPage === 2 ? 'Submit' : 'Next'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </SafeAreaProvider>
   );
