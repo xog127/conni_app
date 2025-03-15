@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import "@/global.css";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { createStackNavigator } from '@react-navigation/stack';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import LoginScreen from './assets/pages/login';
 import SignupScreen from './assets/pages/signup';
@@ -13,10 +14,15 @@ import {Ionicons, FontAwesome, Feather } from '@expo/vector-icons';
 import ProfileScreen from './assets/pages/profile';
 import ForumsPage from './assets/pages/forum';
 import OnboardingPage from './assets/pages/onboarding';
+import Setting from './assets/pages/setting';
+import Feedback from './assets/pages/feedback';
 import { AuthProvider, AuthContext, useAuth } from './assets/services/authContext';
 import { TouchableOpacity } from 'react-native';
 import createPostNew from './assets/pages/createPostNew';
 import CreatePostNew from './assets/pages/createPostNew';
+import CustomDrawerContent from './assets/customFunctions/CustomDrawerContent';
+import UserSettingsScreen from './assets/pages/setting';
+import ProfileEditScreen from './assets/pages/editProfile';
 
 
 // Create navigation stacks
@@ -26,6 +32,7 @@ const AuthStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 const ForumStack = createStackNavigator();
 const PostStack = createStackNavigator();
+const Drawer = createDrawerNavigator();
 
 // Profile Stack Navigator (for nested profile screens)
 const ProfileStackNavigator = () => (
@@ -35,17 +42,26 @@ const ProfileStackNavigator = () => (
       component={ProfileScreen} 
       options={{ headerShown: false }}
     />
-    {/* <ProfileStack.Screen 
+     <ProfileStack.Screen 
       name="EditProfile" 
       component={ProfileEditScreen}
-      options={{ title: 'Edit Profile' }}
-    />
+      options={{ headerShown: false }}
+    /> 
     <ProfileStack.Screen 
       name="UserSettings" 
       component={UserSettingsScreen}
-      options={{ title: 'Settings' }}
-    /> */}
+      options={{ title: 'Settings' }}/>
+          <ProfileStack.Screen 
+      name="PostDisplay" 
+      component={PostDisplay}
+      options={{ headerShown: false }}
+    />
   </ProfileStack.Navigator>
+);
+const DrawerNavigator = () => (
+  <Drawer.Navigator drawerContent={(props) => <CustomDrawerContent {...props} />}>
+      <Drawer.Screen name="MainPage" component={MainPage} options={{ headerShown: false }}  />
+</Drawer.Navigator>
 );
 
 // Forum Stack Navigator (for forum-related screens)
@@ -71,7 +87,12 @@ const PostStackNavigator = () => (
       name="Home" 
       component={MainPage} 
       options={{ headerShown: false, unmountOnBlur: true }}
+                <PostStack.Screen 
+      name="Drawer" 
+      component={DrawerNavigator} 
+      options={{ headerShown: false }}
     />
+
     <PostStack.Screen 
       name="PostDisplay" 
       component={PostDisplay}
@@ -171,16 +192,16 @@ const MainStackNavigator = () => (
       component={TabNavigator}
       options={{ headerShown: false }}
     />
-    {/* <Stack.Screen 
-      name="Notifications" 
-      component={NotificationsScreen}
-      options={{ title: 'Notifications' }}
-    /> */}
-    {/* <Stack.Screen 
-      name="UserProfile" 
-      component={UserProfileScreen}
-      options={({ route }) => ({ title: route.params?.username || 'Profile' })}
-    /> */}
+        <Stack.Screen 
+      name="Setting" 
+      component={Setting} 
+      options={{ headerShown: true, title: "Settings" }} // Show header for Settings
+    />
+    <Stack.Screen 
+      name="Feedback" 
+      component={Feedback} 
+      options={{ headerShown: true, title: "Feedback" }} // Show header for Settings
+  />
     <Stack.Screen 
       name="Onboarding" 
       component={OnboardingPage}
@@ -215,10 +236,12 @@ const RootNavigator = () => {
 // Main App component
 export default function App() {
   return (
+
     <GluestackUIProvider mode="light"><AuthProvider>
         <NavigationContainer>
           <RootNavigator />
         </NavigationContainer>
       </AuthProvider></GluestackUIProvider>
+
   );
 }
