@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Avatar,
@@ -12,48 +12,36 @@ import {
   ScrollView,
   Modal,
 } from "native-base";
-import { getAuth } from "../firebase/firebaseConfig.js";
-import { getRef } from "../firebase/queries";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useAuth } from "../services/authContext";
 
-export default function UserSettingsScreen() {
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
-  const [user, setUser] = useState(null);
-  const navigation = useNavigation();
+export default function UserSettingsScreen({ navigation }) {
+  const { logout, user, deleteAccount } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
-  const [policyUrl, setPolicyUrl] = useState("");
-  const [text, setText] = useState("");
+  const [logoutConfirmationVisible, setLogoutConfirmationVisible] =
+    useState(false); // State for logout confirmation modal
+  const [
+    deleteAccountConfirmationVisible,
+    setDeleteAccountConfirmationVisible,
+  ] = useState(false); // State for delete account modal
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        if (currentUser) {
-          // Fetch the current user's data
-          const userData = await getRef({
-            id: currentUser.uid, // Use the current user's UID
-            collectionName: "users",
-          });
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error("Error fetching User references:", error.message);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
-  const openPolicyModal = (url, text) => {
-    setPolicyUrl(url);
-    setText(text);
-    setModalVisible(true);
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Error logging out:", error.message);
+    }
   };
 
-  const handleOpenBrowser = () => {
-    setModalVisible(false);
-    Linking.openURL(policyUrl);
+  const handleDeleteAccount = async () => {
+    const result = await deleteAccount();
+    navigate("Login");
+    if (result.success) {
+      // Account deleted successfully, navigate to the login screen or show a success message
+    } else {
+      // Handle the error, show a message to the user
+      console.error(result.error);
+    }
   };
 
   return (
@@ -115,12 +103,7 @@ export default function UserSettingsScreen() {
                 justifyContent="space-between"
                 borderRadius="md"
                 _pressed={{ bg: "coolGray.100" }}
-                onPress={() =>
-                  openPolicyModal(
-                    "https://example.com/privacy-policy",
-                    "Privacy Policy"
-                  )
-                }
+                onPress={() => setModalVisible(true)} // Open modal for Privacy Policy
               >
                 <Text fontSize="md">Privacy Policy</Text>
                 <Icon as={MaterialIcons} name="privacy-tip" size={5} />
@@ -134,12 +117,7 @@ export default function UserSettingsScreen() {
                 justifyContent="space-between"
                 borderRadius="md"
                 _pressed={{ bg: "coolGray.100" }}
-                onPress={() =>
-                  openPolicyModal(
-                    "https://example.com/terms-and-conditions",
-                    "Terms and Conditions"
-                  )
-                }
+                onPress={() => setModalVisible(true)} // Open modal for Terms and Conditions
               >
                 <Text fontSize="md">Terms and Conditions</Text>
                 <Icon as={MaterialIcons} name="gavel" size={5} />
@@ -157,6 +135,7 @@ export default function UserSettingsScreen() {
                 justifyContent="space-between"
                 borderRadius="md"
                 _pressed={{ bg: "coolGray.100" }}
+                onPress={() => setLogoutConfirmationVisible(true)} // Show logout confirmation modal
               >
                 <Text color="red.500" fontWeight="bold">
                   Log out
@@ -177,6 +156,7 @@ export default function UserSettingsScreen() {
                 justifyContent="space-between"
                 borderRadius="md"
                 _pressed={{ bg: "coolGray.100" }}
+                onPress={() => setDeleteAccountConfirmationVisible(true)} // Show delete account confirmation modal
               >
                 <Text color="red.500" fontWeight="bold">
                   Delete account
@@ -193,10 +173,63 @@ export default function UserSettingsScreen() {
         </Box>
       </ScrollView>
 
-      {/* Modal for Privacy Policy & Terms */}
+      {/* Modal for Logout Confirmation */}
+      <Modal
+        isOpen={logoutConfirmationVisible}
+        onClose={() => setLogoutConfirmationVisible(false)}
+      >
+        <Modal.Content maxWidth="400px">
+          <Modal.Header>Log out</Modal.Header>
+          <Modal.Body>
+            <Text>You will be redirected to the login page.</Text>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="ghost"
+              onPress={() => setLogoutConfirmationVisible(false)}
+            >
+              Cancel
+            </Button>
+            <Button colorScheme="blue" onPress={handleLogout}>
+              Log out
+            </Button>
+          </Modal.Footer>
+        </Modal.Content>
+      </Modal>
+
+      {/* Modal for Delete Account Confirmation */}
+      <Modal
+        isOpen={deleteAccountConfirmationVisible}
+        onClose={() => setDeleteAccountConfirmationVisible(false)}
+      >
+        <Modal.Content maxWidth="400px">
+          <Modal.Header>Delete Account</Modal.Header>
+          <Modal.Body>
+            <Text>
+              When you delete your account, all information associated with it
+              is permanently removed. This process is irreversible, and you
+              won't be able to recover your account or any of the data linked to
+              it.
+            </Text>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="ghost"
+              onPress={() => setDeleteAccountConfirmationVisible(false)}
+            >
+              Cancel
+            </Button>
+            <Button colorScheme="red" onPress={handleDeleteAccount}>
+              Delete
+            </Button>
+          </Modal.Footer>
+        </Modal.Content>
+      </Modal>
+
+      {/* Modal for Privacy Policy and Terms */}
       <Modal isOpen={modalVisible} onClose={() => setModalVisible(false)}>
         <Modal.Content maxWidth="400px">
-          <Modal.Header>Continue to {text}</Modal.Header>
+          <Modal.Header>Continue to Policy</Modal.Header>
           <Modal.Body>
             <Text>The document will open in a browser view.</Text>
           </Modal.Body>
@@ -204,7 +237,7 @@ export default function UserSettingsScreen() {
             <Button variant="ghost" onPress={() => setModalVisible(false)}>
               Cancel
             </Button>
-            <Button colorScheme="blue" onPress={handleOpenBrowser}>
+            <Button colorScheme="blue" onPress={() => setModalVisible(false)}>
               Yes
             </Button>
           </Modal.Footer>

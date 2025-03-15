@@ -58,9 +58,9 @@ export default function ProfileScreen({ navigation }) {
   }, [selectedOption]);
 
   const displayedPosts =
-    selectedOption === "Your Posts"
+    selectedOption === "Posts"
       ? posts
-      : selectedOption === "Liked Posts"
+      : selectedOption === "Liked"
       ? likedPosts
       : commentedPosts;
 
@@ -182,7 +182,7 @@ export default function ProfileScreen({ navigation }) {
           >
             {options.map((option, index) => (
               <Pressable
-                key={option}
+                key={index}
                 onPress={() => setSelectedOption(option)}
                 flex={1}
               >

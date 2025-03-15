@@ -113,6 +113,11 @@ const AuthNavigator = () => (
       component={SignupScreen} 
       options={{ headerShown: false }}
     />
+    <AuthStack.Screen
+      name = "Setting"
+      component = {UserSettingsScreen}
+      options = {{headerShown: true}}
+      />
     {/* <AuthStack.Screen 
       name="ForgotPassword" 
       component={ForgotPasswordScreen} 
