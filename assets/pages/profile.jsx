@@ -24,7 +24,7 @@ export default function ProfileScreen({ navigation }) {
   const [commentedPosts, setCommentedPosts] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState("Your Posts");
-  const options = ["Your Posts", "Liked Posts", "Commented Posts"];
+  const options = ["Posts", "Liked", "Commented"];
 
   useEffect(() => {
     const fetchPostRefs = async () => {
@@ -75,15 +75,20 @@ export default function ProfileScreen({ navigation }) {
         px={4}
         pt={"10%"}
       >
-        <Text fontSize="30" fontWeight="bold" color="#836fff">
+        <Text
+          fontSize="28"
+          fontWeight="medium"
+          color="#836fff"
+          fontFamily={"Roboto Serif"}
+        >
           {user?.first_name + " " + user?.last_name}
         </Text>
       </Box>
-      <Box bg="white" pt="11px">
+      <Box bg="white" pt="8px">
         <VStack>
           <HStack
             justifyContent="space-between"
-            space="25px"
+            space="24px"
             px="16px"
             pb="16px"
           >
@@ -167,68 +172,59 @@ export default function ProfileScreen({ navigation }) {
           </HStack>
         </VStack>
       </Box>
-
-      <ScrollView flex={1}>
-        <Box>
-          <Box
-            bg="gray.200"
-            py={2}
-            px={4}
-            borderRadius="md"
+      <ScrollView backgroundColor="white" flex={1}>
+        <Box bg="white" pt="8px">
+          <HStack
+            justifyContent="space-around"
+            borderBottomWidth={1}
+            borderBottomColor="gray.200"
             position="relative"
           >
-            <Pressable onPress={() => setIsOpen(!isOpen)}>
-              <HStack
-                justifyContent="flex-end"
-                alignItems="center"
-                space={4}
-                height="20px"
+            {options.map((option, index) => (
+              <Pressable
+                key={option}
+                onPress={() => setSelectedOption(option)}
+                flex={1}
               >
-                <Text fontSize="md" fontWeight="bold">
-                  {selectedOption}
-                </Text>
-                <Icon
-                  as={Ionicons}
-                  name={isOpen ? "chevron-up-outline" : "chevron-down-outline"}
-                  size={6}
-                  color="gray.600"
-                />
-              </HStack>
-            </Pressable>
-            <AnimatePresence>
-              {isOpen && (
-                <MotiView
-                  from={{ opacity: 0, translateY: -10 }}
-                  animate={{ opacity: 1, translateY: 0 }}
-                  exit={{ opacity: 0, translateY: -10 }}
-                  transition={{ type: "timing", duration: 300 }}
-                  style={{
-                    position: "absolute",
-                    top: 40,
-                    right: 10,
-                    zIndex: 10,
-                  }}
-                >
-                  <VStack bg="gray.200" borderRadius="8" width={140}>
-                    {options.map((option, index) => (
-                      <Pressable
-                        key={index}
-                        py={2}
-                        px={3}
-                        onPress={() => {
-                          setSelectedOption(option);
-                          setIsOpen(false);
-                        }}
-                        _pressed={{ bg: "gray.600" }}
-                      >
-                        <Text fontSize="sm">{option}</Text>
-                      </Pressable>
-                    ))}
-                  </VStack>
-                </MotiView>
-              )}
-            </AnimatePresence>
-          </Box>
+                <VStack alignItems="center" py={2}>
+                  <Text
+                    fontSize="16px"
+                    padding="10px"
+                    fontWeight={selectedOption === option ? "bold" : "500"}
+                    color={selectedOption === option ? "#836fff" : "gray.500"}
+                  >
+                    {option}
+                  </Text>
+                  {/* Gray Line for all tabs */}
+                  <Box
+                    mt={1}
+                    width="100%"
+                    height="2px"
+                    bg="gray.300"
+                    position="absolute"
+                    bottom={0}
+                  />
+                </VStack>
+              </Pressable>
+            ))}
+
+            {/* Animated Underline */}
+            <MotiView
+              style={{
+                position: "absolute",
+                bottom: 0,
+                height: 2,
+                backgroundColor: "#836fff",
+                borderRadius: 2,
+              }}
+              from={{ translateX: 0 }}
+              animate={{
+                translateX: options.indexOf(selectedOption) * 100 + "%",
+              }}
+              transition={{ type: "timing", duration: 200 }}
+              width={`${100 / options.length}%`}
+            />
+          </HStack>
         </Box>
 
         {displayedPosts.length > 0 ? (
