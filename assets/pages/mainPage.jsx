@@ -7,7 +7,6 @@ import PostPreviews from "../components/postPreviews";
 
 export default function MainPage({ navigation }) {
   const [postRefs, setPostRefs] = useState([]);
-  // Filter function that filters posts by 'post_genre_ref'
 
   useEffect(() => {
     const fetchPostRefs = async () => {
