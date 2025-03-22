@@ -11,15 +11,25 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
 
   const forumFields = {
     Research: [
-      { name: "Duration", type: "dropdown", options: ["15 min", "30 min", "45 min", "60 min"] },
-      { name: "Incentive", type: "text", placeholder: "Enter incentive" },
-      { name: "Eligibilities", type: "choiceChips", options: ["Students", "Researchers", "Everyone"] },
+      { name: "Duration", type: "text", placeholder: "How long does the study take?"},
+      { name: "Incentive", type: "choiceChips", options: ["Money", "SONA credit", "Voucher", "Other"] },
+      { name: "Incentive value", type: "text", placeholder: "How much are you giving for the incentive?"}, //I need to think about changing it 
+      { name: "Eligibilities", type: "text", placeholder: "Describe participants eligibility" }, // we need to have a popup button "Delete post submission?"
+    ],
+    Ticket: [
+      { name: "Buy or Sell", type: "dropdown", options: ["Buy", "Sell"]},
+      { name: "Date", type: "date", placeholder: "Date of the event" },
+      { name: "Price", type: "text", placeholder: "How much is it?"},
+      { name: "Quantity", type: "text", placeholder: "Enter quantity"},
+    ],
+    Market: [
+      { name: "Buy or Sell", type: "dropdown", options: ["Buy", "Sell"] },
+      { name: "Item", type: "text", placeholder: "What are you selling?" },
+      { name: "Price", type: "text", placeholder: "How much is it?"},
     ],
     Project: [
-      { name: "Duration", type: "dropdown", options: ["3 weeks", "6 weeks", "9 weeks"] },
-      { name: "Incentive", type: "text", placeholder: "Enter incentive" },
-      { name: "Type", type: "dropdown", options: ["Online", "In Person", "Hybrid"] },
-      { name: "Skills", type: "choiceChips", options: ["Programming", "Marketing", "Design"] },
+      { name: "Incentive", type: "dropdown", options: ["Equity", "Stipend", "Salary", "Other"] },
+      { name: "Skills", type: "choiceChips", options: ["Programming", "Marketing", "Design", "UIUX", "Engineering", "Buisness", "Legal", "Research", "Others"]},
     ],
     Flats: [
       { name: "Location", type: "text", placeholder: "Enter postcode" },
