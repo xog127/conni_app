@@ -21,6 +21,7 @@ import UserSettingsScreen from './assets/pages/setting';
 import ProfileEditScreen from './assets/pages/editProfile';
 import AllChats from './assets/pages/allChats';
 import CreateChat from './assets/pages/createChat';
+import ForumScreen from './assets/pages/ForumScreen';
 
 
 // Create navigation stacks
@@ -73,8 +74,8 @@ const ForumStackNavigator = () => (
     />
     <ForumStack.Screen 
       name="Forums" 
-      component={ForumsPage}
-      options={({ route }) => ({ title: route.params?.forumName || 'Forum' })}
+      component={ForumScreen}
+      options={{ headerShown: false }}
     />
   </ForumStack.Navigator>
 );

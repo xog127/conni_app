@@ -1,12 +1,16 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-const ForumCard = ({forumData}) => {
+const ForumCard = ({navigation, forumData}) => {
+
+  const genreref = forumData.id;
   return (
+  
     <TouchableOpacity 
       style={styles.card}
       activeOpacity={0.7}
+      onPress={() => navigation.navigate('Forums', {genreref})}
     >
       {/* Left - Image */}
       <Image
@@ -27,6 +31,7 @@ const ForumCard = ({forumData}) => {
       {/* Right - Icon */}
       <Feather name="chevron-right" size={24} color="#9CA3AF" />
     </TouchableOpacity>
+   
   );
 };
 
