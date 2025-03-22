@@ -115,6 +115,52 @@ const getSubRef = async ({ id, subCollectionID , collectionName, subCollectionNa
     }
   }
 
+  const getPostsWithPagination = async (postsPerLoad = 10, startAfterDoc = null) => {
+    try {
+      // Base query - ordered by time_posted in descending order (newest first)
+      let postsQuery = query(
+        collection(db, 'posts'),
+        orderBy('time_posted', 'desc'),
+        limit(postsPerLoad)
+      );
+      
+      // If we have a document to start after, add it to the query
+      if (startAfterDoc) {
+        postsQuery = query(
+          collection(db, 'posts'),
+          orderBy('time_posted', 'desc'),
+          startAfter(startAfterDoc),
+          limit(postsPerLoad)
+        );
+      }
+      
+      // Execute the query
+      const querySnapshot = await getDocs(postsQuery);
+      const posts = [];
+      
+      // Convert the query results to a usable array
+      querySnapshot.forEach((doc) => {
+        posts.push({
+          id: doc.id,
+          ...doc.data(),
+        });
+      });
+      
+      // Get the last document for pagination
+      const lastVisible = querySnapshot.docs.length > 0 
+        ? querySnapshot.docs[querySnapshot.docs.length - 1] 
+        : null;
+      
+      return {
+        posts,
+        lastVisible
+      };
+    } catch (error) {
+      console.error('Error fetching paginated posts:', error);
+      throw error;
+    }
+  };
+
 const updateRef = async ({ id, collectionName, updateFields }) => {
   try {
     const documentRef = doc(db, collectionName, id);
@@ -240,5 +286,5 @@ const addRef = async ({ collectionName, data }) => {
   
 
 
-export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections, getAnyCollection, fetchUserPosts};
+export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections, getAnyCollection, fetchUserPosts, getPostsWithPagination};
 

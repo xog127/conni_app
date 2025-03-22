@@ -24,6 +24,7 @@ import CreateChat from './assets/pages/createChat';
 import ChatRoom from './assets/pages/chatRoom';
 import ChatInfo from './assets/pages/chatInfo';
 import ForumScreen from './assets/pages/ForumScreen';
+import { NativeBaseProvider } from 'native-base';
 
 
 // Create navigation stacks
@@ -274,12 +275,13 @@ const RootNavigator = () => {
 // Main App component
 export default function App() {
   return (
-
+    <NativeBaseProvider>
       <AuthProvider>
         <NavigationContainer>
           <RootNavigator />
         </NavigationContainer>
       </AuthProvider>
+    </NativeBaseProvider>
 
   );
 }
