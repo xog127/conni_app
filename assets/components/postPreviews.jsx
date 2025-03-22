@@ -46,15 +46,12 @@ const PostPreviews = ({
       // Prevents running on empty data
       const fetchMarketData = async () => {
         try {
-          console.log("data:", data);
           const filteredPosts = filterPostsByGenre(data, genreRef);
-          console.log("filteredPosts:", filteredPosts);
           setMarketRefs(filteredPosts);
           const marketData = await getRef({
             id: genreRef,
             collectionName: "genres",
           });
-          console.log("marketData:", marketData);
           setMarketData(marketData);
         } catch (error) {
           console.error("Error fetching market data:", error.message);

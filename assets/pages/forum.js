@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import ForumCard from '../components/forumCard'; // Import the previously created ForumCard
 import { getCollections } from '../firebase/queries';
 
-const ForumsPage = ({}) => {
+const ForumsPage = ({navigation}) => {
   const [forums, setForums] = useState([]);
   const [showRules, setShowRules] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -86,10 +86,11 @@ const ForumsPage = ({}) => {
           </View>
         ) : (
           forums.map(forum => (
-            
             <ForumCard
               key={forum.id}
+              navigation = {navigation}
               forumData={forum}
+              forumid={forum.id}
             />
           ))
         )}

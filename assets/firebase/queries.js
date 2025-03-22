@@ -3,7 +3,6 @@ import { doc, getDoc, updateDoc, addDoc, getDocs } from "firebase/firestore";
 
 const getCollections = async ({ collectionName }) => {
   try {
-    console.log("Fetching all documents from collection:", collectionName);
 
     // Reference the collection
     const collectionRef = collection(db, collectionName);
@@ -202,6 +201,7 @@ const addRef = async ({ collectionName, data }) => {
       return [];
     }
   };
+
   
   const fetchPostsData = async (postRefs) => {
     try {
