@@ -24,38 +24,7 @@ import CreatePostFields from "./createPostFields";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "../firebase/firebaseConfig";
 import { useAuth } from "../services/authContext";
-
-// Forum Selector Component
-export const ForumSelector = ({ forums, selectedForum, onForumSelect }) => {
-  const [dropdownVisible, setDropdownVisible] = useState(false);
-
-  return (
-    <View style={styles.dropdown}>
-      <TouchableOpacity
-        style={styles.dropdownButton}
-        onPress={() => setDropdownVisible(!dropdownVisible)}
-      >
-        <Text style={styles.dropdownButtonText}>{selectedForum.name}</Text>
-      </TouchableOpacity>
-      {dropdownVisible && (
-        <View style={styles.dropdownList}>
-          {forums.map((forum, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.dropdownItem}
-              onPress={() => {
-                onForumSelect(forum);
-                setDropdownVisible(false);
-              }}
-            >
-              <Text style={styles.dropdownItemText}>{forum.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-    </View>
-  );
-};
+import { ForumSelector } from "./forumselector";
 
 // Poll Options Component
 export const PollOptions = ({ pollOptions, onAddOption, onRemoveOption }) => {
@@ -140,7 +109,7 @@ const CreatePostForm = ({ navigation }) => {
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedForum, setSelectedForum] = useState({ name: "Choose Forum" });
+  const [selectedForum, setSelectedForum] = useState("");
   const [addChat, setAddChat] = useState(false);
   const [addPoll, setAddPoll] = useState(false);
   const [addImage, setAddImage] = useState(false);
@@ -284,7 +253,7 @@ const CreatePostForm = ({ navigation }) => {
   const addPost = async () => {
     // Validation
     console.log(isFormValid)
-    if (!title || !description || selectedForum.name === "Choose Forum" || !isFormValid) {
+    if (!title || !description || selectedForum.name === "General" || !isFormValid) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
@@ -406,16 +375,10 @@ const CreatePostForm = ({ navigation }) => {
                 onForumSelect={handleForumSelect}
               />
 
-              {/* Form Fields */}
-              <CreatePostFields 
-                onChange={handleFormChange} 
-                selectedForum={selectedForum.name}
-                onValidationChange={handleValidationChange}
-              />
               {/* Title Input */}
               <TextInput
                 style={styles.titleInput}
-                placeholder="Enter title"
+                placeholder="Title"
                 value={title}
                 onChangeText={setTitle}
                 multiline
@@ -424,13 +387,20 @@ const CreatePostForm = ({ navigation }) => {
               {/* Description Input */}
               <TextInput
                 style={styles.descriptionInput}
-                placeholder="Enter post details"
+                placeholder="Share you thoughts"
                 value={description}
                 onChangeText={(text) => {
                   setDescription(text);
                 }}
                 multiline
                 textAlignVertical="top"
+              />
+
+              {/* Form Fields */}
+              <CreatePostFields 
+                onChange={handleFormChange} 
+                selectedForum={selectedForum.name}
+                onValidationChange={handleValidationChange}
               />
               
               {/* Image Preview */}
@@ -584,7 +554,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 16,
     marginBottom: 16,
-    minHeight: 200,
+    minHeight: 100,
     borderRadius: 8,
   },
   fixedBottomContainer: {
