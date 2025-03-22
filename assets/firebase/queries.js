@@ -103,7 +103,10 @@ const getSubRef = async ({ id, subCollectionID , collectionName, subCollectionNa
       const docSnapshot = await getDoc(reference);
   
       if (docSnapshot.exists()) {
-        return docSnapshot.data();
+        return {
+              id : docSnapshot.id,
+              ...docSnapshot.data()
+              };
       } else {
         console.log("No document found for this reference");
         return null;

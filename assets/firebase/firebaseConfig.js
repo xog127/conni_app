@@ -1,14 +1,11 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, getDocs, getDoc, updateDoc , deleteDoc} from 'firebase/firestore';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import {getStorage} from "firebase/storage";
 
-// Optionally import the services that you want to use
-import {getAuth} from "firebase/auth";
-// import {...} from "firebase/database";
-// import {...} from "firebase/firestore";
-// import {...} from "firebase/functions";
-// import {...} from "firebase/storage";
+
+
 
 // Initialize Firebase
 const firebaseConfig = {
@@ -24,10 +21,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app); 
+const storage = getStorage(app);
 const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(ReactNativeAsyncStorage)
 });
 
 
-export {app, db, getFirestore, collection, addDoc, getDocs, auth, getDoc, updateDoc, deleteDoc, getAuth};
+export {app, db, storage, getFirestore, collection, addDoc, getDocs, auth, getDoc, updateDoc, deleteDoc, getAuth};
 
