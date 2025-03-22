@@ -21,6 +21,8 @@ import UserSettingsScreen from './assets/pages/setting';
 import ProfileEditScreen from './assets/pages/editProfile';
 import AllChats from './assets/pages/allChats';
 import CreateChat from './assets/pages/createChat';
+import ChatRoom from './assets/pages/chatRoom';
+import ChatInfo from './assets/pages/chatInfo';
 import ForumScreen from './assets/pages/ForumScreen';
 
 
@@ -90,6 +92,16 @@ const ChatStackNavigator = () => (
     <ChatStack.Screen 
       name="CreateChat" 
       component={CreateChat} 
+      options={{ headerShown: false }}
+    />
+    <ChatStack.Screen 
+      name="Chatroom" 
+      component={ChatRoom} 
+      options={{ headerShown: false }}
+    />
+    <ChatStack.Screen 
+      name="Chatinfo" 
+      component={ChatInfo} 
       options={{ headerShown: false }}
     />
   </ChatStack.Navigator>
