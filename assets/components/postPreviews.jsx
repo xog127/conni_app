@@ -1,6 +1,5 @@
 import React, { useCallback, useState, useEffect } from "react";
 import {
-  NativeBaseProvider,
   Box,
   FlatList,
   HStack,
@@ -17,8 +16,11 @@ import { getRef } from "../firebase/queries";
 const PostPreviews = ({
   data,
   renderHeader,
+  renderFooter,
   navigation,
   isMarketView = false,
+  onEndReached,
+  onEndReachedThreshold = 0.5,
 }) => {
   const [marketRefs, setMarketRefs] = useState([]);
   const [marketData, setMarketData] = useState([]);
@@ -65,7 +67,7 @@ const PostPreviews = ({
     ({ item, index }) => (
       <>
         <PostWidget key={item.id} postRef={item.id} navigation={navigation} />
-        {index === 0 && isMarketView && (
+        {index === 0 && isMarketView && marketData?.photo && (
           <Box>
             <VStack pt="36px" pb="36px" space="12px">
               <HStack justifyContent={"space-between"} px="20px">
@@ -120,21 +122,22 @@ const PostPreviews = ({
         )}
       </>
     ),
-    [navigation, marketRefs, marketData]
+    [navigation, marketRefs, marketData, isMarketView]
   );
 
   return (
-    <NativeBaseProvider>
-      <Box flex={1} bg="white">
-        <FlatList
-          data={data}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          ListHeaderComponent={renderHeader}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        />
-      </Box>
-    </NativeBaseProvider>
+    <Box flex={1} bg="white">
+      <FlatList
+        data={data}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        ListHeaderComponent={renderHeader}
+        ListFooterComponent={renderFooter}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={onEndReachedThreshold}
+      />
+    </Box>
   );
 };
 

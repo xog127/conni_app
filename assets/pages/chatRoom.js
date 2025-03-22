@@ -399,7 +399,7 @@ function ChatRoom({ route, navigation }) {
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         {loading ? (
           <ActivityIndicator size="large" color="#4A6FFF" style={styles.loader} />
