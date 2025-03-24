@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "77961618652",
+    "project_id": "uclcommunity",
+    "storage_bucket": "uclcommunity.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:77961618652:android:33ca4b2b0dfff1de1c0019",
+        "android_client_info": {
+          "package_name": "com.mycompany.conni"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA28oBjmoDMfxpoALlklESzrA0YO7Ysptg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:77961618652:android:438852c95632e94c1c0019",
+        "android_client_info": {
+          "package_name": "com.mycompany.gradx"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA28oBjmoDMfxpoALlklESzrA0YO7Ysptg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
