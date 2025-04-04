@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, Platform } from "react-native";
 import { AnimatePresence, MotiView } from "moti";
 import { Feather } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
   const [formData, setFormData] = useState({});
   const [dropdownOpen, setDropdownOpen] = useState({});
   const [touched, setTouched] = useState({});
   const [allFieldsTouched, setAllFieldsTouched] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState({ moveInDate: false, moveOutDate: false });
 
   const forumFields = {
     Research: [
       { name: "Duration", type: "text", placeholder: "How long does the study take?"},
       { name: "Incentive", type: "choiceChips", options: ["Money", "SONA credit", "Voucher", "Other"] },
-      { name: "Incentive value", type: "text", placeholder: "How much are you giving for the incentive?"}, //I need to think about changing it 
-      { name: "Eligibilities", type: "text", placeholder: "Describe participants eligibility" }, // we need to have a popup button "Delete post submission?"
+      { name: "Incentive value", type: "text", placeholder: "How much are you giving for the incentive?"},
+      { name: "Eligibilities", type: "text", placeholder: "Describe participants eligibility" },
     ],
     Ticket: [
       { name: "Buy or Sell", type: "dropdown", options: ["Buy", "Sell"]},
@@ -31,11 +33,40 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
       { name: "Incentive", type: "dropdown", options: ["Equity", "Stipend", "Salary", "Other"] },
       { name: "Skills", type: "choiceChips", options: ["Programming", "Marketing", "Design", "UIUX", "Engineering", "Buisness", "Legal", "Research", "Others"]},
     ],
-    Flats: [
-      { name: "Location", type: "text", placeholder: "Enter postcode" },
-      { name: "Move-in Date", type: "date", placeholder: "Select date" },
-      { name: "Price", type: "text", placeholder: "Enter price per week" },
-      { name: "Rooms", type: "dropdown", options: ["1", "2", "3", "4", "5", "6", "7", "8+"] },
+    Flat: [
+      {
+        name: "rentType",
+        label: "I want to",
+        type: "dropdown",
+        options: ["Find a flat", "Rent out my flat"],
+        required: true,
+      },
+      {
+        name: "moveInDate",
+        label: "Move-in Date",
+        type: "date",
+        required: true,
+      },
+      {
+        name: "moveOutDate",
+        label: "Move-out Date",
+        type: "date",
+        required: true,
+      },
+      {
+        name: "location",
+        label: "Location",
+        type: "text",
+        placeholder: "Enter location (e.g., Mile End, Whitechapel)",
+        required: true,
+      },
+      {
+        name: "price",
+        label: "Price per week (£)",
+        type: "number",
+        placeholder: "Enter price per week in pounds",
+        required: true,
+      },
     ],
   };
 
@@ -101,6 +132,13 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
   const toggleDropdown = (field) => {
     setDropdownOpen(prev => ({ ...prev, [field]: !prev[field] }));
     setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const handleDateChange = (event, selectedDate, field) => {
+    setShowDatePicker(prev => ({ ...prev, [field]: false }));
+    if (selectedDate) {
+      handleInputChange(field, selectedDate);
+    }
   };
 
   if (!selectedForum || !forumFields[selectedForum]) return null;
@@ -210,18 +248,46 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
         return (
           <View>
             <Pressable
-              onPress={() => handleInputChange(field.name, new Date())}
+              onPress={() => setShowDatePicker(prev => ({ ...prev, [field.name]: true }))}
               style={[styles.dateButton, errorStyle]}
             >
               <Text style={styles.dateButtonText}>
-                {formData[field.name] ? formData[field.name].toDateString() : field.placeholder}
+                {formData[field.name] 
+                  ? new Date(formData[field.name]).toLocaleDateString() 
+                  : "Select date"}
               </Text>
               <Feather name="calendar" size={16} color="#666" />
             </Pressable>
             {hasError(field.name, field.type) && (
               <Text style={styles.errorText}>This field is required</Text>
             )}
+            {showDatePicker[field.name] && (
+              <DateTimePicker
+                value={formData[field.name] ? new Date(formData[field.name]) : new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, date) => handleDateChange(event, date, field.name)}
+                minimumDate={new Date()}
+              />
+            )}
           </View>
+        );
+        
+      case "number":
+        return (
+          <>
+            <TextInput
+              placeholder={field.placeholder}
+              value={formData[field.name] || ""}
+              onChangeText={(text) => handleInputChange(field.name, text)}
+              style={[styles.textInput, errorStyle]}
+              keyboardType="numeric"
+              onBlur={() => setTouched(prev => ({ ...prev, [field.name]: true }))}
+            />
+            {hasError(field.name, field.type) && (
+              <Text style={styles.errorText}>This field is required</Text>
+            )}
+          </>
         );
         
       default:
@@ -230,8 +296,8 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
   };
 
   return (
-    <View style={styles.fieldsContainer}>
-      <Text style={styles.sectionTitle}>Forum Details</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>{selectedForum} Details</Text>
       {forumFields[selectedForum].map((field) => (
         <View key={field.name} style={styles.fieldRow}>
           <Text style={styles.fieldLabel}>{field.name} *</Text>
@@ -256,13 +322,13 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
 };
 
 const styles = StyleSheet.create({
-  fieldsContainer: {
+  container: {
     backgroundColor: "#f5f5f5",
     borderRadius: 8,
     padding: 16,
     marginTop: 16,
   },
-  sectionTitle: {
+  title: {
     fontSize: 18,
     fontWeight: "600",
     color: "#836fff",

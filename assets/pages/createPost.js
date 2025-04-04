@@ -104,7 +104,7 @@ const CreatePostForm = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const {user} = useAuth
+  const {user} = useAuth();
   
   // Form state
   const [title, setTitle] = useState("");
@@ -155,8 +155,6 @@ const CreatePostForm = ({ navigation }) => {
     fetchForums();
   }, []);
 
-
-
   const handleFormChange = (data) => {
     setFormData(data);
   };
@@ -193,7 +191,6 @@ const CreatePostForm = ({ navigation }) => {
         } else {
           setAddImage(false);
           setImage(null);
-          setImageHeight(0); // Reset image height when removed
         }
         break;
       case 'anonymous':
@@ -201,7 +198,7 @@ const CreatePostForm = ({ navigation }) => {
         break;
     }
   };
-  
+
   const pickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -251,10 +248,22 @@ const CreatePostForm = ({ navigation }) => {
   };
 
   const addPost = async () => {
+    // Debug logs
+    console.log("Title:", title);
+    console.log("Description:", description);
+    console.log("Selected Forum:", selectedForum);
+    console.log("Form Data:", formData);
+    console.log("Is Form Valid:", isFormValid);
+    
     // Validation
-    console.log(isFormValid)
-    if (!title || !description || selectedForum.name === "General" || !isFormValid) {
+    if (!title || !description || !selectedForum) {
       Alert.alert("Error", "Please fill in all required fields.");
+      return;
+    }
+
+    // Only check isFormValid if it's not a General forum
+    if (selectedForum.name !== "General" && !isFormValid) {
+      Alert.alert("Error", "Please fill in all forum-specific fields.");
       return;
     }
   
@@ -262,12 +271,13 @@ const CreatePostForm = ({ navigation }) => {
       Alert.alert("Error", "Please add at least 2 poll options.");
       return;
     }
-    console.log(formData)
-    genreDoc = doc(db, "genres", selectedForum.id) 
-  
+
     try {
       setIsSubmitting(true);
-  
+      const genreDoc = doc(db, "genres", selectedForum.id);
+      const userDoc = doc(db, 'users', user.id);
+      
+      // Initialize all arrays to empty arrays
       const postData = {
         post_title: title,
         post_data: description,
@@ -275,22 +285,48 @@ const CreatePostForm = ({ navigation }) => {
         addChat,
         addPoll,
         addImage,
-        image,
-        pollOptions: addPoll ? { pollOptions, voters: [] } : [],
+        image: image || null,
+        pollOptions: addPoll ? { 
+          pollOptions: pollOptions.map(option => ({ option, votes: 0 })), 
+          voters: [] 
+        } : null,
         anonymous,
         time_posted: Timestamp.now(),
-        requirements : formData,
-        num_likes : 0,
-        num_comments : 0,
-        views : 0,
-        post_user : doc(db, 'users', user.id)
+        requirements: formData || {},
+        num_likes: 0,
+        num_comments: 0,
+        views: 0,
+        post_user: userDoc,
+        like_userref: [], // Initialize empty array for likes
+        liked_user_ref: [], // Initialize empty array for liked users
+        chatRefs: [], // Initialize empty array for chat references
+        commentedPostsRef: [], // Initialize empty array for commented posts
+        postsRef: [], // Initialize empty array for user's posts
+        voters: [], // Initialize empty array for poll voters
+        comments: [] // Initialize empty array for comments
       };
       
-      await addRef({ collectionName: "posts", data: postData });
+      console.log("Posting data:", JSON.stringify(postData, null, 2));
+      
+      // Add the post to Firestore
+      const postRef = await addRef({ 
+        collectionName: "posts", 
+        data: postData 
+      });
+      
+      console.log("Post created successfully:", postRef);
       navigation.goBack();
     } catch (error) {
       console.error("Error adding post:", error);
-      Alert.alert("Error", "Failed to add post. Please try again.");
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      Alert.alert(
+        "Error", 
+        `Failed to add post. Please try again.\nError: ${error.message}`
+      );
       setIsSubmitting(false);
     }
   };
@@ -298,12 +334,10 @@ const CreatePostForm = ({ navigation }) => {
   // Handle loading and errors
   if (isLoading && forums.length === 0) {
     return (
-
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#836fff" />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#836fff" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
     );
   }
 
@@ -321,20 +355,17 @@ const CreatePostForm = ({ navigation }) => {
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
-
     );
   }
 
   return (
-      <KeyboardAvoidingView 
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardAvoidingView}
-          // keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-          // enabled={true}
-        >
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.keyboardAvoidingView}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.safeArea}>
-        
+        <SafeAreaView style={styles.safeArea}>
           <View style={styles.mainContainer}>
             {/* Header */}
             <View style={styles.headerContainer}>
@@ -363,10 +394,12 @@ const CreatePostForm = ({ navigation }) => {
 
             <KeyboardAwareScrollView
               ref={scrollViewRef}
-              contentContainerStyle={
-                styles.scrollContent}
+              contentContainerStyle={styles.scrollContent}
               keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="interactive"
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              extraScrollHeight={100}
             >
               {/* Forum Selector */}
               <ForumSelector 
@@ -397,11 +430,13 @@ const CreatePostForm = ({ navigation }) => {
               />
 
               {/* Form Fields */}
-              <CreatePostFields 
-                onChange={handleFormChange} 
-                selectedForum={selectedForum.name}
-                onValidationChange={handleValidationChange}
-              />
+              {selectedForum && selectedForum.name !== "General" && (
+                <CreatePostFields 
+                  onChange={handleFormChange} 
+                  selectedForum={selectedForum.name}
+                  onValidationChange={handleValidationChange}
+                />
+              )}
               
               {/* Image Preview */}
               {addImage && image && (
@@ -413,7 +448,6 @@ const CreatePostForm = ({ navigation }) => {
                       onPress={() => {
                         setAddImage(false);
                         setImage(null);
-                        setImageHeight(0); // Reset image height when removed
                       }}
                     >
                       <Feather name="x" size={20} color="#666" />
@@ -425,7 +459,7 @@ const CreatePostForm = ({ navigation }) => {
                   />
                 </View>
               )}
-              
+
               {/* Poll Options */}
               {addPoll && (
                 <View style={styles.modalContentContainer}>
@@ -448,7 +482,7 @@ const CreatePostForm = ({ navigation }) => {
               )}
             </KeyboardAwareScrollView>
             
-            {/* Bottom Action Bar - Always visible */}
+            {/* Bottom Action Bar */}
             <View style={styles.fixedBottomContainer}>
               <ActionBar 
                 options={{ addChat, addPoll, addImage, anonymous }}
@@ -456,10 +490,9 @@ const CreatePostForm = ({ navigation }) => {
               />
             </View>
           </View>
-      </SafeAreaView>
+        </SafeAreaView>
       </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-      
+    </KeyboardAvoidingView>
   );
 };
 
@@ -467,19 +500,18 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#fff",
+    paddingTop: Platform.OS === 'android' ? 25 : 0,
   },
   keyboardAvoidingView: {
     flex: 1,
   },
   mainContainer: {
     flex: 1,
-    justifyContent : 'space-around'
   },
   scrollContent: {
-    padding: 16,
+    padding: 20,
     paddingTop: 0,
-    paddingBottom: 100, // Increased base padding for action bar
-    flexGrow: 1, // Ensure content can grow to enable scrolling
+    paddingBottom: 120,
   },
   centerContainer: {
     flex: 1,
@@ -488,7 +520,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 12,
     fontSize: 16,
     color: '#666',
   },
@@ -500,8 +532,8 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     backgroundColor: '#836fff',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: 8,
   },
   retryButtonText: {
@@ -513,13 +545,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
   header: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "600",
     color: "#836fff",
   },
@@ -528,10 +560,10 @@ const styles = StyleSheet.create({
   },
   postButton: {
     backgroundColor: "#836fff",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 8,
-    minWidth: 70,
+    minWidth: 80,
     alignItems: 'center',
   },
   disabledButton: {
@@ -543,19 +575,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   titleInput: {
-    fontSize: 22,
-    marginVertical: 16,
+    fontSize: 20,
+    marginVertical: 12,
     padding: 16,
     borderBottomWidth: 0.5,
     borderBottomColor: '#E0E0E0',
   },
   descriptionInput: {
-    fontSize: 14,
+    fontSize: 16,
     backgroundColor: 'white',
     padding: 16,
     marginBottom: 16,
-    minHeight: 100,
+    minHeight: 120,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   fixedBottomContainer: {
     position: 'absolute',
@@ -565,12 +599,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
-    paddingBottom: Platform.OS === "ios" ? 10 : 0,
+    paddingBottom: Platform.OS === "ios" ? 20 : 10,
+    paddingTop: 12,
     zIndex: 10,
     elevation: 5,
   },
   imagePreviewContainer: {
-    marginVertical: 16,
+    marginVertical: 12,
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 16,
@@ -587,11 +622,11 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   removeImageButton: {
-    padding: 4,
+    padding: 6,
     borderRadius: 16,
     backgroundColor: '#f0f0f0',
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -600,35 +635,6 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 8,
     resizeMode: 'cover',
-  },
-  dropdown: {
-    marginBottom: 16,
-    zIndex: 1,
-  },
-  dropdownButton: {
-    backgroundColor: "#fff",
-    borderColor: "grey",
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-  },
-  dropdownButtonText: {
-    fontSize: 16,
-    color: "grey",
-  },
-  dropdownList: {
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  dropdownItem: {
-    padding: 12,
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    color: "#000",
   },
   buttonsContainer: {
     flexDirection: 'row',
@@ -639,15 +645,15 @@ const styles = StyleSheet.create({
   iconButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 6,
+    padding: 8,
   },
   iconButtonText: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#57636c',
-    marginTop: 2,
+    marginTop: 4,
   },
   modalContentContainer: {
-    marginVertical: 16,
+    marginVertical: 12,
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 16,
@@ -667,6 +673,8 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   addOptionButton: {
     backgroundColor: '#836fff',
@@ -683,10 +691,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#fff',
     borderRadius: 20,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   pollOptionText: {
     fontSize: 14,
@@ -694,7 +704,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   removeOptionButton: {
-    padding: 4,
+    padding: 6,
     marginLeft: 8,
   },
   pollSectionHeader: {
@@ -709,13 +719,25 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   closePollButton: {
-    padding: 4,
+    padding: 6,
     borderRadius: 16,
     backgroundColor: '#f0f0f0',
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  formFieldsContainer: {
+    marginVertical: 12,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 16,
+  },
+  formFieldsTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 12,
   },
 });
 

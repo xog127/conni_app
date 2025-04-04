@@ -14,7 +14,6 @@ import { timeAgo } from '../customFunctions/time';
 import { increment, arrayRemove, arrayUnion } from 'firebase/firestore';
 import { updateRef } from '../firebase/queries';
 
-
 const UserInfoRow = ({ 
   userRef, postData
 }) => {
@@ -24,94 +23,114 @@ const UserInfoRow = ({
   const [userName, setUserName] = useState('');
   const [isLiked, setLiked] = useState(false);
   const [relativeTime, setRelativeTime] = useState('');
+  const [loading, setLoading] = useState(true);
 
-const handleLike = async () => {
-  try {
-    if (isLiked) {
-      // Unlike: Remove the user reference from likes array
-      await updateRef({
-        id: postData.id,  // Consistent use of postData.id
-        collectionName: "posts",
-        updateFields: {
-          "num_likes": increment(-1),  
-          "liked_user_ref": arrayRemove(userRef)
-        },
-      }).then(() => {;
-      setLiked(false); 
-      }) // Use setLiked instead of isLiked()
-    } else {
-      // Like: Add the user reference to likes array
-      await updateRef({
-        id: postData.id,  // Consistent use of postData.id
-        collectionName: "posts",
-        updateFields: {
-          "num_likes": increment(1),
-          "like_userref": arrayUnion(userRef)
-        },
-      }).then(() => {
-        setLiked(true);  // Use setLiked instead of isLiked()
-      });
-      
+  const handleLike = async () => {
+    if (!postData?.id || !userRef) {
+      console.error('Missing required data for like action');
+      return;
     }
-  } catch (error) {
-    console.error('Error updating like:', error);
-    // Optionally add error handling UI feedback here
-  }
-};
+
+    try {
+      if (isLiked) {
+        await updateRef({
+          id: postData.id,
+          collectionName: "posts",
+          updateFields: {
+            "num_likes": increment(-1),  
+            "liked_user_ref": arrayRemove(userRef)
+          },
+        });
+        setLiked(false);
+      } else {
+        await updateRef({
+          id: postData.id,
+          collectionName: "posts",
+          updateFields: {
+            "num_likes": increment(1),
+            "like_userref": arrayUnion(userRef)
+          },
+        });
+        setLiked(true);
+      }
+    } catch (error) {
+      console.error('Error updating like:', error);
+    }
+  };
 
   const handleProfilePress = () => {
-    if (!postData.anonymous) {
+    if (!postData?.anonymous) {
       onProfilePress?.();
     }
   };
 
   useEffect(() => {
     const fetchUserData = async () => {
-        try {
-            // Pass the entire reference object
-            fetchReferenceData(userRef).then((data) => {
-                setUser(data);
-                if (postData.anonymous) {
-                  setUserName(data.first_name + ' ' + data.last_name);
-                }
-                else {
-                  setUserName(data.display_name);
-                }
-             
-                if (postData.like_userref.includes(userRef)) {
-                  setLiked(true);
-                }
-              });
-       
-            if (likes > 0) {
-              setLiked(true);
-            }
+      if (!userRef || !postData) {
+        console.error('Missing required props');
+        setLoading(false);
+        return;
+      }
 
-            setRelativeTime(timeAgo(postData.time_posted));
-           
-    
-        } catch (error) {
-            console.error('Error fetching user:', error);
-        } finally {
-            setLoading(false);
+      try {
+        const data = await fetchReferenceData(userRef);
+        if (data) {
+          setUser(data);
+          if (postData.anonymous) {
+            // For anonymous posts, show course and year
+            setUserName(`${data.course} ${data.graduation_year}`);
+          } else {
+            // For non-anonymous posts, show full name
+            setUserName(`${data.first_name} ${data.last_name}`);
+          }
         }
+
+        // Check if user has liked the post - with proper null checks
+        const likeUserRef = postData.like_userref || [];
+        if (Array.isArray(likeUserRef)) {
+          setLiked(likeUserRef.includes(userRef));
+        } else {
+          console.warn('like_userref is not an array:', likeUserRef);
+          setLiked(false);
+        }
+
+        if (postData.time_posted) {
+          setRelativeTime(timeAgo(postData.time_posted));
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchUserData();
-  }, []);
+  }, [userRef, postData]);
 
-  
-  
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.userInfoLeft}>
         <TouchableOpacity 
           onPress={handleProfilePress}
-          disabled={postData.anonymous}
+          disabled={postData?.anonymous}
           style={styles.imageContainer}
         >
-          
+          <Image
+            source={
+              user?.photo_url
+                ? { uri: user.photo_url }
+                : require('../images/Blankprofile.png')
+            }
+            style={styles.userImage}
+          />
         </TouchableOpacity>
         <View style={styles.userTextInfo}>
           <Text style={styles.userName}>{userName}</Text>
@@ -120,16 +139,19 @@ const handleLike = async () => {
       </View>
       
       <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          onPress={handleLike} 
-          style={styles.actionButton}
-        >
-          <AntDesign 
-            name={isLiked ? "heart" : "hearto"}
-            size={24} 
-            color={isLiked ? "red" : "red"}
-          />
-        </TouchableOpacity>
+        <View style={styles.likesContainer}>
+          <Text style={styles.likesCount}>{postData?.num_likes || 0}</Text>
+          <TouchableOpacity 
+            onPress={handleLike} 
+            style={styles.actionButton}
+          >
+            <AntDesign 
+              name={isLiked ? "heart" : "hearto"}
+              size={24} 
+              color={isLiked ? "red" : "red"}
+            />
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity 
           onPress={() => setOptionsVisible(true)} 
@@ -138,7 +160,6 @@ const handleLike = async () => {
           <Feather name="more-vertical" size={24} color="#666" />
         </TouchableOpacity>
 
-        {/* Options Modal */}
         <Modal
           animationType="fade"
           transparent={true}
@@ -160,19 +181,6 @@ const handleLike = async () => {
                 <Feather name="flag" size={20} color="#666" />
                 <Text style={styles.optionText}>Report</Text>
               </TouchableOpacity>
-
-              {/* {isOwnPost && (
-                <TouchableOpacity 
-                  style={[styles.optionItem, styles.deleteOption]}
-                  onPress={() => {
-                    onDelete?.();
-                    setOptionsVisible(false);
-                  }}
-                >
-                  <Feather name="trash-2" size={20} color="#ff4444" />
-                  <Text style={[styles.optionText, styles.deleteText]}>Delete</Text>
-                </TouchableOpacity>
-              )} */}
             </View>
           </Pressable>
         </Modal>
@@ -185,35 +193,49 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start', // Changed from 'center' to allow vertical expansion
+    alignItems: 'flex-start',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   userInfoLeft: {
     flexDirection: 'row',
-    alignItems: 'flex-start', // Changed from 'center' to align with top
-    flex: 1, // Added to allow proper space distribution
-    marginRight: 12, // Added to maintain space from action buttons
+    alignItems: 'flex-start',
+    flex: 1,
+    marginRight: 12,
   },
   imageContainer: {
     marginRight: 12,
-    flexShrink: 0, // Prevent image from shrinking
+    flexShrink: 0,
+  },
+  userImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   userTextInfo: {
     justifyContent: 'center',
-    flex: 1, // Added to allow text container to take remaining space
+    flex: 1,
   },
   userName: {
     fontSize: 16,
     fontWeight: '500',
     color: '#000',
-    flexWrap: 'wrap', // Allow text to wrap
+    flexWrap: 'wrap',
   },
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexShrink: 0, // Prevent action buttons from shrinking
+    flexShrink: 0,
+  },
+  likesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  likesCount: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 4,
   },
   postDate: {
     fontSize: 12,

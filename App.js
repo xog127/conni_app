@@ -24,6 +24,7 @@ import CreateChat from './assets/pages/createChat';
 import ChatRoom from './assets/pages/chatRoom';
 import ChatInfo from './assets/pages/chatInfo';
 import ForumScreen from './assets/pages/ForumScreen';
+import SearchScreen from './assets/pages/SearchScreen';
 import { NativeBaseProvider } from 'native-base';
 
 
@@ -116,7 +117,14 @@ const PostStackNavigator = () => (
       component={DrawerNavigator} 
       options={{ headerShown: false }}
     />
-
+    <PostStack.Screen 
+      name="Search" 
+      component={SearchScreen} 
+      options={{ 
+        headerShown: false,
+        presentation: 'modal'
+      }}
+    />
     <PostStack.Screen 
       name="PostDisplay" 
       component={PostDisplay}
@@ -172,24 +180,23 @@ const TabNavigator = () => (
       }}
     />
     <Tab.Screen 
-        name="CreatePost" 
-        component={EmptyComponent} // This is just a placeholder
-        options={({ navigation }) => ({
-          tabBarLabel: 'Create',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="plus" size={size} color={color} />
-          ),
-          tabBarButton: (props) => (
-            <TouchableOpacity
-              {...props}
-              onPress={() => {
-                // Navigate to CreatePost screen which is defined in another navigator
-                navigation.navigate('Posts', { screen: 'createPost' });
-              }}
-            />
-          ),
-        })}
-      />
+      name="CreatePost" 
+      component={EmptyComponent}
+      options={({ navigation }) => ({
+        tabBarLabel: 'Create',
+        tabBarIcon: ({ color, size }) => (
+          <Feather name="plus" size={size} color={color} />
+        ),
+        tabBarButton: (props) => (
+          <TouchableOpacity
+            {...props}
+            onPress={() => {
+              navigation.navigate('Posts', { screen: 'createPost' });
+            }}
+          />
+        ),
+      })}
+    />
     <Tab.Screen 
       name="Forums" 
       component={ForumStackNavigator}
@@ -227,20 +234,38 @@ const TabNavigator = () => (
 const MainStackNavigator = () => (
   <Stack.Navigator>
     <Stack.Screen 
-      name="MainTabs" 
-      component={TabNavigator}
+      name="Main" 
+      component={MainPage} 
       options={{ headerShown: false }}
     />
-        <Stack.Screen 
+    <Stack.Screen 
+      name="Search" 
+      component={SearchScreen} 
+      options={{ 
+        headerShown: false,
+        presentation: 'modal'
+      }}
+    />
+    <Stack.Screen 
+      name="PostDisplay" 
+      component={PostDisplay} 
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen 
+      name="CreatePost" 
+      component={CreatePostForm} 
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen 
       name="Setting" 
       component={Setting} 
-      options={{ headerShown: true, title: "Settings" }} // Show header for Settings
+      options={{ headerShown: true, title: "Settings" }}
     />
     <Stack.Screen 
       name="Feedback" 
       component={Feedback} 
-      options={{ headerShown: true, title: "Feedback" }} // Show header for Settings
-  />
+      options={{ headerShown: true, title: "Feedback" }}
+    />
     <Stack.Screen 
       name="Onboarding" 
       component={OnboardingPage}
@@ -254,21 +279,23 @@ const MainStackNavigator = () => (
 const RootNavigator = () => {
   const { login, user, isAuthenticated } = useAuth();
 
-  // Show loading screen while checking authentication
-
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {isAuthenticated && user ? (
-          // Check if user needs onboarding
-          (user.isOnboarded ? (<Stack.Screen name="Main" component={MainStackNavigator} />) : (<Stack.Screen 
+      {isAuthenticated && user ? (
+        // Check if user needs onboarding
+        user.isOnboarded ? (
+          <Stack.Screen name="MainTabs" component={TabNavigator} />
+        ) : (
+          <Stack.Screen 
             name="Onboarding" 
             component={OnboardingPage} 
             options={{ gestureEnabled: false }}
-          />))
-        ) : (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
-        )}
-      </Stack.Navigator>
+          />
+        )
+      ) : (
+        <Stack.Screen name="Auth" component={AuthNavigator} />
+      )}
+    </Stack.Navigator>
   );
 };
 
