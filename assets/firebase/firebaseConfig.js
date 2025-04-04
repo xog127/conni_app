@@ -3,20 +3,23 @@ import { getFirestore, collection, addDoc, getDocs, getDoc, updateDoc , deleteDo
 import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import {getStorage} from "firebase/storage";
+import Constants from 'expo-constants';
+
 
 
 
 
 // Initialize Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyAa4KuuMhZNToEr59Uv2YCaCIiB_jsfeEQ",
-    authDomain: "uclcommunity.firebaseapp.com",
-    projectId: "uclcommunity",
-    storageBucket: "uclcommunity.appspot.com",
-    messagingSenderId: "77961618652",
-    appId: "1:77961618652:web:0a35ee8bfa045b6b1c0019",
-    measurementId: "G-EXV9Z63NR0"
-  };
+  apiKey: Constants.expoConfig.extra.FIREBASE_API_KEY,
+  authDomain: Constants.expoConfig.extra.FIREBASE_AUTH_DOMAIN,
+  projectId: Constants.expoConfig.extra.FIREBASE_PROJECT_ID,
+  storageBucket: Constants.expoConfig.extra.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: Constants.expoConfig.extra.FIREBASE_MESSAGING_SENDER_ID,
+  appId: Constants.expoConfig.extra.FIREBASE_APP_ID,
+  measurementId: Constants.expoConfig.extra.FIREBASE_MEASUREMENT_ID
+};
+
   
 
 const app = initializeApp(firebaseConfig);

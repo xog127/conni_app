@@ -33,6 +33,7 @@ yarn-error.*
 android/
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -44,3 +45,5 @@ package-lock.json
 #goggle services
 google-services.json
 GoogleService-Info.plist
+
+app.json
