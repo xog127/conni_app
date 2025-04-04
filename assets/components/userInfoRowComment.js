@@ -14,7 +14,6 @@ import { arrayRemove, arrayUnion, doc, deleteDoc } from 'firebase/firestore';
 import { updateSubRef, deleteDocument, fetchReferenceData} from '../firebase/queries';
 import { db } from '../firebase/firebaseConfig';
 
-
 const UserInfoRowComment = ({ 
   commentData, postData, onDeletePress, docu
 }) => {
@@ -24,48 +23,41 @@ const UserInfoRowComment = ({
   const [userName, setUserName] = useState('');
   const [isLiked, setLiked] = useState(false);
   const [relativeTime, setRelativeTime] = useState('');
+  const [loading, setLoading] = useState(true);
 
-const handleLike = async () => {
-  try {
-    if (isLiked) {
-      // Unlike: Remove the user reference from likes array
-      await updateSubRef({
-        docu: docu,
-        updateFields: {
-          "liked_user_ref": arrayRemove(commentData.createdby_ref)
-        },
-      }).then(() => {;
-      setLiked(false); 
-      }) // Use setLiked instead of isLiked()
-    } else {
-      // Like: Add the user reference to likes array
-      await updateSubRef({
-        docu: docu,
-        updateFields: {
-          "liked_user_ref": arrayUnion(commentData.createdby_ref)
-        },
-      }).then(() => {
-        setLiked(true);  // Use setLiked instead of isLiked()
-      });
-      
+  const handleLike = async () => {
+    try {
+      if (isLiked) {
+        await updateSubRef({
+          docu: docu,
+          updateFields: {
+            "liked_user_ref": arrayRemove(commentData.createdby_ref)
+          },
+        });
+        setLiked(false);
+      } else {
+        await updateSubRef({
+          docu: docu,
+          updateFields: {
+            "liked_user_ref": arrayUnion(commentData.createdby_ref)
+          },
+        });
+        setLiked(true);
+      }
+    } catch (error) {
+      console.error('Error updating like:', error);
     }
-  } catch (error) {
-    console.error('Error updating like:', error);
-  }
-};
+  };
 
-handleDelete = async () => {
-  try {
-    setOptionsVisible(false);
-    await deleteDoc(docu);
-
-    onDeletePress();
-    console.log('Deleting comment:', deleteDoc);
-    
-  } catch (error) {
-    console.error('Error deleting comment:', error);
-  }
-}
+  const handleDelete = async () => {
+    try {
+      setOptionsVisible(false);
+      await deleteDoc(docu);
+      onDeletePress();
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+    }
+  };
 
   const handleProfilePress = () => {
     if (!postData.anonymous) {
@@ -74,47 +66,58 @@ handleDelete = async () => {
   };
 
   useEffect(() => {
-
-    setRelativeTime(timeAgo(commentData.date_created));
-
     const fetchUserData = async () => {
-        try {
-            // Pass the entire reference object
-            fetchReferenceData(commentData.createdby_ref).then((data) => {
-                setUser(data);
-                console.log('User is now for comment:', data);
-                if (postData.anonymous) {
-                  setUserName(data.first_name + ' ' + data.last_name);
-                }
-                else {
-                  setUserName(data.display_name);
-                }
-                if (commentData.liked_user_ref.includes(commentData.createdby_ref)) {
-                  setLiked(true);
-                }
-              });
-        } catch (error) {
-            console.error('Error fetching user:', error);
-        } finally {
-            setLoading(false);
+      try {
+        setRelativeTime(timeAgo(commentData.date_created));
+        
+        const data = await fetchReferenceData(commentData.createdby_ref);
+        if (data) {
+          setUser(data);
+          if (postData.anonymous) {
+            setUserName(`${data.course} ${data.graduation_year}`);
+          } else {
+            setUserName(`${data.first_name} ${data.last_name}`);
+          }
+          
+          // Check if comment is liked
+          if (commentData.liked_user_ref && Array.isArray(commentData.liked_user_ref)) {
+            setLiked(commentData.liked_user_ref.includes(commentData.createdby_ref));
+          }
         }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchUserData();
   }, []);
 
-  
-  
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.userInfoLeft}>
         <TouchableOpacity 
           onPress={handleProfilePress}
-          disabled={postData.anonymous}
+          disabled={postData?.anonymous}
           style={styles.imageContainer}
         >
-          
+          <Image
+            source={
+              user?.photo_url
+                ? { uri: user.photo_url }
+                : require('../images/Blankprofile.png')
+            }
+            style={styles.userImage}
+          />
         </TouchableOpacity>
         <View style={styles.userTextInfo}>
           <Text style={styles.userName}>{userName}</Text>
@@ -141,7 +144,6 @@ handleDelete = async () => {
           <Feather name="more-vertical" size={14} color="#666" />
         </TouchableOpacity>
 
-        {/* Options Modal */}
         <Modal
           animationType="fade"
           transparent={true}
@@ -167,7 +169,7 @@ handleDelete = async () => {
               {(commentData.createdby_ref == commentData.createdby_ref) && (
                 <TouchableOpacity 
                   style={[styles.optionItem, styles.deleteOption]}
-                  onPress={ handleDelete }
+                  onPress={handleDelete}
                 >
                   <Feather name="trash-2" size={20} color="#ff4444" />
                   <Text style={[styles.optionText, styles.deleteText]}>Delete</Text>
@@ -187,20 +189,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 8,
- 
   },
   userInfoLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   imageContainer: {
-    marginRight: 12,
+    marginRight: 8,
   },
   userImage: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginBottom: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   userTextInfo: {
     justifyContent: 'center',
@@ -209,19 +210,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#000',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   postDate: {
     fontSize: 10,
     color: '#666',
-    marginTop: 2,
   },
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   actionButton: {
-    marginLeft: 16,
+    marginLeft: 12,
     padding: 4,
   },
   modalOverlay: {

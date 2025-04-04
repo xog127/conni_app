@@ -96,7 +96,7 @@ export default function MainPage({ navigation }) {
                 color="gray.500"
               />
             </Pressable>
-            <Pressable>
+            <Pressable onPress={() => navigation.navigate("Search")}>
               <Icon as={Ionicons} name="search" size={7} color="gray.500" />
             </Pressable>
           </HStack>
