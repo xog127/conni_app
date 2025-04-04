@@ -40,3 +40,7 @@ android/
 
 #package-lock.json
 package-lock.json
+
+#goggle services
+google-services.json
+GoogleService-Info.plist
