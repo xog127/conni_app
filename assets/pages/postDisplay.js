@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
@@ -12,6 +11,7 @@ import {
   KeyboardAvoidingView,
   TextInput,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import UserInfoRow from '../components/userInfoRow';
 import { getRef, fetchReferenceData, getSubRefAll, addRef, updateRef } from '../firebase/queries';
@@ -21,6 +21,7 @@ import { Timestamp, doc, collection, arrayUnion, increment} from 'firebase/fires
 import { TouchableWithoutFeedback } from 'react-native-gesture-handler';
 import PollOption from '../components/pollOption.js';
 import { useRoute } from '@react-navigation/native';
+import { Box } from 'native-base';
 
 const authUser = "Psychology 1st Year";
 
@@ -185,11 +186,18 @@ const PostDisplay = () => {
               <Text style={styles.postTitle}>{post?.post_title}</Text>
               <Text style={styles.postDescription}>{post?.post_data}</Text>
               {post?.post_photo && (
-                <Image
-                  source={{ uri: post.post_photo }}
-                  style={styles.postImage}
-                  resizeMode="contain"
-                />
+                <Box mt={4}>
+                  <Image
+                    source={{ uri: post.post_photo }}
+                    style={{
+                      width: "100%",
+                      height: 400,
+                      borderRadius: 8,
+                    }}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                </Box>
               )}
             </View>
             {/* Polls Content */}
@@ -272,12 +280,6 @@ const styles = StyleSheet.create({
     color: '#333',
     lineHeight: 24,
     marginBottom: 16,
-  },
-  postImage: {
-    width: '100%',
-    height: 300,
-    borderRadius: 8,
-    marginTop: 8,
   },
   statsContainer: {
     padding: 16,

@@ -7,6 +7,7 @@ import { useAuth } from '../services/authContext';
 import { fetchReferenceData } from '../firebase/queries';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-context';
 
 function AllChats({navigation}) {
   const [chats, setChats] = useState([]);
@@ -177,7 +178,7 @@ function AllChats({navigation}) {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaViewContext style={{ flex: 1, backgroundColor: '#F5F7FA' }}>
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Chats</Text>
@@ -203,7 +204,7 @@ function AllChats({navigation}) {
           }
         />
       </View>
-    </SafeAreaView>
+    </SafeAreaViewContext>
   );
 }
 
