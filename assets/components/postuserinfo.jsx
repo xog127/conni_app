@@ -54,7 +54,7 @@ const postuserinfo = ({ userRef, anonymous, date_posted, forumRef }) => {
     userName = "[Deleted User]";
   } else if (anonymous) {
     userImage = require("../images/Blankprofile.png");
-    userName = postUser?.display_name;
+    userName = `${postUser?.course} ${postUser?.graduation_year}`;
   } else {
     userImage = postUser?.photo_url
       ? { uri: postUser.photo_url }

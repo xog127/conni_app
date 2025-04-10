@@ -249,25 +249,31 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
           <View>
             <Pressable
               onPress={() => setShowDatePicker(prev => ({ ...prev, [field.name]: true }))}
-              style={[styles.dateButton, errorStyle]}
+              style={[styles.dropdownButton, errorStyle]}
             >
-              <Text style={styles.dateButtonText}>
+              <Text style={styles.dropdownButtonText}>
                 {formData[field.name] 
-                  ? new Date(formData[field.name]).toLocaleDateString() 
-                  : "Select date"}
+                  ? new Date(formData[field.name]).toISOString().split('T')[0]
+                  : field.placeholder || "Select a date"}
               </Text>
               <Feather name="calendar" size={16} color="#666" />
             </Pressable>
+            
             {hasError(field.name, field.type) && (
               <Text style={styles.errorText}>This field is required</Text>
             )}
+
             {showDatePicker[field.name] && (
               <DateTimePicker
                 value={formData[field.name] ? new Date(formData[field.name]) : new Date()}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, date) => handleDateChange(event, date, field.name)}
-                minimumDate={new Date()}
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(prev => ({ ...prev, [field.name]: false }));
+                  if (selectedDate) {
+                    handleInputChange(field.name, selectedDate.toISOString());
+                  }
+                }}
               />
             )}
           </View>

@@ -10,7 +10,6 @@ import {
   Platform,
   Image,
   ActivityIndicator,
-  SafeAreaView,
   StatusBar,
   Modal,
   Dimensions,
@@ -38,6 +37,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/firebaseConfig';
 import { useAuth } from '../services/authContext';
 import { timeAgo, timeFormat } from '../customFunctions/time';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const MESSAGES_PER_LOAD = 20;
 
@@ -334,7 +334,7 @@ function ChatRoom({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F7FA' }}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       
       {/* Image Preview Modal */}
