@@ -70,7 +70,7 @@ export default function MainPage({ navigation }) {
       // Fetch market data
       // Market genre reference
       const marketGenre = await getRef({
-        id: genreRef,
+        id: marketRef,
         collectionName: "genres",
       });
       setMarketData(marketGenre);
@@ -79,7 +79,7 @@ export default function MainPage({ navigation }) {
       const marketPosts = postsData.filter((post) => {
         if (post.post_genre_ref) {
           const genreRefId = post.post_genre_ref.id || post.post_genre_ref.path;
-          return genreRefId === genreRef && post.image;
+          return genreRefId === marketRef && post.image;
         }
         return false;
       });
