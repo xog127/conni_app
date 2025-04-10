@@ -37,6 +37,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "../firebase/firebaseConfig";
 import { useAuth } from "../services/authContext";
 import { ForumSelector } from "./forumselector";
+import { SafeAreaView as SafeAreaViewRN } from 'react-native-safe-area-context';
 
 // Poll Options Component
 export const PollOptions = ({ pollOptions, onAddOption, onRemoveOption }) => {
@@ -288,17 +289,17 @@ const CreatePost = ({ navigation }) => {
       setIsSubmitting(true);
       const genreDoc = doc(db, "genres", selectedForum.id);
       const userDoc = doc(db, 'users', user.uid);
-      
+
       
       // Initialize all arrays to empty arrays
       const postData = {
         post_title: title,
         post_data: description,
         post_genre_ref: genreDoc,
+        post_photo: image || null,
         addChat,
         addPoll,
         addImage,
-        image: image || null,
         pollOptions: addPoll ? { 
           pollOptions: pollOptions.map(option => ({ option, votes: 0 })), 
           voters: [] 
@@ -378,12 +379,12 @@ const CreatePost = ({ navigation }) => {
   }
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
-    >
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaViewRN style={{ flex: 1, backgroundColor: 'white' }}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
+      >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -486,8 +487,8 @@ const CreatePost = ({ navigation }) => {
             onOptionToggle={toggleOption}
           />
         </View>
-      </SafeAreaView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaViewRN>
   );
 };
 

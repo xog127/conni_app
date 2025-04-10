@@ -1,5 +1,6 @@
 import React from "react";
-import { Box, Text, HStack, Pressable, VStack, Image } from "native-base";
+import { Box, Text, HStack, Pressable, VStack } from "native-base";
+import { Image } from "expo-image";
 import PostUserInfo from "./postuserinfo.jsx";
 import HeartIcon from "../customIcon/HeartIcon.js";
 import CommentIcon from "../customIcon/CommentIcon.js";
@@ -7,6 +8,45 @@ import ViewIcon from "../customIcon/ViewIcon.js";
 import { timeAgo } from "../customFunctions/time.js";
 
 const PostCard = ({ item, navigation }) => {
+  // Convert timestamp to milliseconds for timeAgo function
+  const getTimeAgo = (timestamp) => {
+    if (!timestamp) return "Just now";
+    if (timestamp.seconds) {
+      return timeAgo(timestamp.seconds * 1000);
+    }
+    return timeAgo(timestamp);
+  };
+
+  const renderForumDetails = () => {
+    if (!item.requirements) return null;
+
+    return (
+      <VStack space={2} mt={2}>
+        {Object.entries(item.requirements).map(([key, value]) => {
+          // Skip empty values
+          if (!value) return null;
+
+          // Format date values
+          let displayValue = value;
+          if (value instanceof Date || (typeof value === 'string' && value.includes('T'))) {
+            displayValue = new Date(value).toISOString().split('T')[0];
+          }
+
+          return (
+            <HStack key={key} space={2} alignItems="center">
+              <Text fontSize="sm" color="gray.500" fontWeight="medium">
+                {key}:
+              </Text>
+              <Text fontSize="sm" color="gray.700">
+                {displayValue}
+              </Text>
+            </HStack>
+          );
+        })}
+      </VStack>
+    );
+  };
+
   return (
     <Pressable
       onPress={() =>
@@ -23,9 +63,9 @@ const PostCard = ({ item, navigation }) => {
         <PostUserInfo
           userRef={item.post_user}
           anonymous={item.anonymous}
-          date_posted={
-            item.time_posted ? timeAgo(item.time_posted) : "Just now"
-          }
+
+          date_posted={getTimeAgo(item.time_posted)}
+
           forumRef={item.post_genre_ref}
         />
 
@@ -55,68 +95,10 @@ const PostCard = ({ item, navigation }) => {
             alignItems="flex-start"
             space="10px"
           >
-            {Object.entries(item.requirements)
-              .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-              .map(([key, value]) => (
-                <HStack key={key} flex={1}>
-                  <Box minWidth="80px">
-                    <Text
-                      fontSize="14px"
-                      color="#65686B"
-                      fontWeight="500"
-                      lineHeight="21px"
-                      letterSpacing="0.5px"
-                      style={{
-                        fontStyle: "normal",
-                        width: "60px",
-                      }}
-                    >
-                      {key}
-                    </Text>
-                  </Box>
-                  <HStack space="10px" flexWrap="wrap">
-                    {Array.isArray(value) ? (
-                      value.map((item, index) => (
-                        <Box
-                          key={index}
-                          px="12px"
-                          py="6px"
-                          bg="gray.200"
-                          borderRadius="full"
-                        >
-                          <Text
-                            fontSize="12px"
-                            color="#383C3F"
-                            fontWeight="500"
-                            lineHeight="21px"
-                            letterSpacing="0.5px"
-                            style={{
-                              fontStyle: "normal",
-                            }}
-                          >
-                            {item}
-                          </Text>
-                        </Box>
-                      ))
-                    ) : (
-                      <Text
-                        fontSize="12px"
-                        color="#383C3F"
-                        fontWeight="500"
-                        lineHeight="21px"
-                        letterSpacing="0.5px"
-                        style={{
-                          fontStyle: "normal",
-                        }}
-                      >
-                        {value}
-                      </Text>
-                    )}
-                  </HStack>
-                </HStack>
-              ))}
+            {renderForumDetails()}
           </VStack>
         )}
+
 
         {item.image && (
           <Image
@@ -130,6 +112,7 @@ const PostCard = ({ item, navigation }) => {
             contentFit="contain"
             contentPosition="center"
           />
+
         )}
 
         <HStack justifyContent="space-between" mt={2} alignItems="center">

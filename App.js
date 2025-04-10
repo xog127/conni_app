@@ -25,7 +25,6 @@ import ChatRoom from './assets/pages/chatRoom';
 import ChatInfo from './assets/pages/chatInfo';
 import ForumScreen from './assets/pages/ForumScreen';
 import NewSearchScreen from './assets/pages/NewSearchScreen';
-import RedditStyleCreatePost from './assets/pages/RedditStyleCreatePost';
 import { NativeBaseProvider } from 'native-base';
 
 
@@ -159,27 +158,6 @@ const PostStackNavigator = () => (
       }}
     />
     <PostStack.Screen 
-      name="RedditCreatePost" 
-      component={RedditStyleCreatePost} 
-      options={{ 
-        headerShown: false,
-        presentation: 'modal',
-        tabBarStyle: { display: 'none' },
-        cardStyleInterpolator: ({ current, layouts }) => ({
-          cardStyle: {
-            transform: [
-              {
-                translateX: current.progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [layouts.screen.width, 0],
-                }),
-              },
-            ],
-          },
-        }),
-      }}
-    />
-    <PostStack.Screen 
       name="PostDisplay" 
       component={PostDisplay}
       options={{ 
@@ -242,7 +220,6 @@ const TabNavigator = () => (
           'Search',
           'PostDisplay',
           'createPost',
-          'RedditCreatePost',
           'Forums',
           'IndividualForum',
           'Chatroom',

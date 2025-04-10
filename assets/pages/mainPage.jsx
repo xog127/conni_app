@@ -1,18 +1,5 @@
-import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Icon,
-  HStack,
-  Pressable,
-  Spacer,
-  Spinner,
-  Center,
-  FlatList,
-  ScrollView,
-  VStack,
-  Image,
-  Text,
-} from "native-base";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Box, Icon, HStack, Pressable, Spacer, Spinner, Center, FlatList, ScrollView, VStack, Image, Text } from "native-base";
 import { Ionicons } from "@expo/vector-icons";
 import { getAnyCollection, getRef } from "../firebase/queries";
 import ConniIcon from "../customIcon/ConniIcon";
@@ -24,117 +11,97 @@ import CommentIcon from "../customIcon/CommentIcon.js";
 import ViewIcon from "../customIcon/ViewIcon.js";
 import MarketPreview from "../components/marketPreview";
 import PostCard from "../components/PostCard.jsx";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function MainPage({ navigation }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [marketData, setMarketData] = useState(null);
   const [marketPosts, setMarketPosts] = useState([]);
-  const marketRef = "QNywRjCYSwAi4TuLkzbh";
-  console.log(marketRef);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Fetch all posts
-        const postsData = await getAnyCollection("posts");
+  const flatListRef = useRef(null);
 
-        // Fetch forum data for each post
-        const postsWithForumData = await Promise.all(
-          postsData.map(async (post) => {
-            try {
-              const forumData = await getRef({
-                id: post.post_genre_ref.id || post.post_genre_ref.path,
-                collectionName: "genres",
-              });
-              return {
-                ...post,
-                forum: forumData,
-              };
-            } catch (error) {
-              console.error("Error fetching forum data:", error);
-              return post;
-            }
-          })
-        );
-
-        const sortedPosts = postsWithForumData.sort(
-          (a, b) => b.time_posted - a.time_posted
-        );
-        setPosts(sortedPosts);
-
-        // Fetch market data
-        // Market genre reference
-        const marketGenre = await getRef({
-          id: marketRef,
-          collectionName: "genres",
-        });
-        setMarketData(marketGenre);
-
-        // Filter market posts
-        const marketPosts = postsData.filter((post) => {
-          if (post.post_genre_ref) {
-            const genreRefId =
-              post.post_genre_ref.id || post.post_genre_ref.path;
-            return genreRefId === marketRef && post.image;
+  const fetchData = async () => {
+    try {
+      // Fetch all posts
+      const postsData = await getAnyCollection("posts");
+      
+      // Fetch forum data for each post
+      const postsWithForumData = await Promise.all(
+        postsData.map(async (post) => {
+          try {
+            const forumData = await getRef({
+              id: post.post_genre_ref.id || post.post_genre_ref.path,
+              collectionName: "genres"
+            });
+            return {
+              ...post,
+              forum: forumData
+            };
+          } catch (error) {
+            console.error("Error fetching forum data:", error);
+            return post;
           }
-          return false;
-        });
-        setMarketPosts(marketPosts);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+        })
+      );
 
+      const sortedPosts = postsWithForumData.sort((a, b) => b.time_posted - a.time_posted);
+      setPosts(sortedPosts);
+
+      // Fetch market data
+      const genreRef = "QNywRjCYSwAi4TuLkzbh"; // Market genre reference
+      const marketGenre = await getRef({ id: genreRef, collectionName: "genres" });
+      setMarketData(marketGenre);
+
+      // Filter market posts
+      const marketPosts = postsData.filter(post => {
+        if (post.post_genre_ref) {
+          const genreRefId = post.post_genre_ref.id || post.post_genre_ref.path;
+          return genreRefId === genreRef && post.post_photo;
+        }
+        return false;
+      });
+      setMarketPosts(marketPosts);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
     fetchData();
   }, []);
 
-  const renderHeader = () => (
-    <Box>
-      <Box
-        bg="white"
-        h={100}
-        justifyContent="space-between"
-        alignItems="center"
-        flexDirection="row"
-        px={4}
-        pt={"10%"}
-      >
-        <HStack flex={1} alignItems="center" justifyContent="space-between">
-          {/* Left section */}
-          <HStack space={4} alignItems="center">
-            <Pressable onPress={() => navigation.openDrawer()}>
-              <Icon as={Ionicons} name="menu" size={7} color="black" />
-            </Pressable>
-            <Pressable onPress={() => navigation.navigate("RedditCreatePost")}>
-              <Icon as={Ionicons} name="add-circle" size={7} color="#836FFF" />
-            </Pressable>
-          </HStack>
-          {/* Centered ConniIcon */}
-          <Spacer />
-          <ConniIcon name="logo" size={56} />
-          <Spacer />
-          {/* Right section */}
-          <HStack space={4} alignItems="center">
-            <Pressable>
-              <Icon
-                as={Ionicons}
-                name="notifications"
-                size={7}
-                color="gray.500"
-              />
-            </Pressable>
-            <Pressable onPress={() => navigation.navigate("Search")}>
-              <Icon as={Ionicons} name="search" size={7} color="gray.500" />
-            </Pressable>
-          </HStack>
-        </HStack>
-      </Box>
-    </Box>
+  // Refresh when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
   );
+
+  // Handle pull to refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData();
+  }, []);
+
+  // Handle tab press to scroll to top
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', (e) => {
+      if (navigation.isFocused()) {
+        // If already on the screen, scroll to top
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   const renderMarketSection = () => {
     if (!marketData || marketPosts.length === 0) return null;
@@ -194,29 +161,71 @@ export default function MainPage({ navigation }) {
       </Box>
     );
   };
-  const renderPost = ({ item, index }) => (
-    <>
-      <PostCard item={item} navigation={navigation} />
-      {index === 0 && renderMarketSection()}
-    </>
+  const renderPost = ({ item }) => (
+    <PostCard item={item} navigation={navigation} />
   );
   if (loading) {
     return (
-      <Box flex={1} justifyContent="center" alignItems="center" bg="white">
-        <Spinner size="lg" color="#836FFF" />
-      </Box>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+        <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+        <Box flex={1}>
+          <HStack px={4} py={3} alignItems="center" space={3}>
+            <Pressable onPress={() => navigation.openDrawer()}>
+              <Icon as={Ionicons} name="menu" size={6} color="gray.500" />
+            </Pressable>
+            <ConniIcon />
+            <Spacer />
+            <Pressable>
+              <Icon as={Ionicons} name="notifications" size={6} color="gray.500" />
+            </Pressable>
+            <Pressable onPress={() => navigation.navigate('Search')}>
+              <Icon as={Ionicons} name="search" size={6} color="gray.500" />
+            </Pressable>
+          </HStack>
+
+          <Center flex={1}>
+            <Spinner size="lg" color="#836FFF" />
+          </Center>
+        </Box>
+      </SafeAreaView>
     );
   }
 
   return (
-    <Box flex={1} bg="white">
-      <FlatList
-        data={posts}
-        renderItem={renderPost}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderHeader}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      />
-    </Box>
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+      <Box flex={1}>
+        <HStack px={4} py={3} alignItems="center" space={3}>
+          <Pressable onPress={() => navigation.openDrawer()}>
+            <Icon as={Ionicons} name="menu" size={6} color="gray.500" />
+          </Pressable>
+          <ConniIcon />
+          <Spacer />
+          <Pressable>
+            <Icon as={Ionicons} name="notifications" size={6} color="gray.500" />
+          </Pressable>
+          <Pressable onPress={() => navigation.navigate('Search')}>
+            <Icon as={Ionicons} name="search" size={6} color="gray.500" />
+          </Pressable>
+        </HStack>
+
+        <FlatList
+          ref={flatListRef}
+          data={posts}
+          renderItem={renderPost}
+          keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#836FFF']}
+              tintColor="#836FFF"
+            />
+          }
+          ListHeaderComponent={renderMarketSection}
+          onEndReachedThreshold={0.5}
+        />
+      </Box>
+    </SafeAreaView>
   );
 }

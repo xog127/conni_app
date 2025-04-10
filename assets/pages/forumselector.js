@@ -15,9 +15,8 @@ export const ForumSelector = ({ forums, selectedForum, onForumSelect, forumData 
   const generalForum = forums.find((forum) => forum.name === "General");
 
   useEffect(() => {
-
     if (!selectedForum && generalForum) {
-        onForumSelect(generalForum);
+      onForumSelect(generalForum);
     }
   }, [forums, selectedForum]);
 
@@ -28,7 +27,12 @@ export const ForumSelector = ({ forums, selectedForum, onForumSelect, forumData 
         style={styles.selectorButton}
         onPress={() => setModalVisible(true)}
       >
-        
+        {selectedForum?.photo && (
+          <Image
+            source={{ uri: selectedForum.photo }}
+            style={styles.selectedIcon}
+          />
+        )}
         <Text style={styles.selectorButtonText}>
           {selectedForum?.name || "General"}
         </Text>
@@ -61,8 +65,10 @@ export const ForumSelector = ({ forums, selectedForum, onForumSelect, forumData 
                 setModalVisible(false);
               }}
             >
-              <Image source={{ uri: forum.photo }} style={styles.icon} />
-              <Text style={styles.forumName}>{forum.name}</Text>
+              <View style={styles.forumHeader}>
+                <Image source={{ uri: forum.photo }} style={styles.icon} />
+                <Text style={styles.forumName}>{forum.name}</Text>
+              </View>
               <Text style={styles.forumDescription}>
                 {forum.description || "No description provided."}
               </Text>
@@ -82,27 +88,35 @@ export const ForumSelector = ({ forums, selectedForum, onForumSelect, forumData 
   );
 };
 
-// --- STYLES ---
 const styles = StyleSheet.create({
   selectorButton: {
-    backgroundColor: "#f5f5f5",
-    borderColor: "grey",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#000000",
+    borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     alignSelf: "flex-start",
   },
+  selectedIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 8,
+    borderRadius: 10,
+  },
   selectorButtonText: {
     fontSize: 16,
-    color: "#666",
+    color: "#000000",
+    fontWeight: "500",
+    marginRight: 8,
   },
   icon: {
-    width: 16,
-    height: 16,
-    marginRight: 6,
+    width: 24,
+    height: 24,
+    marginRight: 12,
+    borderRadius: 12,
   },
   overlay: {
     flex: 1,
@@ -114,7 +128,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 16,
-    // This pushes the sheet up from the bottom
     maxHeight: "75%",
   },
   sheetTitle: {
@@ -124,9 +137,14 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   forumItem: {
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
+  },
+  forumHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
   },
   forumName: {
     fontSize: 16,
@@ -136,7 +154,8 @@ const styles = StyleSheet.create({
   forumDescription: {
     fontSize: 12,
     color: "#666",
-    marginTop: 4,
+    marginTop: 8,
+    marginLeft: 36,
   },
   cancelButton: {
     alignSelf: "center",

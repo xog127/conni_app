@@ -12,6 +12,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import PostPreviews from "../components/postPreviews";
 import { getAnyCollection, getRef } from "../firebase/queries";
+import { AnimatePresence, MotiView } from "moti";
+import { NativeBaseProvider } from "native-base";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'react-native';
 
 export default function ForumScreen({ route, navigation }) {
   const { genreref } = route.params;
@@ -80,30 +84,6 @@ export default function ForumScreen({ route, navigation }) {
     }, 500);
   }, [allPosts, currentIndex, loadingMore]);
 
-  const renderHeader = () => (
-    <Box>
-      <Box
-        bg="white"
-        h={100}
-        justifyContent="space-between"
-        alignItems="center"
-        flexDirection="row"
-        px={4}
-        pt={"10%"}
-      >
-        <HStack flex={1} alignItems="center" justifyContent="space-between">
-          <Pressable onPress={() => navigation.goBack()}>
-            <Icon as={Ionicons} name="arrow-back" size={7} color="black" />
-          </Pressable>
-          <Text fontSize="xl" fontWeight="bold">
-            {genre?.name || "Forum"}
-          </Text>
-          <Box w={7} /> {/* Spacer for alignment */}
-        </HStack>
-      </Box>
-    </Box>
-  );
-
   const renderFooter = () => {
     if (currentIndex >= allPosts.length) return null;
 
@@ -116,21 +96,45 @@ export default function ForumScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <Box flex={1} justifyContent="center" alignItems="center" bg="white">
-        <Spinner size="lg" color="#836FFF" />
-      </Box>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+        <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+        <Center flex={1}>
+          <Spinner size="lg" color="#836FFF" />
+        </Center>
+      </SafeAreaView>
     );
   }
 
   return (
-    <PostPreviews
-      data={postRefs}
-      renderHeader={renderHeader}
-      renderFooter={renderFooter}
-      navigation={navigation}
-      isMarketView={false}
-      onEndReached={loadMorePosts}
-      onEndReachedThreshold={0.5}
-    />
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+      <Box flex={1}>
+        <HStack 
+          px={4} 
+          py={3} 
+          alignItems="center" 
+          justifyContent="space-between"
+          borderBottomWidth={1}
+          borderBottomColor="gray.200"
+        >
+          <Pressable onPress={() => navigation.goBack()}>
+            <Icon as={Ionicons} name="arrow-back" size={6} color="black" />
+          </Pressable>
+          <Text fontSize="lg" fontWeight="bold">
+            {genre?.name || "Forum"}
+          </Text>
+          <Box w={6} /> {/* Spacer for alignment */}
+        </HStack>
+
+        <PostPreviews
+          data={postRefs}
+          navigation={navigation}
+          isMarketView={false}
+          onEndReached={loadMorePosts}
+          onEndReachedThreshold={0.5}
+          renderFooter={renderFooter}
+        />
+      </Box>
+    </SafeAreaView>
   );
 }
