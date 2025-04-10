@@ -15,7 +15,7 @@ import OnboardingPage from './assets/pages/onboarding';
 import Setting from './assets/pages/setting';
 import Feedback from './assets/pages/feedback';
 import { AuthProvider, AuthContext, useAuth } from './assets/services/authContext';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, Platform } from 'react-native';
 import CustomDrawerContent from './assets/customFunctions/CustomDrawerContent';
 import UserSettingsScreen from './assets/pages/setting';
 import ProfileEditScreen from './assets/pages/editProfile';
@@ -50,16 +50,26 @@ const ProfileStackNavigator = () => (
      <ProfileStack.Screen 
       name="EditProfile" 
       component={ProfileEditScreen}
-      options={{ headerShown: false }}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
     /> 
     <ProfileStack.Screen 
       name="UserSettings" 
       component={UserSettingsScreen}
-      options={{ title: 'Settings' }}/>
-          <ProfileStack.Screen 
+      options={{ 
+        title: 'Settings',
+        tabBarStyle: { display: 'none' }
+      }}
+    />
+    <ProfileStack.Screen 
       name="PostDisplay" 
       component={PostDisplay}
-      options={{ headerShown: false }}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
     />
   </ProfileStack.Navigator>
 );
@@ -80,7 +90,10 @@ const ForumStackNavigator = () => (
     <ForumStack.Screen 
       name="Forums" 
       component={ForumScreen}
-      options={{ headerShown: false }}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
     />
   </ForumStack.Navigator>
 );
@@ -88,24 +101,33 @@ const ForumStackNavigator = () => (
 const ChatStackNavigator = () => (
   <ChatStack.Navigator>
     <ChatStack.Screen 
-      name="Chats" 
+      name="ChatsList" 
       component={AllChats} 
       options={{ headerShown: false }}
     />
     <ChatStack.Screen 
       name="CreateChat" 
       component={CreateChat} 
-      options={{ headerShown: false }}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
     />
     <ChatStack.Screen 
       name="Chatroom" 
       component={ChatRoom} 
-      options={{ headerShown: false }}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
     />
     <ChatStack.Screen 
       name="Chatinfo" 
       component={ChatInfo} 
-      options={{ headerShown: false }}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
     />
   </ChatStack.Navigator>
 );
@@ -114,7 +136,7 @@ const ChatStackNavigator = () => (
 const PostStackNavigator = () => (
   <PostStack.Navigator>
     <PostStack.Screen 
-      name="Drawer" 
+      name="MainFeed" 
       component={DrawerNavigator} 
       options={{ headerShown: false }}
     />
@@ -123,7 +145,8 @@ const PostStackNavigator = () => (
       component={NewSearchScreen} 
       options={{ 
         headerShown: false,
-        presentation: 'modal'
+        presentation: 'modal',
+        tabBarStyle: { display: 'none' }
       }}
     />
     <PostStack.Screen 
@@ -132,6 +155,7 @@ const PostStackNavigator = () => (
       options={{ 
         headerShown: false,
         presentation: 'modal',
+        tabBarStyle: { display: 'none' },
         cardStyleInterpolator: ({ current, layouts }) => ({
           cardStyle: {
             transform: [
@@ -149,12 +173,18 @@ const PostStackNavigator = () => (
     <PostStack.Screen 
       name="PostDisplay" 
       component={PostDisplay}
-      options={{ headerShown: false }}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
     />
     <PostStack.Screen 
       name="createPost" 
       component={CreatePostForm}
-      options={{ headerShown: false }}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
     />
   </PostStack.Navigator>
 );
@@ -189,7 +219,47 @@ const EmptyComponent = () => null;
 
 // Main Tab Navigator
 const TabNavigator = () => (
-  <Tab.Navigator>
+  <Tab.Navigator
+    screenOptions={({ route, navigation }) => ({
+      tabBarHideOnKeyboard: true,
+      tabBarStyle: ((state) => {
+        const navigationState = navigation.getState();
+        
+        // Get the current route name
+        const currentRouteName = navigationState.routes[navigationState.index].state?.routes?.slice(-1)[0]?.name;
+
+        // List of routes where tab bar should be hidden
+        const hideTabBarRoutes = [
+          'Search',
+          'PostDisplay',
+          'createPost',
+          'RedditCreatePost',
+          'Forums',
+          'Chatroom',
+          'CreateChat',
+          'Chatinfo',
+          'EditProfile',
+          'UserSettings'
+        ];
+
+        // Hide tab bar if we're in one of the specified routes
+        if (hideTabBarRoutes.includes(currentRouteName)) {
+          return { display: 'none' };
+        }
+
+        // Show tab bar with styling
+        return {
+          display: 'flex',
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#e0e0e0',
+          paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+          paddingTop: 10,
+          height: Platform.OS === 'ios' ? 85 : 65,
+        };
+      })()
+    })}
+  >
     <Tab.Screen 
       name="Posts" 
       component={PostStackNavigator}
