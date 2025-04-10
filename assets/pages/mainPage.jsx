@@ -21,6 +21,7 @@ export default function MainPage({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [marketData, setMarketData] = useState(null);
   const [marketPosts, setMarketPosts] = useState([]);
+
   const flatListRef = useRef(null);
 
   const fetchData = async () => {
@@ -127,7 +128,11 @@ export default function MainPage({ navigation }) {
                 Market
               </Text>
             </HStack>
-            <Pressable>
+            <Pressable
+              onPress={() =>
+                navigation.navigate("IndividualForum", { genreref: marketRef })
+              }
+            >
               <Box px="12px" py="6px" bg="#836FFF" borderRadius="16px">
                 <Text
                   fontSize="14px"
@@ -141,10 +146,7 @@ export default function MainPage({ navigation }) {
               </Box>
             </Pressable>
           </HStack>
-          <ScrollView
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-          >
+          <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
             <HStack space="8px" px="20px">
               {marketPosts.map((post) => (
                 <MarketPreview

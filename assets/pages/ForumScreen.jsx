@@ -1,5 +1,14 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Box, Text, Icon, HStack, VStack, Pressable, Spinner, Center } from "native-base";
+import {
+  Box,
+  Text,
+  Icon,
+  HStack,
+  VStack,
+  Pressable,
+  Spinner,
+  Center,
+} from "native-base";
 import { Ionicons } from "@expo/vector-icons";
 import PostPreviews from "../components/postPreviews";
 import { getAnyCollection, getRef } from "../firebase/queries";
@@ -10,17 +19,14 @@ import { StatusBar } from 'react-native';
 
 export default function ForumScreen({ route, navigation }) {
   const { genreref } = route.params;
-  const [isOpen, setIsOpen] = useState(false);
   const [genre, setGenre] = useState(null);
-  const [selectedOption, setSelectedOption] = useState("Latest");
-  const options = ["Latest", "Most Liked", "Most Commented", "Most Viewed"];
   const [postRefs, setPostRefs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [allPosts, setAllPosts] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const POSTS_PER_LOAD = 10;
-
+  console.log(genreref);
   const filterPostsByGenre = (posts, genreRef) => {
     const filteredPosts = posts.filter((post) => {
       if (post.post_genre_ref) {
@@ -43,9 +49,11 @@ export default function ForumScreen({ route, navigation }) {
         setGenre(genreData);
         const posts = await getAnyCollection("posts");
         const filteredPosts = filterPostsByGenre(posts, genreref);
-        const sortedPosts = filteredPosts.sort((a, b) => b.time_posted - a.time_posted);
+        const sortedPosts = filteredPosts.sort(
+          (a, b) => b.time_posted - a.time_posted
+        );
         setAllPosts(sortedPosts);
-        
+
         // Load only the first batch
         const initialPosts = sortedPosts.slice(0, POSTS_PER_LOAD);
         setPostRefs(initialPosts);
@@ -61,29 +69,27 @@ export default function ForumScreen({ route, navigation }) {
 
   const loadMorePosts = useCallback(() => {
     if (loadingMore || currentIndex >= allPosts.length) return;
-    
+
     setLoadingMore(true);
-    
+
     setTimeout(() => {
       const nextBatch = allPosts.slice(
-        currentIndex, 
+        currentIndex,
         currentIndex + POSTS_PER_LOAD
       );
-      
-      setPostRefs(prevPosts => [...prevPosts, ...nextBatch]);
-      setCurrentIndex(prevIndex => prevIndex + POSTS_PER_LOAD);
+
+      setPostRefs((prevPosts) => [...prevPosts, ...nextBatch]);
+      setCurrentIndex((prevIndex) => prevIndex + POSTS_PER_LOAD);
       setLoadingMore(false);
     }, 500);
   }, [allPosts, currentIndex, loadingMore]);
 
   const renderFooter = () => {
     if (currentIndex >= allPosts.length) return null;
-    
+
     return (
       <Center py={4}>
-        {loadingMore ? (
-          <Spinner size="sm" color="#836FFF" />
-        ) : null}
+        {loadingMore ? <Spinner size="sm" color="#836FFF" /> : null}
       </Center>
     );
   };

@@ -10,7 +10,7 @@ const ForumCard = ({navigation, forumData}) => {
     <TouchableOpacity 
       style={styles.card}
       activeOpacity={0.7}
-      onPress={() => navigation.navigate('Forums', {genreref})}
+      onPress={() => navigation.navigate('IndividualForum', {genreref})}
     >
       {/* Left - Image */}
       <Image

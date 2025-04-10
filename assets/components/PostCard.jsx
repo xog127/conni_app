@@ -48,8 +48,10 @@ const PostCard = ({ item, navigation }) => {
   };
 
   return (
-    <Pressable 
-      onPress={() => navigation.navigate('PostDisplay', { postRef: item.id, navigation })}
+    <Pressable
+      onPress={() =>
+        navigation.navigate("PostDisplay", { postRef: item.id, navigation })
+      }
     >
       <Box
         bg="white"
@@ -61,7 +63,9 @@ const PostCard = ({ item, navigation }) => {
         <PostUserInfo
           userRef={item.post_user}
           anonymous={item.anonymous}
+
           date_posted={getTimeAgo(item.time_posted)}
+
           forumRef={item.post_genre_ref}
         />
 
@@ -95,19 +99,20 @@ const PostCard = ({ item, navigation }) => {
           </VStack>
         )}
 
-        {item.post_photo && (
-          <Box mt={4}>
-            <Image
-              source={{ uri: item.post_photo }}
-              style={{
-                width: "100%",
-                height: 300,
-                borderRadius: 8,
-              }}
-              contentFit="cover"
-              transition={200}
-            />
-          </Box>
+
+        {item.image && (
+          <Image
+            source={{ uri: item.image }}
+            style={{
+              alignSelf: "center",
+              width: "100%",
+              height: undefined,
+              aspectRatio: 1,
+            }}
+            contentFit="contain"
+            contentPosition="center"
+          />
+
         )}
 
         <HStack justifyContent="space-between" mt={2} alignItems="center">
@@ -143,4 +148,4 @@ const PostCard = ({ item, navigation }) => {
   );
 };
 
-export default PostCard; 
+export default PostCard;

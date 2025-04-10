@@ -34,9 +34,9 @@ const MarketPreview = ({ postRef, navigation }) => {
     >
       <Box position="relative" width="169px" height="169px">
         {/* Image */}
-        {post?.post_photo && (
+        {post?.image && (
           <Image
-            source={{ uri: post.post_photo }}
+            source={{ uri: post.image }}
             style={{
               width: "100%",
               height: "100%",
@@ -47,7 +47,7 @@ const MarketPreview = ({ postRef, navigation }) => {
         )}
 
         {/* Overlay Box for Price & Item */}
-        {post?.req && (
+        {post?.requirements && (
           <VStack
             position="absolute"
             bottom={0}
@@ -58,10 +58,10 @@ const MarketPreview = ({ postRef, navigation }) => {
             borderBottomRadius={10}
           >
             <Text color="white" fontWeight="bold" fontSize="md">
-              {post.req.Item}
+              {post.requirements.Item}
             </Text>
             <Text color="yellow.400" fontWeight="bold" fontSize="lg">
-              {post.req.Price}
+              {post.requirements.Price}
             </Text>
           </VStack>
         )}
