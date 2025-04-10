@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Box, Icon, HStack, Pressable, Spacer, Spinner, Center, FlatList, ScrollView, VStack, Image, Text } from "native-base";
+import {
+  Box,
+  Icon,
+  HStack,
+  Pressable,
+  Spacer,
+  Spinner,
+  Center,
+  FlatList,
+  ScrollView,
+  VStack,
+  Image,
+  Text,
+} from "native-base";
 import { Ionicons } from "@expo/vector-icons";
 import { getAnyCollection, getRef } from "../firebase/queries";
 import ConniIcon from "../customIcon/ConniIcon";
@@ -17,6 +30,8 @@ export default function MainPage({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [marketData, setMarketData] = useState(null);
   const [marketPosts, setMarketPosts] = useState([]);
+  const marketRef = "QNywRjCYSwAi4TuLkzbh";
+  console.log(marketRef);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,18 +39,18 @@ export default function MainPage({ navigation }) {
         setLoading(true);
         // Fetch all posts
         const postsData = await getAnyCollection("posts");
-        
+
         // Fetch forum data for each post
         const postsWithForumData = await Promise.all(
           postsData.map(async (post) => {
             try {
               const forumData = await getRef({
                 id: post.post_genre_ref.id || post.post_genre_ref.path,
-                collectionName: "genres"
+                collectionName: "genres",
               });
               return {
                 ...post,
-                forum: forumData
+                forum: forumData,
               };
             } catch (error) {
               console.error("Error fetching forum data:", error);
@@ -44,19 +59,25 @@ export default function MainPage({ navigation }) {
           })
         );
 
-        const sortedPosts = postsWithForumData.sort((a, b) => b.time_posted - a.time_posted);
+        const sortedPosts = postsWithForumData.sort(
+          (a, b) => b.time_posted - a.time_posted
+        );
         setPosts(sortedPosts);
 
         // Fetch market data
-        const genreRef = "QNywRjCYSwAi4TuLkzbh"; // Market genre reference
-        const marketGenre = await getRef({ id: genreRef, collectionName: "genres" });
+        // Market genre reference
+        const marketGenre = await getRef({
+          id: marketRef,
+          collectionName: "genres",
+        });
         setMarketData(marketGenre);
 
         // Filter market posts
-        const marketPosts = postsData.filter(post => {
+        const marketPosts = postsData.filter((post) => {
           if (post.post_genre_ref) {
-            const genreRefId = post.post_genre_ref.id || post.post_genre_ref.path;
-            return genreRefId === genreRef && post.post_photo;
+            const genreRefId =
+              post.post_genre_ref.id || post.post_genre_ref.path;
+            return genreRefId === marketRef && post.image;
           }
           return false;
         });
@@ -140,7 +161,11 @@ export default function MainPage({ navigation }) {
                 Market
               </Text>
             </HStack>
-            <Pressable>
+            <Pressable
+              onPress={() =>
+                navigation.navigate("IndividualForum", { genreref: marketRef })
+              }
+            >
               <Box px="12px" py="6px" bg="#836FFF" borderRadius="16px">
                 <Text
                   fontSize="14px"
@@ -154,10 +179,7 @@ export default function MainPage({ navigation }) {
               </Box>
             </Pressable>
           </HStack>
-          <ScrollView
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-          >
+          <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
             <HStack space="8px" px="20px">
               {marketPosts.map((post) => (
                 <MarketPreview
@@ -191,7 +213,7 @@ export default function MainPage({ navigation }) {
       <FlatList
         data={posts}
         renderItem={renderPost}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         ListHeaderComponent={renderHeader}
         contentContainerStyle={{ paddingBottom: 20 }}
       />

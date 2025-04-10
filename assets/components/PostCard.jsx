@@ -8,8 +8,10 @@ import { timeAgo } from "../customFunctions/time.js";
 
 const PostCard = ({ item, navigation }) => {
   return (
-    <Pressable 
-      onPress={() => navigation.navigate('PostDisplay', { postRef: item.id, navigation })}
+    <Pressable
+      onPress={() =>
+        navigation.navigate("PostDisplay", { postRef: item.id, navigation })
+      }
     >
       <Box
         bg="white"
@@ -21,7 +23,9 @@ const PostCard = ({ item, navigation }) => {
         <PostUserInfo
           userRef={item.post_user}
           anonymous={item.anonymous}
-          date_posted={item.time_posted ? timeAgo(item.time_posted) : "Just now"}
+          date_posted={
+            item.time_posted ? timeAgo(item.time_posted) : "Just now"
+          }
           forumRef={item.post_genre_ref}
         />
 
@@ -114,9 +118,9 @@ const PostCard = ({ item, navigation }) => {
           </VStack>
         )}
 
-        {item.post_photo && (
+        {item.image && (
           <Image
-            source={{ uri: item.post_photo }}
+            source={{ uri: item.image }}
             style={{
               alignSelf: "center",
               width: "100%",
@@ -161,4 +165,4 @@ const PostCard = ({ item, navigation }) => {
   );
 };
 
-export default PostCard; 
+export default PostCard;
