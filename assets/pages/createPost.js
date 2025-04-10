@@ -11,12 +11,24 @@ import {
   ActivityIndicator,
   Keyboard,
   TextInput,
-  Text,
   Image,
   TouchableWithoutFeedback,
+  Switch,
+  Dimensions,
 } from "react-native";
+import {
+  Box,
+  HStack,
+  Pressable,
+  IconButton,
+  Icon,
+  Button,
+  Text,
+  Modal,
+  VStack,
+} from "native-base";
 import {KeyboardAwareScrollView} from "react-native-keyboard-aware-scroll-view"
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { addRef, getCollections } from "../firebase/queries";
 import * as ImagePicker from 'expo-image-picker';
 import { doc, Timestamp } from "firebase/firestore";
@@ -72,34 +84,32 @@ export const PollOptions = ({ pollOptions, onAddOption, onRemoveOption }) => {
 };
 
 // Action Bar Component
-export const ActionBar = ({ options, onOptionToggle }) => {
+const ActionBar = ({ options, onOptionToggle }) => {
   return (
-    <View style={styles.buttonsContainer}>
-      <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('addPoll')}>
-        <Feather name="bar-chart-2" size={24} color="#836fff" />
-        <Text style={styles.iconButtonText}>Poll</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('addImage')}>
-        <Feather name="image" size={24} color="#836fff" />
-        <Text style={styles.iconButtonText}>Image</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('addChat')}>
-        <Feather name="message-circle" size={24} color="#836fff" />
-        <Text style={styles.iconButtonText}>Chat</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('anonymous')}>
-        <Feather name="user-x" size={24} color="#836fff" />
-        <Text style={styles.iconButtonText}>Anonymous</Text>
+    <View style={styles.actionBar}>
+      <View style={styles.leftActions}>
+        <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('addImage')}>
+          <Feather name="image" size={22} color="#836fff" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('addPoll')}>
+          <Feather name="bar-chart-2" size={22} color="#836fff" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('addChat')}>
+          <Feather name="message-circle" size={22} color="#836fff" />
+        </TouchableOpacity>
+      </View>
+      <TouchableOpacity 
+        style={[styles.iconButton, styles.anonymousButton]} 
+        onPress={() => onOptionToggle('anonymous')}
+      >
+        <Feather name="eye-off" size={22} color={options.anonymous ? "#836fff" : "#666"} />
       </TouchableOpacity>
     </View>
   );
 };
 
 // Main Component
-const CreatePostForm = ({ navigation }) => {
+const CreatePost = ({ navigation }) => {
   const scrollViewRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -121,6 +131,8 @@ const CreatePostForm = ({ navigation }) => {
   
   // Forums data
   const [forums, setForums] = useState([]);
+  const [showForumModal, setShowForumModal] = useState(false);
+  const [postType, setPostType] = useState('text');
 
   // Set up tab bar hiding
   useEffect(() => {
@@ -361,157 +373,218 @@ const CreatePostForm = ({ navigation }) => {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.keyboardAvoidingView}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      style={styles.container}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.mainContainer}>
-            {/* Header */}
-            <View style={styles.headerContainer}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => navigation.goBack()}
-              >
-                <Feather name="x" size={24} color="#666" />
-              </TouchableOpacity>
-              <Text style={styles.header}>Create Post</Text>
-              <TouchableOpacity
-                style={[
-                  styles.postButton,
-                  isSubmitting && styles.disabledButton
-                ]}
-                onPress={addPost}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.postButtonText}>Post</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+      <SafeAreaView style={styles.safeArea}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Feather name="x" size={24} color="#666" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.postButton,
+              (!title || !selectedForum || isSubmitting) && styles.disabledButton
+            ]}
+            onPress={addPost}
+            disabled={!title || !selectedForum || isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.postButtonText}>Post</Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
-            <KeyboardAwareScrollView
-              ref={scrollViewRef}
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-              showsVerticalScrollIndicator={false}
-              bounces={false}
-              extraScrollHeight={100}
-            >
-              {/* Forum Selector */}
-              <ForumSelector 
-                forums={forums}
-                selectedForum={selectedForum}
-                onForumSelect={handleForumSelect}
-              />
+        {/* Forum Selector */}
+        <View style={styles.forumSelectorContainer}>
+          <ForumSelector 
+            forums={forums}
+            selectedForum={selectedForum}
+            onForumSelect={handleForumSelect}
+          />
+        </View>
 
-              {/* Title Input */}
-              <TextInput
-                style={styles.titleInput}
-                placeholder="Title"
-                value={title}
-                onChangeText={setTitle}
-                multiline
-              />
+        {/* Content Area */}
+        <ScrollView 
+          style={styles.contentContainer}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          <TextInput
+            style={styles.titleInput}
+            placeholder="Title"
+            value={title}
+            onChangeText={setTitle}
+            multiline
+          />
 
-              {/* Description Input */}
-              <TextInput
-                style={styles.descriptionInput}
-                placeholder="Share you thoughts"
-                value={description}
-                onChangeText={(text) => {
-                  setDescription(text);
-                }}
-                multiline
-                textAlignVertical="top"
-              />
+          <TextInput
+            style={styles.bodyInput}
+            placeholder="What's on your mind?"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            textAlignVertical="top"
+          />
 
-              {/* Form Fields */}
-              {selectedForum && selectedForum.name !== "General" && (
+          <View style={styles.contentExtrasContainer}>
+            {/* Image Preview */}
+            {addImage && image && (
+              <View style={styles.imageContainer}>
+                <Image source={{ uri: image }} style={styles.imagePreview} />
+                <TouchableOpacity 
+                  style={styles.removeImageButton}
+                  onPress={() => {
+                    setAddImage(false);
+                    setImage(null);
+                  }}
+                >
+                  <Feather name="x" size={20} color="#666" />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Forum Details */}
+            {selectedForum && selectedForum.name !== "General" && (
+              <View style={styles.forumDetailsContainer}>
                 <CreatePostFields 
                   onChange={handleFormChange} 
                   selectedForum={selectedForum.name}
                   onValidationChange={handleValidationChange}
                 />
-              )}
-              
-              {/* Image Preview */}
-              {addImage && image && (
-                <View style={styles.imagePreviewContainer}>
-                  <View style={styles.imageHeader}>
-                    <Text style={styles.imageHeaderText}>Image Preview</Text>
-                    <TouchableOpacity 
-                      style={styles.removeImageButton}
-                      onPress={() => {
-                        setAddImage(false);
-                        setImage(null);
-                      }}
-                    >
-                      <Feather name="x" size={20} color="#666" />
-                    </TouchableOpacity>
-                  </View>
-                  <Image 
-                    source={{ uri: image }} 
-                    style={styles.imagePreview} 
-                  />
-                </View>
-              )}
+              </View>
+            )}
+          </View>
 
-              {/* Poll Options */}
-              {addPoll && (
-                <View style={styles.modalContentContainer}>
-                  <View style={styles.pollSectionHeader}>
-                    <Text style={styles.pollSectionTitle}>Add Poll Options</Text>
-                    <TouchableOpacity 
-                      style={styles.closePollButton}
-                      onPress={() => setAddPoll(false)}
-                    >
-                      <Feather name="x" size={20} color="#666" />
-                    </TouchableOpacity>
-                  </View>
-                  
-                  <PollOptions 
-                    pollOptions={pollOptions}
-                    onAddOption={addPollOption}
-                    onRemoveOption={removePollOption}
-                  />
-                </View>
-              )}
-            </KeyboardAwareScrollView>
-            
-            {/* Bottom Action Bar */}
-            <View style={styles.fixedBottomContainer}>
-              <ActionBar 
-                options={{ addChat, addPoll, addImage, anonymous }}
-                onOptionToggle={toggleOption}
+          {/* Poll Options */}
+          {addPoll && (
+            <View style={styles.pollContainer}>
+              <PollOptions 
+                pollOptions={pollOptions}
+                onAddOption={addPollOption}
+                onRemoveOption={removePollOption}
               />
             </View>
-          </View>
-        </SafeAreaView>
-      </TouchableWithoutFeedback>
+          )}
+        </ScrollView>
+
+        {/* Action Bar */}
+        <View style={styles.actionBarContainer}>
+          <View style={styles.divider} />
+          <ActionBar 
+            options={{ addChat, addPoll, addImage, anonymous }}
+            onOptionToggle={toggleOption}
+          />
+        </View>
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: "#fff",
-    paddingTop: Platform.OS === 'android' ? 25 : 0,
   },
-  keyboardAvoidingView: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  postButton: {
+    backgroundColor: '#836fff',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  postButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  forumSelectorContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  contentContainer: {
     flex: 1,
+    paddingHorizontal: 16,
   },
-  mainContainer: {
+  titleInput: {
+    fontSize: 18,
+    fontWeight: '500',
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  bodyInput: {
+    fontSize: 16,
+    minHeight: 120,
+    paddingTop: 8,
+  },
+  contentExtrasContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 16,
+  },
+  imageContainer: {
+    marginRight: 16,
+    marginBottom: 16,
+  },
+  imagePreview: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 12,
+    padding: 4,
+  },
+  forumDetailsContainer: {
     flex: 1,
+    minWidth: 250,
   },
-  scrollContent: {
-    padding: 20,
-    paddingTop: 0,
-    paddingBottom: 120,
+  pollContainer: {
+    marginTop: 16,
+  },
+  actionBarContainer: {
+    width: '100%',
+    backgroundColor: '#fff',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  actionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  leftActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    padding: 8,
+    marginRight: 16,
+  },
+  anonymousButton: {
+    marginRight: 0,
   },
   centerContainer: {
     flex: 1,
@@ -541,204 +614,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  header: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#836fff",
-  },
-  backButton: {
-    padding: 8,
-  },
-  postButton: {
-    backgroundColor: "#836fff",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  disabledButton: {
-    backgroundColor: '#b0a4ff',
-  },
-  postButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  titleInput: {
-    fontSize: 20,
-    marginVertical: 12,
-    padding: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#E0E0E0',
-  },
-  descriptionInput: {
-    fontSize: 16,
-    backgroundColor: 'white',
-    padding: 16,
-    marginBottom: 16,
-    minHeight: 120,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  fixedBottomContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingBottom: Platform.OS === "ios" ? 20 : 10,
-    paddingTop: 12,
-    zIndex: 10,
-    elevation: 5,
-  },
-  imagePreviewContainer: {
-    marginVertical: 12,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 16,
-  },
-  imageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  imageHeaderText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-  },
-  removeImageButton: {
-    padding: 6,
-    borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  imagePreview: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-    resizeMode: 'cover',
-  },
-  buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 8,
-    backgroundColor: '#fff',
-  },
-  iconButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 8,
-  },
-  iconButtonText: {
-    fontSize: 12,
-    color: '#57636c',
-    marginTop: 4,
-  },
-  modalContentContainer: {
-    marginVertical: 12,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 16,
-  },
-  pollSection: {
-    marginTop: 8,
-  },
-  pollInputContainer: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  pollOptionInput: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  addOptionButton: {
-    backgroundColor: '#836fff',
-    borderRadius: 8,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pollOptionsContainer: {
-    gap: 8,
-  },
-  pollOption: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  pollOptionText: {
-    fontSize: 14,
-    color: '#333',
-    flex: 1,
-  },
-  removeOptionButton: {
-    padding: 6,
-    marginLeft: 8,
-  },
-  pollSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  pollSectionTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-  },
-  closePollButton: {
-    padding: 6,
-    borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  formFieldsContainer: {
-    marginVertical: 12,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 16,
-  },
-  formFieldsTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 12,
-  },
 });
 
-export default CreatePostForm;
+export default CreatePost;

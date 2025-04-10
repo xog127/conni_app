@@ -1,5 +1,8 @@
-
 function timeAgo(firebaseTimestamp) {
+    if (!firebaseTimestamp || !firebaseTimestamp.seconds) {
+        return "Just now";
+    }
+
     const seconds = firebaseTimestamp.seconds;
     const now = Math.floor(Date.now() / 1000); // Current time in seconds
     const diff = now - seconds; // Difference in seconds

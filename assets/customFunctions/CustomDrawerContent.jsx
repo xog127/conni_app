@@ -1,93 +1,176 @@
 import React from "react";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
-import { Linking } from "react-native";
+import { Linking, Platform } from "react-native";
 import {
   VStack,
   Text,
   Pressable,
   HStack,
   Box,
-  NativeBaseProvider,
+  Avatar,
+  Divider,
+  Icon,
+  useTheme,
 } from "native-base";
-import { FontAwesome5 } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { useAuth } from "../services/authContext";
 
 function CustomDrawerContent(props) {
-  const menuItems = [
+  const { user } = useAuth();
+  const theme = useTheme();
+
+  const quickLinks = [
     {
       name: "Portico",
       icon: "school",
-      color: "green",
-      url: "https://www.example1.com",
+      color: "#4CAF50",
+      url: "https://evision.ucl.ac.uk/",
     },
     {
-      name: "Notice",
-      icon: "bell",
-      color: "red",
-      url: "https://www.example2.com",
+      name: "Moodle",
+      icon: "graduation-cap",
+      color: "#2196F3",
+      url: "https://moodle.ucl.ac.uk/",
     },
     {
       name: "Library",
       icon: "book",
-      color: "blue",
-      url: "https://www.example3.com",
+      color: "#9C27B0",
+      url: "https://www.ucl.ac.uk/library/",
     },
     {
       name: "Calendar",
       icon: "calendar-alt",
-      color: "brown",
-      url: "https://www.example4.com",
+      color: "#FF9800",
+      url: "https://timetable.ucl.ac.uk/",
     },
   ];
 
-  return (
-    <NativeBaseProvider>
-      <DrawerContentScrollView
-        {...props}
-        contentContainerStyle={{ paddingVertical: 20 }}
+  const renderQuickLink = (item, index) => (
+    <Pressable 
+      key={index} 
+      onPress={() => Linking.openURL(item.url)}
+      mb={2}
+    >
+      <HStack
+        alignItems="center"
+        space={3}
+        py={3}
+        px={4}
+        borderRadius="xl"
+        bg="gray.50"
+        _pressed={{ bg: "gray.100" }}
       >
-        <VStack space="6" my="2" mx="4">
-          {/* Sidebar Header */}
-          <Text fontSize="30" fontWeight="bold" fontFamily={"Roboto Serif"}>
-            University College London
-          </Text>
-          {/* Menu List */}
-          <Box>
-            <Text fontSize="24" fontWeight="semibold" height={"12"} py={"8px"}>
-              Quick Menu
-            </Text>
-            {menuItems.map((item, index) => (
-              <Pressable key={index} onPress={() => Linking.openURL(item.url)}>
-                <HStack
-                  alignItems="center"
-                  space={3}
-                  py={4}
-                  borderBottomWidth={1}
-                  borderColor="white"
-                  justifyContent={"space-between"}
-                >
-                  <Text fontSize="16" fontWeight={"medium"}>
-                    {item.name}
-                  </Text>
-                  <FontAwesome5 name={item.icon} size={20} color={item.color} />
-                </HStack>
-              </Pressable>
-            ))}
-          </Box>
+        <Box
+          width={10}
+          height={10}
+          borderRadius="lg"
+          bg={item.color + "10"}
+          justifyContent="center"
+          alignItems="center"
+        >
+          <FontAwesome5 name={item.icon} size={20} color={item.color} />
+        </Box>
+        <Text fontSize="md" fontWeight="medium" color="gray.800">
+          {item.name}
+        </Text>
+      </HStack>
+    </Pressable>
+  );
 
-          {/* Feedback Button */}
+  return (
+    <DrawerContentScrollView
+      {...props}
+      contentContainerStyle={{ 
+        flexGrow: 1,
+        paddingTop: Platform.OS === 'ios' ? 0 : 20
+      }}
+    >
+      <VStack space={6} flex={1} px={4}>
+        {/* User Profile Section */}
+        <Box pt={4} pb={6}>
+          <Pressable 
+            onPress={() => props.navigation.navigate("Profile")}
+          >
+            <HStack space={3} alignItems="center">
+              <Avatar
+                size="lg"
+                source={
+                  user?.photo_url
+                    ? { uri: user.photo_url }
+                    : require("../images/Blankprofile.png")
+                }
+                bg="gray.300"
+              />
+              <VStack>
+                <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                  {user?.first_name} {user?.last_name}
+                </Text>
+                <HStack space={1} alignItems="center">
+                  <Text fontSize="sm" color="gray.500">
+                    View Profile
+                  </Text>
+                  <Icon 
+                    as={Ionicons}
+                    name="chevron-forward" 
+                    size={4} 
+                    color="gray.400"
+                  />
+                </HStack>
+              </VStack>
+            </HStack>
+          </Pressable>
+        </Box>
+
+        <Divider bg="gray.200" />
+
+        {/* Quick Links */}
+        <VStack space={3}>
+          <Text 
+            fontSize="xs" 
+            fontWeight="bold" 
+            color="gray.500"
+            letterSpacing="xl"
+            pl={2}
+          >
+            QUICK LINKS
+          </Text>
+          <VStack space={2}>
+            {quickLinks.map(renderQuickLink)}
+          </VStack>
+        </VStack>
+
+        <Box flex={1} />
+
+        {/* Feedback Button */}
+        <Box pb={6}>
           <Pressable
-            mt={10}
-            p={3}
-            bg="gray.200"
-            borderRadius="md"
-            alignItems="center"
             onPress={() => props.navigation.navigate("Feedback")}
           >
-            <Text fontSize="md">Give Feedback</Text>
+            <HStack
+              space={3}
+              py={3}
+              px={4}
+              borderRadius="2xl"
+              bg="#836FFF15"
+              alignItems="center"
+              borderWidth={1}
+              borderColor="#836FFF20"
+            >
+              <Icon 
+                as={Ionicons}
+                name="chatbubble-ellipses-outline" 
+                size={5} 
+                color="#836FFF"
+              />
+              <Text fontSize="md" fontWeight="medium" color="#836FFF">
+                Give Feedback
+              </Text>
+            </HStack>
           </Pressable>
-        </VStack>
-      </DrawerContentScrollView>
-    </NativeBaseProvider>
+        </Box>
+      </VStack>
+    </DrawerContentScrollView>
   );
 }
 

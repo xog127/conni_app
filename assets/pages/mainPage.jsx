@@ -1,66 +1,75 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { Box, Icon, HStack, Pressable, Spacer, Spinner, Center } from "native-base";
+import React, { useState, useEffect } from "react";
+import { Box, Icon, HStack, Pressable, Spacer, Spinner, Center, FlatList, ScrollView, VStack, Image, Text } from "native-base";
 import { Ionicons } from "@expo/vector-icons";
-import { getAnyCollection } from "../firebase/queries";
+import { getAnyCollection, getRef } from "../firebase/queries";
 import ConniIcon from "../customIcon/ConniIcon";
-import PostPreviews from "../components/postPreviews";
-
-// Number of posts to load per batch
-const POSTS_PER_LOAD = 10;
+import PostWidget from "../components/postwidget";
+import PostUserInfo from "../components/postuserinfo.jsx";
+import { timeAgo } from "../customFunctions/time.js";
+import HeartIcon from "../customIcon/HeartIcon.js";
+import CommentIcon from "../customIcon/CommentIcon.js";
+import ViewIcon from "../customIcon/ViewIcon.js";
+import MarketPreview from "../components/marketPreview";
+import PostCard from "../components/PostCard.jsx";
 
 export default function MainPage({ navigation }) {
-  const [postRefs, setPostRefs] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [allPosts, setAllPosts] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [marketData, setMarketData] = useState(null);
+  const [marketPosts, setMarketPosts] = useState([]);
 
   useEffect(() => {
-    const fetchAllPosts = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const posts = await getAnyCollection("posts");
-        // Sort posts by time_posted in descending order (newest first)
-        const sortedPosts = posts.sort((a, b) => b.time_posted - a.time_posted);
-        setAllPosts(sortedPosts);
+        // Fetch all posts
+        const postsData = await getAnyCollection("posts");
         
-        // Load only the first batch
-        const initialPosts = sortedPosts.slice(0, POSTS_PER_LOAD);
-        setPostRefs(initialPosts);
-        setCurrentIndex(POSTS_PER_LOAD);
+        // Fetch forum data for each post
+        const postsWithForumData = await Promise.all(
+          postsData.map(async (post) => {
+            try {
+              const forumData = await getRef({
+                id: post.post_genre_ref.id || post.post_genre_ref.path,
+                collectionName: "genres"
+              });
+              return {
+                ...post,
+                forum: forumData
+              };
+            } catch (error) {
+              console.error("Error fetching forum data:", error);
+              return post;
+            }
+          })
+        );
+
+        const sortedPosts = postsWithForumData.sort((a, b) => b.time_posted - a.time_posted);
+        setPosts(sortedPosts);
+
+        // Fetch market data
+        const genreRef = "QNywRjCYSwAi4TuLkzbh"; // Market genre reference
+        const marketGenre = await getRef({ id: genreRef, collectionName: "genres" });
+        setMarketData(marketGenre);
+
+        // Filter market posts
+        const marketPosts = postsData.filter(post => {
+          if (post.post_genre_ref) {
+            const genreRefId = post.post_genre_ref.id || post.post_genre_ref.path;
+            return genreRefId === genreRef && post.post_photo;
+          }
+          return false;
+        });
+        setMarketPosts(marketPosts);
       } catch (error) {
-        console.error("Error fetching post references:", error.message);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAllPosts();
+    fetchData();
   }, []);
-
-  const loadMorePosts = useCallback(() => {
-    // Don't load more if already loading or if we've loaded all posts
-    if (loadingMore || currentIndex >= allPosts.length) return;
-    
-    setLoadingMore(true);
-    console.log("Loading more posts...");
-    
-    // Simulate network delay to show loading indicator
-    setTimeout(() => {
-      // Get the next batch of posts
-      const nextBatch = allPosts.slice(
-        currentIndex, 
-        currentIndex + POSTS_PER_LOAD
-      );
-      
-      // Update state
-      setPostRefs(prevPosts => [...prevPosts, ...nextBatch]);
-      setCurrentIndex(prevIndex => prevIndex + POSTS_PER_LOAD);
-      setLoadingMore(false);
-      
-      console.log(`Loaded ${nextBatch.length} more posts`);
-    }, 500); // Small delay to make loading visible
-  }, [allPosts, currentIndex, loadingMore]);
 
   const renderHeader = () => (
     <Box>
@@ -76,11 +85,12 @@ export default function MainPage({ navigation }) {
         <HStack flex={1} alignItems="center" justifyContent="space-between">
           {/* Left section */}
           <HStack space={4} alignItems="center">
-            {/* Add Pressable to open the drawer */}
             <Pressable onPress={() => navigation.openDrawer()}>
               <Icon as={Ionicons} name="menu" size={7} color="black" />
             </Pressable>
-            <Icon as={Ionicons} name="notifications" size={7} color="white" />
+            <Pressable onPress={() => navigation.navigate("RedditCreatePost")}>
+              <Icon as={Ionicons} name="add-circle" size={7} color="#836FFF" />
+            </Pressable>
           </HStack>
           {/* Centered ConniIcon */}
           <Spacer />
@@ -105,18 +115,69 @@ export default function MainPage({ navigation }) {
     </Box>
   );
 
-  const renderFooter = () => {
-    if (currentIndex >= allPosts.length) return null;
-    
+  const renderMarketSection = () => {
+    if (!marketData || marketPosts.length === 0) return null;
+
     return (
-      <Center py={4}>
-        {loadingMore ? (
-          <Spinner size="sm" color="#836FFF" />
-        ) : null}
-      </Center>
+      <Box>
+        <VStack pt="36px" pb="36px" space="12px">
+          <HStack justifyContent={"space-between"} px="20px">
+            <HStack space="8px">
+              <Image
+                source={{ uri: marketData.photo }}
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  aspectRatio: 1,
+                }}
+              />
+              <Text
+                fontSize="20px"
+                fontWeight="500"
+                lineHeight="36px"
+                fontStyle="normal"
+              >
+                Market
+              </Text>
+            </HStack>
+            <Pressable>
+              <Box px="12px" py="6px" bg="#836FFF" borderRadius="16px">
+                <Text
+                  fontSize="14px"
+                  fontWeight="500"
+                  lineHeight="21px"
+                  fontStyle="normal"
+                  color="#FFF"
+                >
+                  See All
+                </Text>
+              </Box>
+            </Pressable>
+          </HStack>
+          <ScrollView
+            horizontal={true}
+            showsHorizontalScrollIndicator={false}
+          >
+            <HStack space="8px" px="20px">
+              {marketPosts.map((post) => (
+                <MarketPreview
+                  key={post.id}
+                  postRef={post.id}
+                  navigation={navigation}
+                />
+              ))}
+            </HStack>
+          </ScrollView>
+        </VStack>
+      </Box>
     );
   };
-
+  const renderPost = ({ item, index }) => (
+    <>
+      <PostCard item={item} navigation={navigation} />
+      {index === 0 && renderMarketSection()}
+    </>
+  );
   if (loading) {
     return (
       <Box flex={1} justifyContent="center" alignItems="center" bg="white">
@@ -126,14 +187,14 @@ export default function MainPage({ navigation }) {
   }
 
   return (
-    <PostPreviews
-      data={postRefs}
-      renderHeader={renderHeader}
-      renderFooter={renderFooter}
-      navigation={navigation}
-      isMarketView={true}
-      onEndReached={loadMorePosts}
-      onEndReachedThreshold={0.5}
-    />
+    <Box flex={1} bg="white">
+      <FlatList
+        data={posts}
+        renderItem={renderPost}
+        keyExtractor={item => item.id}
+        ListHeaderComponent={renderHeader}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      />
+    </Box>
   );
 }

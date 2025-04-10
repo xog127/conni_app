@@ -24,7 +24,8 @@ import CreateChat from './assets/pages/createChat';
 import ChatRoom from './assets/pages/chatRoom';
 import ChatInfo from './assets/pages/chatInfo';
 import ForumScreen from './assets/pages/ForumScreen';
-import SearchScreen from './assets/pages/SearchScreen';
+import NewSearchScreen from './assets/pages/NewSearchScreen';
+import RedditStyleCreatePost from './assets/pages/RedditStyleCreatePost';
 import { NativeBaseProvider } from 'native-base';
 
 
@@ -119,10 +120,30 @@ const PostStackNavigator = () => (
     />
     <PostStack.Screen 
       name="Search" 
-      component={SearchScreen} 
+      component={NewSearchScreen} 
       options={{ 
         headerShown: false,
         presentation: 'modal'
+      }}
+    />
+    <PostStack.Screen 
+      name="RedditCreatePost" 
+      component={RedditStyleCreatePost} 
+      options={{ 
+        headerShown: false,
+        presentation: 'modal',
+        cardStyleInterpolator: ({ current, layouts }) => ({
+          cardStyle: {
+            transform: [
+              {
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              },
+            ],
+          },
+        }),
       }}
     />
     <PostStack.Screen 
@@ -240,7 +261,7 @@ const MainStackNavigator = () => (
     />
     <Stack.Screen 
       name="Search" 
-      component={SearchScreen} 
+      component={NewSearchScreen} 
       options={{ 
         headerShown: false,
         presentation: 'modal'

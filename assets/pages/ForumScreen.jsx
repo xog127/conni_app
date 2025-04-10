@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Box, Text, Icon, HStack, VStack, Pressable } from "native-base";
+import React, { useEffect, useState, useCallback } from "react";
+import { Box, Text, Icon, HStack, VStack, Pressable, Spinner, Center } from "native-base";
 import { Ionicons } from "@expo/vector-icons";
 import PostPreviews from "../components/postPreviews";
 import { getAnyCollection, getRef } from "../firebase/queries";
@@ -13,27 +13,27 @@ export default function ForumScreen({ route, navigation }) {
   const [selectedOption, setSelectedOption] = useState("Latest");
   const options = ["Latest", "Most Liked", "Most Commented", "Most Viewed"];
   const [postRefs, setPostRefs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [allPosts, setAllPosts] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const POSTS_PER_LOAD = 10;
 
   const filterPostsByGenre = (posts, genreRef) => {
     const filteredPosts = posts.filter((post) => {
-      // Ensure post_genre_ref exists and has an id before filtering
       if (post.post_genre_ref) {
         const genreRefId = post.post_genre_ref.id || post.post_genre_ref.path;
-
-        // Only include posts that match the genreRef AND have a post_photo
         return genreRefId === genreRef;
       }
-
-      // If post_genre_ref doesn't exist OR there's no post_photo, exclude it
       return false;
     });
-
     return filteredPosts;
   };
 
   useEffect(() => {
     const fetchPostRefs = async () => {
       try {
+        setLoading(true);
         const genreData = await getRef({
           id: genreref,
           collectionName: "genres",
@@ -41,115 +41,92 @@ export default function ForumScreen({ route, navigation }) {
         setGenre(genreData);
         const posts = await getAnyCollection("posts");
         const filteredPosts = filterPostsByGenre(posts, genreref);
-        setPostRefs(
-          filteredPosts.sort((a, b) => b.time_posted - a.time_posted)
-        );
+        const sortedPosts = filteredPosts.sort((a, b) => b.time_posted - a.time_posted);
+        setAllPosts(sortedPosts);
+        
+        // Load only the first batch
+        const initialPosts = sortedPosts.slice(0, POSTS_PER_LOAD);
+        setPostRefs(initialPosts);
+        setCurrentIndex(POSTS_PER_LOAD);
       } catch (error) {
         console.error("Error fetching post references:", error.message);
+      } finally {
+        setLoading(false);
       }
     };
     fetchPostRefs();
   }, [genreref]);
 
+  const loadMorePosts = useCallback(() => {
+    if (loadingMore || currentIndex >= allPosts.length) return;
+    
+    setLoadingMore(true);
+    
+    setTimeout(() => {
+      const nextBatch = allPosts.slice(
+        currentIndex, 
+        currentIndex + POSTS_PER_LOAD
+      );
+      
+      setPostRefs(prevPosts => [...prevPosts, ...nextBatch]);
+      setCurrentIndex(prevIndex => prevIndex + POSTS_PER_LOAD);
+      setLoadingMore(false);
+    }, 500);
+  }, [allPosts, currentIndex, loadingMore]);
+
   const renderHeader = () => (
     <Box>
-      <Box bg="gray.200" py={2} px={4} borderRadius="md" position="relative">
-        <Pressable onPress={() => setIsOpen(!isOpen)}>
-          <HStack
-            justifyContent="flex-end"
-            alignItems="center"
-            space={4}
-            height="20px"
-          >
-            <Text fontSize="md" fontWeight="bold">
-              {selectedOption}
-            </Text>
-            <Icon
-              as={Ionicons}
-              name={isOpen ? "chevron-up-outline" : "chevron-down-outline"}
-              size={6}
-              color="gray.600"
-            />
-          </HStack>
-        </Pressable>
-        <AnimatePresence>
-          {isOpen && (
-            <MotiView
-              from={{ opacity: 0, translateY: -10 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              exit={{ opacity: 0, translateY: -10 }}
-              transition={{ type: "timing", duration: 300 }}
-              style={{
-                position: "absolute",
-                top: 40, // Positioning the dropdown below
-                right: 10,
-                zIndex: 10,
-              }}
-            >
-              <VStack
-                bg="gray.200" // Apply the background color directly from NativeBase
-                borderRadius="8"
-                width={140}
-              >
-                {options.map((option, index) => (
-                  <Pressable
-                    key={index}
-                    py={2}
-                    px={3}
-                    onPress={() => {
-                      setSelectedOption(option);
-                      setIsOpen(false);
-                    }}
-                    _pressed={{ bg: "gray.600" }}
-                  >
-                    <Text fontSize="sm">{option}</Text>
-                  </Pressable>
-                ))}
-              </VStack>
-            </MotiView>
-          )}
-        </AnimatePresence>
+      <Box
+        bg="white"
+        h={100}
+        justifyContent="space-between"
+        alignItems="center"
+        flexDirection="row"
+        px={4}
+        pt={"10%"}
+      >
+        <HStack flex={1} alignItems="center" justifyContent="space-between">
+          <Pressable onPress={() => navigation.goBack()}>
+            <Icon as={Ionicons} name="arrow-back" size={7} color="black" />
+          </Pressable>
+          <Text fontSize="xl" fontWeight="bold">
+            {genre?.name || "Forum"}
+          </Text>
+          <Box w={7} /> {/* Spacer for alignment */}
+        </HStack>
       </Box>
     </Box>
   );
 
-  return (
-    <NativeBaseProvider>
-      <HStack
-        bg="white"
-        justifyContent="space-between"
-        alignItems="center"
-        alignSelf="stretch"
-        pt={"10%"}
-      >
-        <Pressable onPress={() => navigation.goBack()}>
-          <Box
-            width="48px"
-            height="48px"
-            justifyContent="center"
-            alignItems="center"
-          >
-            <Ionicons name="chevron-back" size={30} color="black" />
-          </Box>
-        </Pressable>
-        <Text fontSize={20} fontWeight="bold">
-          {genre?.name}
-        </Text>
+  const renderFooter = () => {
+    if (currentIndex >= allPosts.length) return null;
+    
+    return (
+      <Center py={4}>
+        {loadingMore ? (
+          <Spinner size="sm" color="#836FFF" />
+        ) : null}
+      </Center>
+    );
+  };
 
-        <Box
-          width="48px"
-          height="48px"
-          justifyContent="center"
-          alignItems="center"
-        >
-          <Ionicons name="chevron-back" size={30} color="white" />
-        </Box>
-      </HStack>
-      <PostPreviews
-        data={postRefs}
-        renderHeader={renderHeader}
-        navigation={navigation}
-      />
-    </NativeBaseProvider>
+  if (loading) {
+    return (
+      <Box flex={1} justifyContent="center" alignItems="center" bg="white">
+        <Spinner size="lg" color="#836FFF" />
+      </Box>
+    );
+  }
+
+  return (
+    <PostPreviews
+      data={postRefs}
+      renderHeader={renderHeader}
+      renderFooter={renderFooter}
+      navigation={navigation}
+      isMarketView={false}
+      onEndReached={loadMorePosts}
+      onEndReachedThreshold={0.5}
+    />
   );
 }
