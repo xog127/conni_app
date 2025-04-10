@@ -193,8 +193,7 @@ const PostDisplay = () => {
               )}
             </View>
             {/* Polls Content */}
-           
-            {post.addPoll && post.pollOptions.pollOptions.map((pollOption, index) => (
+            {post.addPoll && post.pollOptions?.pollOptions?.map((pollOption, index) => (
               <PollOption
                 key={index}
                 pollOption={pollOption}

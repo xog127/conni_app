@@ -75,7 +75,7 @@ const PostWidget = ({ postRef, navigation }) => {
               {post?.post_data}
             </Text>
 
-            {post?.requirements && (
+            {post?.requirements && genre?.name !== "General" && (
               <VStack
                 mt={2}
                 p="12px"
