@@ -46,6 +46,7 @@ const ProfileStackNavigator = () => (
       component={ProfileScreen} 
       options={{ headerShown: false }}
     />
+
      <ProfileStack.Screen 
       name="EditProfile" 
       component={ProfileEditScreen}
@@ -55,7 +56,7 @@ const ProfileStackNavigator = () => (
       }}
     /> 
     <ProfileStack.Screen 
-      name="UserSettings" 
+      name="Setting" 
       component={UserSettingsScreen}
       options={{ 
         title: 'Settings',
@@ -87,8 +88,16 @@ const ForumStackNavigator = () => (
       options={{ headerShown: false }}
     />
     <ForumStack.Screen 
-      name="Forums" 
+      name="IndividualForum" 
       component={ForumScreen}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
+    />
+        <ForumStack.Screen 
+      name="PostDisplay" 
+      component={PostDisplay}
       options={{ 
         headerShown: false,
         tabBarStyle: { display: 'none' }
@@ -212,11 +221,13 @@ const TabNavigator = () => (
           'PostDisplay',
           'createPost',
           'Forums',
+          'IndividualForum',
           'Chatroom',
           'CreateChat',
           'Chatinfo',
           'EditProfile',
-          'UserSettings'
+          'Setting',
+          'Feedback'
         ];
 
         // Hide tab bar if we're in one of the specified routes
@@ -298,50 +309,6 @@ const TabNavigator = () => (
   </Tab.Navigator>
 );
 
-// Main Stack Navigator (for screens that shouldn't be in tabs)
-const MainStackNavigator = () => (
-  <Stack.Navigator>
-    <Stack.Screen 
-      name="Main" 
-      component={MainPage} 
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen 
-      name="Search" 
-      component={NewSearchScreen} 
-      options={{ 
-        headerShown: false,
-        presentation: 'modal'
-      }}
-    />
-    <Stack.Screen 
-      name="PostDisplay" 
-      component={PostDisplay} 
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen 
-      name="CreatePost" 
-      component={CreatePostForm} 
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen 
-      name="Setting" 
-      component={Setting} 
-      options={{ headerShown: true, title: "Settings" }}
-    />
-    <Stack.Screen 
-      name="Feedback" 
-      component={Feedback} 
-      options={{ headerShown: true, title: "Feedback" }}
-    />
-    <Stack.Screen 
-      name="Onboarding" 
-      component={OnboardingPage}
-      options={{ headerShown: false, gestureEnabled: false }}
-    />
-  </Stack.Navigator>
-);
-
 
 // Root Navigator - Handles authentication flow
 const RootNavigator = () => {
@@ -352,7 +319,30 @@ const RootNavigator = () => {
       {isAuthenticated && user ? (
         // Check if user needs onboarding
         user.isOnboarded ? (
+          <>
           <Stack.Screen name="MainTabs" component={TabNavigator} />
+          <Stack.Screen 
+          name="Feedback" 
+          component={Feedback} 
+          options={{ headerShown: true, title: "Feedback" }}
+        />
+            <Stack.Screen 
+      name="IndividualForum" 
+      component={ForumScreen}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
+    />
+        <Stack.Screen 
+      name="PostDisplay" 
+      component={PostDisplay}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      }}
+    />
+        </>
         ) : (
           <Stack.Screen 
             name="Onboarding" 

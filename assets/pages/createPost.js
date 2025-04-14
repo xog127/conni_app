@@ -31,7 +31,7 @@ import {KeyboardAwareScrollView} from "react-native-keyboard-aware-scroll-view"
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { addRef, getCollections } from "../firebase/queries";
 import * as ImagePicker from 'expo-image-picker';
-import { doc, Timestamp } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, Timestamp } from "firebase/firestore";
 import CreatePostFields from "./createPostFields";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "../firebase/firebaseConfig";
@@ -289,6 +289,7 @@ const CreatePost = ({ navigation }) => {
       setIsSubmitting(true);
       const genreDoc = doc(db, "genres", selectedForum.id);
       const userDoc = doc(db, 'users', user.uid);
+
       
       // Initialize all arrays to empty arrays
       const postData = {
@@ -311,21 +312,27 @@ const CreatePost = ({ navigation }) => {
         num_comments: 0,
         views: 0,
         post_user: userDoc,
-        like_userref: [], // Initialize empty array for likes
         liked_user_ref: [], // Initialize empty array for liked users
-        chatRefs: [], // Initialize empty array for chat references
         commentedPostsRef: [], // Initialize empty array for commented posts
-        postsRef: [], // Initialize empty array for user's posts
         voters: [], // Initialize empty array for poll voters
         comments: [] // Initialize empty array for comments
       };
-      
-      console.log("Posting data:", JSON.stringify(postData, null, 2));
       
       // Add the post to Firestore
       const postRef = await addRef({ 
         collectionName: "posts", 
         data: postData 
+      });
+
+      console.log("Post reference:", postRef);
+
+      await updateDoc(genreDoc, {
+        postsRef: arrayUnion(postRef),
+      });
+  
+      // ? Update user's postsRef
+      await updateDoc(userDoc, {
+        postsRef: arrayUnion(postRef),
       });
       
       console.log("Post created successfully:", postRef);

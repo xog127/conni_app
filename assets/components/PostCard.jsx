@@ -18,6 +18,7 @@ const PostCard = ({ item, navigation }) => {
     return timeAgo(timestamp);
   };
 
+
   const renderForumDetails = (post) => {
     if (!post.forum_details) return null;
 
@@ -39,6 +40,7 @@ const PostCard = ({ item, navigation }) => {
       <View style={[styles.detailLine, styles.emphasisContainer]}>
         <Text style={styles.emphasis}>{text}</Text>
       </View>
+
     );
 
     const renderSkillChips = (skills) => {
@@ -117,8 +119,10 @@ const PostCard = ({ item, navigation }) => {
   };
 
   return (
-    <Pressable 
-      onPress={() => navigation.navigate('PostDisplay', { postRef: item.id, navigation })}
+    <Pressable
+      onPress={() =>
+        navigation.navigate("PostDisplay", { postRef: item.id, navigation })
+      }
     >
       <Box
         bg="white"
@@ -149,28 +153,28 @@ const PostCard = ({ item, navigation }) => {
           {item.post_data}
         </Text>
 
+
         {item.forum_details && item.forum_type && (
           <Box mt={2}>
             <View style={styles.forumDetailsBox}>
               {renderForumDetails(item)}
             </View>
           </Box>
-        )}
 
         {item.post_photo && (
-          <Box mt={4}>
-            <Image
-              source={{ uri: item.post_photo }}
-              style={{
-                width: "100%",
-                height: 300,
-                borderRadius: 8,
-              }}
-              contentFit="cover"
-              transition={200}
-            />
-          </Box>
+          <Image
+            source={{ uri: item.post_photo }}
+            style={{
+              alignSelf: "center",
+              width: "100%",
+              height: undefined,
+              aspectRatio: 1,
+            }}
+            contentFit="contain"
+            contentPosition="center"
+          />
         )}
+
 
         <HStack justifyContent="space-between" mt={2} alignItems="center">
           <HStack alignItems="center">
@@ -178,7 +182,7 @@ const PostCard = ({ item, navigation }) => {
               <HStack alignItems="center">
                 <HeartIcon size={20} color="#FF5963" />
                 <Text fontSize="xs" color="gray.700" ml={1}>
-                  {item.likes?.length || 0}
+                  {item.num_likes || 0}
                 </Text>
               </HStack>
             </Pressable>
@@ -204,6 +208,7 @@ const PostCard = ({ item, navigation }) => {
     </Pressable>
   );
 };
+
 
 const styles = StyleSheet.create({
   emphasis: {
@@ -257,3 +262,4 @@ const styles = StyleSheet.create({
 });
 
 export default PostCard; 
+
