@@ -28,8 +28,11 @@ const PostCard = ({ item, navigation }) => {
 
           // Format date values
           let displayValue = value;
-          if (value instanceof Date || (typeof value === 'string' && value.includes('T'))) {
-            displayValue = new Date(value).toISOString().split('T')[0];
+          if (
+            value instanceof Date ||
+            (typeof value === "string" && value.includes("T"))
+          ) {
+            displayValue = new Date(value).toISOString().split("T")[0];
           }
 
           return (
@@ -63,9 +66,7 @@ const PostCard = ({ item, navigation }) => {
         <PostUserInfo
           userRef={item.post_user}
           anonymous={item.anonymous}
-
           date_posted={getTimeAgo(item.time_posted)}
-
           forumRef={item.post_genre_ref}
         />
 
@@ -84,9 +85,22 @@ const PostCard = ({ item, navigation }) => {
           {item.post_data}
         </Text>
 
+        {item.post_photo && (
+          <Image
+            source={{ uri: item.post_photo }}
+            style={{
+              alignSelf: "center",
+              width: "100%",
+              height: undefined,
+              aspectRatio: 1,
+            }}
+            contentFit="contain"
+            contentPosition="center"
+          />
+        )}
+
         {item.requirements && item.forum?.name !== "General" && (
           <VStack
-            mt={2}
             p="12px"
             bg="gray.100"
             borderRadius="16px"
@@ -99,29 +113,13 @@ const PostCard = ({ item, navigation }) => {
           </VStack>
         )}
 
-
-        {item.image && (
-          <Image
-            source={{ uri: item.image }}
-            style={{
-              alignSelf: "center",
-              width: "100%",
-              height: undefined,
-              aspectRatio: 1,
-            }}
-            contentFit="contain"
-            contentPosition="center"
-          />
-
-        )}
-
         <HStack justifyContent="space-between" mt={2} alignItems="center">
           <HStack alignItems="center">
             <Pressable>
               <HStack alignItems="center">
                 <HeartIcon size={20} color="#FF5963" />
                 <Text fontSize="xs" color="gray.700" ml={1}>
-                  {item.likes?.length || 0}
+                  {item.num_likes || 0}
                 </Text>
               </HStack>
             </Pressable>

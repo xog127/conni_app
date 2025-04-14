@@ -18,14 +18,15 @@ import { getRef, fetchReferenceData, getSubRefAll, addRef, updateRef } from '../
 import CommentCard from '../components/commentCard.js';
 import { addDoc, db } from '../firebase/firebaseConfig';
 import { Timestamp, doc, collection, arrayUnion, increment} from 'firebase/firestore';
-import { TouchableWithoutFeedback } from 'react-native-gesture-handler';
 import PollOption from '../components/pollOption.js';
 import { useRoute } from '@react-navigation/native';
 import { Box } from 'native-base';
+import { useAuth } from '../services/authContext';
 
 const authUser = "Psychology 1st Year";
 
 const PostDisplay = () => {
+  const { user } = useAuth();
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +87,7 @@ const PostDisplay = () => {
       const commentData = {
         content: newComment,
         date_created: Timestamp.now(),
-        createdby_ref: doc(db, 'users', 'ErtsKCM5RFbcMAxiyCsz4sbjZxe2'),
+        createdby_ref: doc(db, 'users', user.uid),
       };
 
       // If replying to a comment, add the reply_to field
@@ -95,6 +96,21 @@ const PostDisplay = () => {
       }
 
       await addDoc(commentsRef, commentData);
+      const postDoc = doc(db, 'posts', post.id);
+        await updateRef({
+          id: post.id,
+          collectionName: "posts",
+          updateFields: {
+            "num_comments": increment(1),
+          },
+        });
+        await updateRef({
+          id: user.uid,
+          collectionName: "users",
+          updateFields: {
+            "commented_posts_ref": arrayUnion(postDoc)
+          },
+        });
       setNewComment('');
       setReplyingTo(null);
       inputRef.current?.clear();
@@ -188,7 +204,7 @@ const PostDisplay = () => {
               {post?.post_photo && (
                 <Box mt={4}>
                   <Image
-                    source={{ uri: post.post_photo }}
+                    source={{ uri: post.post_photo}}
                     style={{
                       width: "100%",
                       height: 400,
@@ -200,6 +216,28 @@ const PostDisplay = () => {
                 </Box>
               )}
             </View>
+
+            {post?.requirements && Object.entries(post.requirements).length > 0 && (
+        <View style={styles.requirementsContainer}>
+          {Object.entries(post.requirements).map(([key, value]) => {
+            // Skip empty values
+            if (!value) return null
+
+            // Format date values
+            let displayValue = value
+            if (value instanceof Date || (typeof value === "string" && value.includes("T"))) {
+              displayValue = new Date(value).toISOString().split("T")[0]
+            }
+
+            return (
+              <View key={key} style={styles.requirementRow}>
+                <Text style={styles.requirementLabel}>{key}:</Text>
+                <Text style={styles.requirementValue}>{displayValue}</Text>
+              </View>
+            )
+          })}
+        </View>
+      )}
             {/* Polls Content */}
             {post.addPoll && post.pollOptions?.pollOptions?.map((pollOption, index) => (
               <PollOption
@@ -217,7 +255,7 @@ const PostDisplay = () => {
             {/* Post Stats */}
             <View style={styles.statsContainer}>
               <Text style={styles.statsText}>
-                {post?.num_likes || 0} likes · {post?.num_comments || 0} comments · {post?.views || 0} views
+               {post?.views || 0} views
               </Text>
             </View>
 
@@ -228,7 +266,7 @@ const PostDisplay = () => {
               </Text>
             </View>
 
-            <Text style={styles.commentsHeader}>Comments</Text>
+            <Text style={styles.commentsHeader}>Comments {post?.num_comments}</Text>
           </>
         }
         renderItem={({ item }) => <CommentCard onReply={handleReply} comment={item} userRef={item.createdby_ref} postData={post} onTrigger = {getComments} docu={doc(db, 'posts', post.id, 'comments', item.id)}/>}
@@ -363,6 +401,30 @@ const styles = StyleSheet.create({
   cancelReplyButton: {
     padding: 4,
   },
+    // Requirements styling
+    requirementsContainer: {
+      marginTop: 12,
+      marginBottom: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: "#f9f9f9",
+      borderRadius: 8,
+    },
+    requirementRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginVertical: 4,
+    },
+    requirementLabel: {
+      fontSize: 14,
+      color: "#666",
+      fontWeight: "500",
+      marginRight: 8,
+    },
+    requirementValue: {
+      fontSize: 14,
+      color: "#333",
+    },
 });
 
 
