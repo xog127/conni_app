@@ -150,6 +150,7 @@ export default function MainPage({ navigation }) {
             <Pressable
               onPress={() =>
                 navigation.navigate("IndividualForum", { genreref: marketRef })
+
               }
             >
               <Box px="12px" py="6px" bg="#836FFF" borderRadius="16px">
@@ -247,6 +248,7 @@ export default function MainPage({ navigation }) {
           data={posts}
           renderItem={renderPost}
           keyExtractor={(item) => item.id}
+          ListHeaderComponent={renderMarketSection}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

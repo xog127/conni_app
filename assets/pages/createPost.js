@@ -306,7 +306,8 @@ const CreatePost = ({ navigation }) => {
         } : null,
         anonymous,
         time_posted: Timestamp.now(),
-        requirements: formData || {},
+        forum_type: selectedForum.name,
+        forum_details: formData || {},
         num_likes: 0,
         num_comments: 0,
         views: 0,
@@ -408,7 +409,7 @@ const CreatePost = ({ navigation }) => {
 
         {/* Forum Selector */}
         <View style={styles.forumSelectorContainer}>
-          <ForumSelector 
+          <ForumSelector
             forums={forums}
             selectedForum={selectedForum}
             onForumSelect={handleForumSelect}
@@ -428,9 +429,8 @@ const CreatePost = ({ navigation }) => {
             onChangeText={setTitle}
             multiline
           />
-
           <TextInput
-            style={styles.bodyInput}
+            style={styles.descriptionInput}
             placeholder="What's on your mind?"
             value={description}
             onChangeText={setDescription}
@@ -504,18 +504,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  backButton: {
+    padding: 8,
   },
   postButton: {
     backgroundColor: '#836fff',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 8,
   },
   postButtonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   disabledButton: {
     opacity: 0.6,
@@ -529,15 +533,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   titleInput: {
-    fontSize: 18,
-    fontWeight: '500',
-    paddingVertical: 8,
+    fontSize: 20,
+    fontWeight: '600',
     marginBottom: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    borderRadius: 8,
   },
-  bodyInput: {
+  descriptionInput: {
     fontSize: 16,
-    minHeight: 120,
-    paddingTop: 8,
+    lineHeight: 24,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    borderRadius: 8,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: 8,
   },
   contentExtrasContainer: {
     flexDirection: 'row',
