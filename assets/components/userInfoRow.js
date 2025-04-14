@@ -11,15 +11,19 @@ import {
 import { Feather, AntDesign } from '@expo/vector-icons';
 import { fetchReferenceData } from '../firebase/queries';
 import { timeAgo } from '../customFunctions/time';
-import { increment, arrayRemove, arrayUnion } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
+import { doc, increment, arrayRemove, arrayUnion } from 'firebase/firestore';
 import { updateRef } from '../firebase/queries';
+import { useAuth } from '../services/authContext';
 
 const UserInfoRow = ({ 
   userRef, postData
 }) => {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
+  const postDoc = doc(db, 'posts', postData.id);
+  const [postuser, setUser] = useState(null);
   const [optionsVisible, setOptionsVisible] = useState(false);
-  const [likes, setLikes] = useState(0);
+  const [likes, setLikes] = useState(postData?.num_likes || 0);
   const [userName, setUserName] = useState('');
   const [isLiked, setLiked] = useState(false);
   const [relativeTime, setRelativeTime] = useState('');
@@ -30,7 +34,7 @@ const UserInfoRow = ({
       console.error('Missing required data for like action');
       return;
     }
-
+  
     try {
       if (isLiked) {
         await updateRef({
@@ -41,7 +45,15 @@ const UserInfoRow = ({
             "liked_user_ref": arrayRemove(userRef)
           },
         });
+        await updateRef({
+          id: user.uid,
+          collectionName: "users",
+          updateFields: {
+            "liked_posts_ref": arrayRemove(postDoc)
+          },
+        });
         setLiked(false);
+        setLikes(prev => prev - 1);
       } else {
         await updateRef({
           id: postData.id,
@@ -51,12 +63,21 @@ const UserInfoRow = ({
             "like_userref": arrayUnion(userRef)
           },
         });
+        await updateRef({
+          id: user.uid,
+          collectionName: "users",
+          updateFields: {
+            "liked_posts_ref": arrayUnion(postDoc)
+          },
+        });
         setLiked(true);
+        setLikes(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error updating like:', error);
     }
   };
+  
 
   const handleProfilePress = () => {
     if (!postData?.anonymous) {
@@ -71,29 +92,28 @@ const UserInfoRow = ({
         setLoading(false);
         return;
       }
-
+  
       try {
         const data = await fetchReferenceData(userRef);
         if (data) {
           setUser(data);
           if (postData.anonymous) {
-            // For anonymous posts, show course and year
             setUserName(`${data.course} ${data.graduation_year}`);
           } else {
-            // For non-anonymous posts, show full name
             setUserName(`${data.first_name} ${data.last_name}`);
           }
         }
-
-        // Check if user has liked the post - with proper null checks
-        const likeUserRef = postData.like_userref || [];
-        if (Array.isArray(likeUserRef)) {
-          setLiked(likeUserRef.includes(userRef));
-        } else {
-          console.warn('like_userref is not an array:', likeUserRef);
-          setLiked(false);
+  
+        const currentuser = await fetchReferenceData(userRef);
+        let likedFromUser = false;
+        const likedPostsRef = currentuser?.liked_posts_ref || [];
+        if (Array.isArray(likedPostsRef)) {
+          // Check if postDoc (a Firestore document reference) is in liked_posts_ref
+          likedFromUser = likedPostsRef.some(ref => ref?.id === postData.id);
         }
-
+  
+        setLiked( likedFromUser);
+  
         if (postData.time_posted) {
           setRelativeTime(timeAgo(postData.time_posted));
         }
@@ -103,9 +123,10 @@ const UserInfoRow = ({
         setLoading(false);
       }
     };
-
+  
     fetchUserData();
   }, [userRef, postData]);
+  
 
   if (loading) {
     return (
@@ -125,7 +146,7 @@ const UserInfoRow = ({
         >
           <Image
             source={
-              user?.photo_url
+              postuser?.photo_url
                 ? { uri: user.photo_url }
                 : require('../images/Blankprofile.png')
             }
@@ -140,7 +161,8 @@ const UserInfoRow = ({
       
       <View style={styles.actionButtons}>
         <View style={styles.likesContainer}>
-          <Text style={styles.likesCount}>{postData?.num_likes || 0}</Text>
+        <Text style={styles.likesCount}>{likes}</Text>
+
           <TouchableOpacity 
             onPress={handleLike} 
             style={styles.actionButton}
