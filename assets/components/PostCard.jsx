@@ -18,7 +18,6 @@ const PostCard = ({ item, navigation }) => {
     return timeAgo(timestamp);
   };
 
-
   const renderForumDetails = (post) => {
     if (!post.forum_details) return null;
 
@@ -30,7 +29,9 @@ const PostCard = ({ item, navigation }) => {
             <Text style={styles.detailLabel}>{label}:</Text>
           </View>
           <Text style={styles.detailValue}>
-            {prefix}{value}{suffix}
+            {prefix}
+            {value}
+            {suffix}
           </Text>
         </View>
       );
@@ -40,7 +41,6 @@ const PostCard = ({ item, navigation }) => {
       <View style={[styles.detailLine, styles.emphasisContainer]}>
         <Text style={styles.emphasis}>{text}</Text>
       </View>
-
     );
 
     const renderSkillChips = (skills) => {
@@ -67,8 +67,10 @@ const PostCard = ({ item, navigation }) => {
         return (
           <View>
             {renderEmphasis(marketType)}
-            {post.forum_details.Item && renderLabel("Item", post.forum_details.Item)}
-            {post.forum_details.Price && renderLabel("Price", post.forum_details.Price, "£")}
+            {post.forum_details.Item &&
+              renderLabel("Item", post.forum_details.Item)}
+            {post.forum_details.Price &&
+              renderLabel("Price", post.forum_details.Price, "£")}
           </View>
         );
 
@@ -85,9 +87,15 @@ const PostCard = ({ item, navigation }) => {
         return (
           <View>
             {renderEmphasis(ticketType)}
-            {post.forum_details.Date && renderLabel("Date", new Date(post.forum_details.Date).toISOString().split('T')[0])}
-            {post.forum_details.Price && renderLabel("Price", post.forum_details.Price, "£")}
-            {post.forum_details.Quantity && renderLabel("Quantity", post.forum_details.Quantity)}
+            {post.forum_details.Date &&
+              renderLabel(
+                "Date",
+                new Date(post.forum_details.Date).toISOString().split("T")[0]
+              )}
+            {post.forum_details.Price &&
+              renderLabel("Price", post.forum_details.Price, "£")}
+            {post.forum_details.Quantity &&
+              renderLabel("Quantity", post.forum_details.Quantity)}
           </View>
         );
 
@@ -95,8 +103,18 @@ const PostCard = ({ item, navigation }) => {
         return (
           <View>
             {renderEmphasis(post.forum_details["Rent type"])}
-            {renderLabel("Move in Date", new Date(post.forum_details["Move in Date"]).toISOString().split('T')[0])}
-            {renderLabel("Move out Date", new Date(post.forum_details["Move out Date"]).toISOString().split('T')[0])}
+            {renderLabel(
+              "Move in Date",
+              new Date(post.forum_details["Move in Date"])
+                .toISOString()
+                .split("T")[0]
+            )}
+            {renderLabel(
+              "Move out Date",
+              new Date(post.forum_details["Move out Date"])
+                .toISOString()
+                .split("T")[0]
+            )}
             {renderLabel("Location", post.forum_details.Location)}
             {renderLabel("Price", post.forum_details.Price, "£", " per week")}
           </View>
@@ -107,8 +125,12 @@ const PostCard = ({ item, navigation }) => {
         return (
           <View>
             {renderLabel("Incentive", incentive)}
-            {incentive === "Other" && post.forum_details.CustomIncentive && 
-              renderLabel("Custom incentive", post.forum_details.CustomIncentive)}
+            {incentive === "Other" &&
+              post.forum_details.CustomIncentive &&
+              renderLabel(
+                "Custom incentive",
+                post.forum_details.CustomIncentive
+              )}
             {renderSkillChips(post.forum_details.Skills)}
           </View>
         );
@@ -153,13 +175,13 @@ const PostCard = ({ item, navigation }) => {
           {item.post_data}
         </Text>
 
-
         {item.forum_details && item.forum_type && (
           <Box mt={2}>
             <View style={styles.forumDetailsBox}>
               {renderForumDetails(item)}
             </View>
           </Box>
+        )}
 
         {item.post_photo && (
           <Image
@@ -174,7 +196,6 @@ const PostCard = ({ item, navigation }) => {
             contentPosition="center"
           />
         )}
-
 
         <HStack justifyContent="space-between" mt={2} alignItems="center">
           <HStack alignItems="center">
@@ -209,7 +230,6 @@ const PostCard = ({ item, navigation }) => {
   );
 };
 
-
 const styles = StyleSheet.create({
   emphasis: {
     fontWeight: "600",
@@ -220,8 +240,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   detailLine: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 10,
   },
   labelContainer: {
@@ -261,5 +281,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PostCard; 
-
+export default PostCard;
