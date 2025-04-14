@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, Platform } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, Platform, ScrollView } from "react-native";
 import { AnimatePresence, MotiView } from "moti";
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+    "Buy or Sell": "Sell", // Default for Market and Ticket
+    "Incentive": "Money",  // Default for Project
+  });
   const [dropdownOpen, setDropdownOpen] = useState({});
   const [touched, setTouched] = useState({});
   const [allFieldsTouched, setAllFieldsTouched] = useState(false);
@@ -13,59 +16,115 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
 
   const forumFields = {
     Research: [
-      { name: "Duration", type: "text", placeholder: "How long does the study take?"},
-      { name: "Incentive", type: "choiceChips", options: ["Money", "SONA credit", "Voucher", "Other"] },
-      { name: "Incentive value", type: "text", placeholder: "How much are you giving for the incentive?"},
-      { name: "Eligibilities", type: "text", placeholder: "Describe participants eligibility" },
+      { name: "Duration", type: "text", placeholder: "How long does the study take?", required: true },
+      { name: "Eligibilities", type: "text", placeholder: "Describe participants eligibility", required: true },
     ],
     Ticket: [
-      { name: "Buy or Sell", type: "dropdown", options: ["Buy", "Sell"]},
-      { name: "Date", type: "date", placeholder: "Date of the event" },
-      { name: "Price", type: "text", placeholder: "How much is it?"},
-      { name: "Quantity", type: "text", placeholder: "Enter quantity"},
+      { 
+        name: "Buy or Sell", 
+        type: "dropdown", 
+        options: ["Buy", "Sell"],
+        required: true,
+        defaultValue: "Sell",
+      },
+      { 
+        name: "Date", 
+        type: "date", 
+        placeholder: "Date of the event",
+        required: (values) => values["Buy or Sell"] === "Sell",
+      },
+      { 
+        name: "Price", 
+        type: "text", 
+        placeholder: "Enter price in £",
+        required: (values) => values["Buy or Sell"] === "Sell",
+        format: (value) => value ? `£${value}` : value,
+      },
+      { 
+        name: "Quantity", 
+        type: "number", 
+        placeholder: "Enter quantity",
+        required: (values) => values["Buy or Sell"] === "Sell",
+      },
     ],
     Market: [
-      { name: "Buy or Sell", type: "dropdown", options: ["Buy", "Sell"] },
-      { name: "Item", type: "text", placeholder: "What are you selling?" },
-      { name: "Price", type: "text", placeholder: "How much is it?"},
+      { 
+        name: "Buy or Sell", 
+        type: "dropdown", 
+        options: ["Buy", "Sell"],
+        required: true,
+        defaultValue: "Sell",
+      },
+      { 
+        name: "Item", 
+        type: "text", 
+        placeholder: "What are you selling?",
+        required: (values) => values["Buy or Sell"] === "Sell",
+      },
+      { 
+        name: "Price", 
+        type: "text", 
+        placeholder: "Enter price in £",
+        required: (values) => values["Buy or Sell"] === "Sell",
+        format: (value) => value ? `£${value}` : value,
+      },
     ],
     Project: [
-      { name: "Incentive", type: "dropdown", options: ["Equity", "Stipend", "Salary", "Other"] },
-      { name: "Skills", type: "choiceChips", options: ["Programming", "Marketing", "Design", "UIUX", "Engineering", "Buisness", "Legal", "Research", "Others"]},
+      { 
+        name: "Incentive", 
+        type: "dropdown", 
+        options: ["Credit", "Money", "Other"],
+        required: true,
+        defaultValue: "Money",
+      },
+      { 
+        name: "Custom Incentive", 
+        type: "text", 
+        placeholder: "Enter custom incentive",
+        required: (values) => values.Incentive === "Other",
+        conditional: (values) => values.Incentive === "Other",
+      },
+      { 
+        name: "Skills", 
+        type: "choiceChips", 
+        options: ["Programming", "Marketing", "Design", "UIUX", "Engineering", "Business", "Legal", "Research", "Others"],
+        required: true,
+      },
     ],
     Flat: [
       {
-        name: "rentType",
+        name: "Rent type",
         label: "I want to",
         type: "dropdown",
-        options: ["Find a flat", "Rent out my flat"],
+        options: ["Find a flat / flatmate", "Rent out my flat"],
         required: true,
       },
       {
-        name: "moveInDate",
+        name: "Move in Date",
         label: "Move-in Date",
         type: "date",
         required: true,
       },
       {
-        name: "moveOutDate",
+        name: "Move out Date",
         label: "Move-out Date",
         type: "date",
         required: true,
       },
       {
-        name: "location",
+        name: "Location",
         label: "Location",
         type: "text",
         placeholder: "Enter location (e.g., Mile End, Whitechapel)",
         required: true,
       },
       {
-        name: "price",
+        name: "Price",
         label: "Price per week (£)",
         type: "number",
         placeholder: "Enter price per week in pounds",
         required: true,
+        format: (value) => value ? `£${value}` : value,
       },
     ],
   };
@@ -145,6 +204,14 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
 
   const renderField = (field) => {
     const errorStyle = hasError(field.name, field.type) ? styles.errorInput : null;
+    const isRequired = typeof field.required === 'function' 
+      ? field.required(formData)
+      : field.required;
+    
+    // Check if field should be shown based on conditional logic
+    if (field.conditional && !field.conditional(formData)) {
+      return null;
+    }
     
     switch (field.type) {
       case "text":
@@ -171,7 +238,7 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
               style={[styles.dropdownButton, errorStyle]}
             >
               <Text style={styles.dropdownButtonText}>
-                {formData[field.name] || field.placeholder || "Select an option"}
+                {formData[field.name] || field.defaultValue || field.placeholder || "Select an option"}
               </Text>
               <Feather name={dropdownOpen[field.name] ? "chevron-up" : "chevron-down"} size={16} color="#666" />
             </Pressable>
@@ -187,9 +254,9 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
                   animate={{ opacity: 1, translateY: 0 }}
                   exit={{ opacity: 0, translateY: -10 }}
                   transition={{ type: "timing", duration: 300 }}
-                  style={styles.dropdownList}
+                  style={[styles.dropdownList, { maxHeight: 200 }]}
                 >
-                  <View>
+                  <ScrollView>
                     {field.options.map((option, index) => (
                       <Pressable
                         key={index}
@@ -207,7 +274,7 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
                         </Text>
                       </Pressable>
                     ))}
-                  </View>
+                  </ScrollView>
                 </MotiView>
               )}
             </AnimatePresence>
@@ -285,9 +352,13 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
             <TextInput
               placeholder={field.placeholder}
               value={formData[field.name] || ""}
-              onChangeText={(text) => handleInputChange(field.name, text)}
-              style={[styles.textInput, errorStyle]}
+              onChangeText={(text) => {
+                // Only allow numbers
+                const numericValue = text.replace(/[^0-9]/g, '');
+                handleInputChange(field.name, numericValue);
+              }}
               keyboardType="numeric"
+              style={[styles.textInput, errorStyle]}
               onBlur={() => setTouched(prev => ({ ...prev, [field.name]: true }))}
             />
             {hasError(field.name, field.type) && (
@@ -302,16 +373,24 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { marginTop: 8 }]}>
       <Text style={styles.title}>{selectedForum} Details</Text>
-      {forumFields[selectedForum].map((field) => (
-        <View key={field.name} style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>{field.name} *</Text>
-          <View style={styles.fieldInputContainer}>
-            {renderField(field)}
+      {forumFields[selectedForum].map((field) => {
+        const isRequired = typeof field.required === 'function' 
+          ? field.required(formData)
+          : field.required;
+        
+        return (
+          <View key={field.name} style={styles.fieldRow}>
+            <Text style={styles.fieldLabel}>
+              {field.name} {isRequired && '*'}
+            </Text>
+            <View style={styles.fieldInputContainer}>
+              {renderField(field)}
+            </View>
           </View>
-        </View>
-      ))}
+        );
+      })}
       
       {/* Validate All Button - Optional, can be used for debugging or to force validation */}
       {/* <Pressable 
