@@ -86,6 +86,7 @@ const PostDisplay = () => {
       let commentsRef = collection(db, 'posts', postRef, 'comments');
       const commentData = {
         content: newComment,
+        num_likes: 0,
         date_created: Timestamp.now(),
         createdby_ref: doc(db, 'users', user.uid),
       };

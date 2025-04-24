@@ -10,7 +10,7 @@ import {
   sendPasswordResetEmail,
   deleteUser
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc,deleteDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc,deleteDoc, onSnapshot } from 'firebase/firestore';
 
 // Create the authentication context
 export const AuthContext = createContext();
@@ -24,80 +24,43 @@ export const AuthProvider = ({ children }) => {
   // Load stored user data and set up auth state listener
   useEffect(() => {
     let isMounted = true;
-    
-    const loadStoredUser = async () => {
-      try {
-        const storedUser = await AsyncStorage.getItem('user');
-        if (storedUser && isMounted) {
-          setUser(JSON.parse(storedUser));
-        }
-      } catch (error) {
-        console.error('Error loading stored user:', error);
-      }
-    };
-
-    // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let firestoreUnsubscribe = null;
+  
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        try {
-          // Get additional user data from Firestore if it exists
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          
-          let userData = {
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+  
+        // Real-time Firestore listener
+        firestoreUnsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
+          if (!isMounted) return;
+  
+          const firestoreData = docSnapshot.data() || {};
+          const userData = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
             emailVerified: firebaseUser.emailVerified,
             createdAt: firebaseUser.metadata.creationTime,
+            ...firestoreData // This merges Firestore data
           };
-          
-          // Add Firestore data if available
-          if (userDoc.exists()) {
-            userData = { ...userData, ...userDoc.data() };
-          }
-          
-          // Store user data in AsyncStorage
-          await AsyncStorage.setItem('user', JSON.stringify(userData));
-          
-          if (isMounted) {
-            setUser(userData);
-          }
-        } catch (error) {
-          console.error('Error getting user data:', error);
-          // Store basic Firebase user data even if Firestore fetch fails
-          const basicUserData = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-          };
-          await AsyncStorage.setItem('user', JSON.stringify(basicUserData));
-          
-          if (isMounted) {
-            setUser(basicUserData);
-          }
-        }
+  
+          // Update state and storage
+          AsyncStorage.setItem('user', JSON.stringify(userData));
+          setUser(userData);
+        });
       } else {
-        // Clear stored user data
+        if (firestoreUnsubscribe) firestoreUnsubscribe();
         await AsyncStorage.removeItem('user');
-        
-        if (isMounted) {
-          setUser(null);
-        }
-      }
+        setUser(null);
       
-      if (isMounted) {
-        setLoading(false);
       }
     });
-    
-    loadStoredUser();
-    
-    // Clean up subscription and prevent state updates if unmounted
+  
     return () => {
       isMounted = false;
-      unsubscribe();
+      unsubscribeAuth();
+      if (firestoreUnsubscribe) firestoreUnsubscribe(); // Cleanup Firestore listener
     };
   }, []);
   

@@ -86,39 +86,30 @@ const UserInfoRow = ({
   };
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!userRef || !postData) {
-        console.error('Missing required props');
-        setLoading(false);
-        return;
-      }
+    if (user && postDoc?.path) {
+      const likedPostsRef = user.liked_posts_ref || [];
+      const liked = likedPostsRef.some(ref => ref?.path === postDoc.path);
+      setLiked(liked);
+      console.log('?? Updated like status from fresh user:', liked);
+    }
+  }, [user, postDoc?.path]);
   
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!userRef || !postData) return;
       try {
         const data = await fetchReferenceData(userRef);
-        if (data) {
-          setUser(data);
-          if (postData.anonymous) {
-            setUserName(`${data.course} ${data.graduation_year}`);
-          } else {
-            setUserName(`${data.first_name} ${data.last_name}`);
-          }
-        }
-  
-        const currentuser = await fetchReferenceData(userRef);
-        let likedFromUser = false;
-        const likedPostsRef = currentuser?.liked_posts_ref || [];
-        if (Array.isArray(likedPostsRef)) {
-          // Check if postDoc (a Firestore document reference) is in liked_posts_ref
-          likedFromUser = likedPostsRef.some(ref => ref?.id === postData.id);
-        }
-  
-        setLiked( likedFromUser);
+        setUser(data);
+        const displayName = postData.anonymous
+          ? `${data.course} ${data.graduation_year}`
+          : `${data.first_name} ${data.last_name}`;
+        setUserName(displayName);
   
         if (postData.time_posted) {
           setRelativeTime(timeAgo(postData.time_posted));
         }
-      } catch (error) {
-        console.error('Error fetching user:', error);
+      } catch (err) {
+        console.error('Error fetching post user:', err);
       } finally {
         setLoading(false);
       }
@@ -161,7 +152,6 @@ const UserInfoRow = ({
       
       <View style={styles.actionButtons}>
         <View style={styles.likesContainer}>
-        <Text style={styles.likesCount}>{likes}</Text>
 
           <TouchableOpacity 
             onPress={handleLike} 
@@ -173,6 +163,7 @@ const UserInfoRow = ({
               color={isLiked ? "red" : "red"}
             />
           </TouchableOpacity>
+          <Text style={styles.likesCount}>{likes}</Text>
         </View>
 
         <TouchableOpacity 
@@ -255,9 +246,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   likesCount: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#666',
-    marginRight: 4,
+    marginLeft: 6,
   },
   postDate: {
     fontSize: 12,
