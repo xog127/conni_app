@@ -17,7 +17,8 @@ import { updateRef } from '../firebase/queries';
 import { useAuth } from '../services/authContext';
 
 const UserInfoRow = ({ 
-  userRef, postData
+  userRef, postData,
+  onMorePress
 }) => {
   const { user } = useAuth();
   const postDoc = doc(db, 'posts', postData.id);
@@ -196,11 +197,11 @@ const UserInfoRow = ({
               <TouchableOpacity 
                 style={styles.optionItem}
                 onPress={() => {
-                  onReport?.();
                   setOptionsVisible(false);
+                  onMorePress?.();
                 }}
               >
-                <Feather name="flag" size={20} color="#666" />
+                <Feather name="flag" size={20} color="#FF3B30" />
                 <Text style={styles.optionText}>Report</Text>
               </TouchableOpacity>
             </View>
@@ -271,25 +272,26 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   optionsContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 16,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 8,
+    width: '80%',
+    maxWidth: 300,
   },
   optionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderRadius: 8,
   },
   optionText: {
     marginLeft: 12,
     fontSize: 16,
-    color: '#333',
+    color: '#FF3B30',
   },
   deleteOption: {
     borderBottomWidth: 0,

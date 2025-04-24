@@ -22,6 +22,7 @@ import PollOption from '../components/pollOption.js';
 import { useRoute } from '@react-navigation/native';
 import { Box } from 'native-base';
 import { useAuth } from '../services/authContext';
+import ReportModal from '../components/ReportModal';
 
 const authUser = "Psychology 1st Year";
 
@@ -32,6 +33,7 @@ const PostDisplay = () => {
   const [loading, setLoading] = useState(true);
   const [genre, setGenre] = useState(null);
   const [newComment, setNewComment] = useState('');
+  const [showReportModal, setShowReportModal] = useState(false);
   const inputRef = useRef(null);
   const [replyingTo, setReplyingTo] = useState(null);
   const route = useRoute();
@@ -150,13 +152,127 @@ const PostDisplay = () => {
     }
   };
 
+  const handleReport = () => {
+    setShowReportModal(true);
+  };
+
+  // Pass this to UserInfoRow as a prop
+  const onMorePress = () => {
+    handleReport();
+  };
+
+  const renderForumRequirements = () => {
+    console.log('Rendering requirements. Post:', {
+      forum_details: post?.forum_details,
+      forum_type: post?.forum_type,
+      genre: genre?.name
+    });
+    
+    if (!post?.forum_details || !post?.forum_type || !genre || post.forum_type === "General") {
+      console.log('Requirements not shown because:', {
+        hasForumDetails: !!post?.forum_details,
+        hasForumType: !!post?.forum_type,
+        hasGenre: !!genre,
+        isGeneral: post?.forum_type === "General"
+      });
+      return null;
+    }
+
+
+    const renderSkillChips = (skills) => {
+      if (!skills || !skills.length) return null;
+      return (
+        <View style={styles.requirementRow} key="skills">
+          <Text style={styles.requirementLabel}>Skills:</Text>
+          <View style={styles.skillsContainer}>
+            {skills.map((skill, index) => (
+              <View key={index} style={styles.skillChip}>
+                <Text style={styles.skillChipText}>{skill}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      );
+    };
+
+    switch (post.forum_type) {
+      case "Market":
+        const marketType = post.forum_details["Buy or Sell"] || "Sell";
+        content = (
+          <>
+            {renderEmphasis(marketType)}
+            {post.forum_details.Item && renderLabel("Item", post.forum_details.Item)}
+            {post.forum_details.Price && renderLabel("Price", post.forum_details.Price, "£")}
+          </>
+        );
+        break;
+
+      case "Research":
+        content = (
+          <>
+            {renderLabel("Duration", post.forum_details.Duration)}
+            {renderLabel("Eligibilities", post.forum_details.Eligibilities)}
+          </>
+        );
+        break;
+
+      case "Ticket":
+        const ticketType = post.forum_details["Buy or Sell"] || "Sell";
+        content = (
+          <>
+            {renderEmphasis(ticketType)}
+            {post.forum_details.Date && renderLabel("Date", new Date(post.forum_details.Date).toISOString().split('T')[0])}
+            {post.forum_details.Price && renderLabel("Price", post.forum_details.Price, "£")}
+            {post.forum_details.Quantity && renderLabel("Quantity", post.forum_details.Quantity)}
+          </>
+        );
+        break;
+
+      case "Flat":
+        content = (
+          <>
+            {renderEmphasis(post.forum_details["Rent type"])}
+            {renderLabel("Move in Date", new Date(post.forum_details["Move in Date"]).toISOString().split('T')[0])}
+            {renderLabel("Move out Date", new Date(post.forum_details["Move out Date"]).toISOString().split('T')[0])}
+            {renderLabel("Location", post.forum_details.Location)}
+            {renderLabel("Price", post.forum_details.Price, "£", " per week")}
+          </>
+        );
+        break;
+
+      case "Project":
+        const incentive = post.forum_details.Incentive || "Money";
+        content = (
+          <>
+            {renderLabel("Incentive", incentive)}
+            {incentive === "Other" && post.forum_details.CustomIncentive && 
+              renderLabel("Custom incentive", post.forum_details.CustomIncentive)}
+            {renderSkillChips(post.forum_details.Skills)}
+          </>
+        );
+        break;
+
+      default:
+        return null;
+    }
+
+    return (
+      <View style={styles.requirementsContainer}>
+        {content}
+      </View>
+    );
+  };
+
   useEffect(() => {
     const fetchPostData = async () => {
       try {
         const postData = await getRef({ id: postRef, collectionName: "posts" });
+        console.log('Post Data:', postData);
+        console.log('Post Requirements:', postData?.requirements);
         setPost(postData);
     
         const genreData = await fetchReferenceData(postData.post_genre_ref);
+        console.log('Genre Data:', genreData);
         setGenre(genreData);
 
         getComments();
@@ -171,13 +287,6 @@ const PostDisplay = () => {
     fetchPostData();
   }, []);
 
-  if (loading) {
-    return (
-      <SafeAreaView style={[styles.safeArea, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#836fff" />
-      </SafeAreaView>
-    );
-  }
 
   return (
     <KeyboardAvoidingView behavior="padding" style={styles.safeArea}>
@@ -195,78 +304,83 @@ const PostDisplay = () => {
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <>
-            <UserInfoRow userRef={post.post_user} postData={post} />
-
-            {/* Post Content */}
-            <View style={styles.postContent}>
-              <Text style={styles.postTitle}>{post?.post_title}</Text>
-              <Text style={styles.postDescription}>{post?.post_data}</Text>
-              {post?.post_photo && (
-                <Box mt={4}>
-                  <Image
-                    source={{ uri: post.post_photo}}
-                    style={{
-                      width: "100%",
-                      height: 400,
-                      borderRadius: 8,
-                    }}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                </Box>
-              )}
-            </View>
-
-            {post?.requirements && Object.entries(post.requirements).length > 0 && (
-        <View style={styles.requirementsContainer}>
-          {Object.entries(post.requirements).map(([key, value]) => {
-            // Skip empty values
-            if (!value) return null
-
-            // Format date values
-            let displayValue = value
-            if (value instanceof Date || (typeof value === "string" && value.includes("T"))) {
-              displayValue = new Date(value).toISOString().split("T")[0]
-            }
-
-            return (
-              <View key={key} style={styles.requirementRow}>
-                <Text style={styles.requirementLabel}>{key}:</Text>
-                <Text style={styles.requirementValue}>{displayValue}</Text>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#836fff" />
               </View>
-            )
-          })}
-        </View>
-      )}
-            {/* Polls Content */}
-            {post.addPoll && post.pollOptions?.pollOptions?.map((pollOption, index) => (
-              <PollOption
-                key={index}
-                pollOption={pollOption}
-                hasVoted={pollOption.voters?.includes(authUser)}
-                onChoose={() => {
-                  // Handle vote logic here
-                  console.log('Voted for:', pollOption.option);
-                  handleSelectPoll(index);
-                }}
-              />
-            ))}
+            ) : post ? (
+              <>
+                <UserInfoRow 
+                  userRef={post.post_user} 
+                  postData={post} 
+                  onMorePress={onMorePress}
+                />
 
-            {/* Post Stats */}
-            <View style={styles.statsContainer}>
-              <Text style={styles.statsText}>
-               {post?.views || 0} views
-              </Text>
-            </View>
+                {/* Post Content */}
+                <View style={styles.postContent}>
+                  <Text style={styles.postTitle}>{post.post_title}</Text>
+                  <Text style={styles.postDescription}>{post.post_data}</Text>
+                </View>
 
-            <View style={styles.userSafetyInfoContainer}>
-              <Text style={styles.userSafetyInfoText}>
-                - Any comments that violate the guideline can be deleted without notice{'\n'}
-                - If you find certain comments to be disturbing, please report through Dashboard {'>'} Setting {'>'} Feedback.
-              </Text>
-            </View>
+                {/* Forum Requirements */}
+                {post.forum_details && post.forum_type && post.forum_type !== "General" && (
+                  <Box mt={2}>
+                    <View style={styles.requirementsContainer}>
+                      {renderForumRequirements()}
+                    </View>
+                  </Box>
+                )}
 
-            <Text style={styles.commentsHeader}>Comments {post?.num_comments}</Text>
+                {/* Post Image */}
+                {post.post_photo && (
+                  <Box mt={4}>
+                    <Image
+                      source={{ uri: post.post_photo}}
+                      style={{
+                        width: "100%",
+                        height: 400,
+                        borderRadius: 8,
+                      }}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  </Box>
+                )}
+
+                {/* Polls Content */}
+                {post.addPoll && post.pollOptions?.pollOptions?.map((pollOption, index) => (
+                  <PollOption
+                    key={index}
+                    pollOption={pollOption}
+                    hasVoted={pollOption.voters?.includes(authUser)}
+                    onChoose={() => {
+                      console.log('Voted for:', pollOption.option);
+                      handleSelectPoll(index);
+                    }}
+                  />
+                ))}
+
+                {/* Post Stats */}
+                <View style={styles.statsContainer}>
+                  <Text style={styles.statsText}>
+                   {post.views || 0} views
+                  </Text>
+                </View>
+
+                <View style={styles.userSafetyInfoContainer}>
+                  <Text style={styles.userSafetyInfoText}>
+                    - Any comments that violate the guideline can be deleted without notice{'\n'}
+                    - If you find certain comments to be disturbing, please report through Dashboard {'>'} Setting {'>'} Feedback.
+                  </Text>
+                </View>
+
+                <Text style={styles.commentsHeader}>Comments {post.num_comments}</Text>
+              </>
+            ) : (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>Post not found</Text>
+              </View>
+            )}
           </>
         }
         renderItem={({ item }) => <CommentCard onReply={handleReply} comment={item} userRef={item.createdby_ref} postData={post} onTrigger = {getComments} docu={doc(db, 'posts', post.id, 'comments', item.id)}/>}
@@ -275,6 +389,11 @@ const PostDisplay = () => {
       
       {renderCommentInput()}
 
+      <ReportModal
+        isVisible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        postId={postRef}
+      />
     </SafeAreaView>
     </KeyboardAvoidingView>
   );
@@ -286,8 +405,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -403,12 +535,13 @@ const styles = StyleSheet.create({
   },
     // Requirements styling
     requirementsContainer: {
-      marginTop: 12,
-      marginBottom: 12,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
+      marginHorizontal: 16,
+      marginVertical: 12,
+      padding: 16,
       backgroundColor: "#f9f9f9",
       borderRadius: 8,
+      borderWidth: 1,
+      borderColor: "#eee",
     },
     requirementRow: {
       flexDirection: "row",
@@ -420,10 +553,35 @@ const styles = StyleSheet.create({
       color: "#666",
       fontWeight: "500",
       marginRight: 8,
+      flex: 1,
     },
     requirementValue: {
       fontSize: 14,
       color: "#333",
+      flex: 2,
+    },
+    emphasisText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "#836fff",
+      textAlign: "left",
+    },
+    skillsContainer: {
+      flex: 2,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    skillChip: {
+      backgroundColor: "#836fff20",
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 16,
+    },
+    skillChipText: {
+      color: "#836fff",
+      fontSize: 12,
+      fontWeight: "500",
     },
 });
 

@@ -49,7 +49,7 @@ const LoginScreen = ({ navigation }) => {
       style={styles.container}
     >
       <View style={styles.formContainer}>
-        <Text style={styles.title}>Welcome Back</Text>
+        <Text style={styles.title}>Conni</Text>
         
         <TextInput
           style={styles.input}
@@ -70,7 +70,7 @@ const LoginScreen = ({ navigation }) => {
 
         <TouchableOpacity 
           style={styles.forgotPassword}
-          onPress={() => navigation.navigate('ForgotPassword')}
+          onPress={() => navigation.navigate('forgot-password')}
         >
           <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
@@ -81,7 +81,7 @@ const LoginScreen = ({ navigation }) => {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color="#836FFF" />
           ) : (
             <Text style={styles.buttonText}>Login</Text>
           )}
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
       fontSize: 16,
     },
     button: {
-      backgroundColor: '#FF6B6B',
+      backgroundColor: '#836FFF',
       padding: 15,
       borderRadius: 10,
       alignItems: 'center',
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
       marginBottom: 20,
     },
     forgotPasswordText: {
-      color: '#FF6B6B',
+      color: '#6A707C',
       fontSize: 14,
     },
     signupLink: {
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
       color: '#666',
     },
     signupTextBold: {
-      color: '#FF6B6B',
+      color: '#6A707C',
       fontWeight: 'bold',
     },
   });
