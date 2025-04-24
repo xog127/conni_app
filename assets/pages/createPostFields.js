@@ -132,6 +132,18 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
   // Function to check if a field has an error
   const hasError = (field, type) => {
     if (!touched[field]) return false;
+    
+    // Get the field definition
+    const fieldDef = forumFields[selectedForum]?.find(f => f.name === field);
+    if (!fieldDef) return false;
+
+    // Check if the field is required based on current form values
+    const isRequired = typeof fieldDef.required === 'function' 
+      ? fieldDef.required(formData)
+      : fieldDef.required;
+
+    if (!isRequired) return false;
+
     if (type === "choiceChips") {
       return !formData[field] || formData[field].length === 0;
     }
@@ -152,16 +164,26 @@ const CreatePostFields = ({ selectedForum, onChange, onValidationChange }) => {
       setAllFieldsTouched(true);
     }
 
-    // Check if any field has an error
-    return !forumFields[selectedForum].some(field => 
-      hasError(field.name, field.type)
-    );
+    // Check if any required field has an error
+    return !forumFields[selectedForum].some(field => {
+      const isRequired = typeof field.required === 'function' 
+        ? field.required(formData)
+        : field.required;
+      
+      return isRequired && hasError(field.name, field.type);
+    });
   };
 
   // Effect to update parent component about validation status whenever form data changes
   useEffect(() => {
     if (selectedForum && forumFields[selectedForum]) {
       const isValid = forumFields[selectedForum].every(field => {
+        const isRequired = typeof field.required === 'function' 
+          ? field.required(formData)
+          : field.required;
+
+        if (!isRequired) return true;
+
         if (field.type === "choiceChips") {
           return formData[field.name] && formData[field.name].length > 0;
         }

@@ -5,6 +5,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import LoginScreen from './assets/pages/login';
 import SignupScreen from './assets/pages/signup';
+import ForgotPasswordScreen from './assets/pages/forgot-password';
 import PostDisplay from './assets/pages/postDisplay';
 import CreatePostForm from './assets/pages/createPost';
 import MainPage from './assets/pages/mainPage';
@@ -15,7 +16,7 @@ import OnboardingPage from './assets/pages/onboarding';
 import Setting from './assets/pages/setting';
 import Feedback from './assets/pages/feedback';
 import { AuthProvider, AuthContext, useAuth } from './assets/services/authContext';
-import { TouchableOpacity, Platform } from 'react-native';
+import { TouchableOpacity, Platform, StyleSheet, View, Text } from 'react-native';
 import CustomDrawerContent from './assets/customFunctions/CustomDrawerContent';
 import UserSettingsScreen from './assets/pages/setting';
 import ProfileEditScreen from './assets/pages/editProfile';
@@ -25,7 +26,7 @@ import ChatRoom from './assets/pages/chatRoom';
 import ChatInfo from './assets/pages/chatInfo';
 import ForumScreen from './assets/pages/ForumScreen';
 import NewSearchScreen from './assets/pages/NewSearchScreen';
-import { NativeBaseProvider } from 'native-base';
+import { NativeBaseProvider, Box } from 'native-base';
 
 
 // Create navigation stacks
@@ -142,35 +143,36 @@ const ChatStackNavigator = () => (
 
 // Post Stack Navigator (for post-related screens)
 const PostStackNavigator = () => (
-  <PostStack.Navigator>
+  <PostStack.Navigator
+    screenOptions={{
+      headerShown: false,
+    }}
+  >
     <PostStack.Screen 
       name="MainFeed" 
       component={DrawerNavigator} 
-      options={{ headerShown: false }}
     />
     <PostStack.Screen 
       name="Search" 
       component={NewSearchScreen} 
       options={{ 
-        headerShown: false,
         presentation: 'modal',
-        tabBarStyle: { display: 'none' }
       }}
     />
     <PostStack.Screen 
       name="PostDisplay" 
       component={PostDisplay}
       options={{ 
-        headerShown: false,
-        tabBarStyle: { display: 'none' }
+        presentation: 'card',
+        tabBarVisible: false
       }}
     />
     <PostStack.Screen 
       name="createPost" 
       component={CreatePostForm}
       options={{ 
-        headerShown: false,
-        tabBarStyle: { display: 'none' }
+        presentation: 'modal',
+        animation: 'slide_from_bottom'
       }}
     />
   </PostStack.Navigator>
@@ -189,6 +191,11 @@ const AuthNavigator = () => (
       component={SignupScreen} 
       options={{ headerShown: false }}
     />
+    <AuthStack.Screen 
+      name="forgot-password" 
+      component={ForgotPasswordScreen} 
+      options={{ headerShown: false }}
+    />
     <AuthStack.Screen
       name = "Setting"
       component = {UserSettingsScreen}
@@ -204,23 +211,41 @@ const AuthNavigator = () => (
 
 const EmptyComponent = () => null;
 
+// Create Button Component
+const CreateButton = ({ navigation }) => (
+  <TouchableOpacity 
+    onPress={() => {
+      navigation.navigate('Home', {
+        screen: 'createPost'
+      });
+    }} 
+    style={styles.createButton}
+  >
+    <View style={styles.createButtonInner}>
+      <Ionicons name="add" size={32} color="#FFFFFF" />
+    </View>
+  </TouchableOpacity>
+);
+
 // Main Tab Navigator
 const TabNavigator = () => (
   <Tab.Navigator
     screenOptions={({ route, navigation }) => ({
       tabBarHideOnKeyboard: true,
+      tabBarActiveTintColor: '#836FFF',
+      tabBarInactiveTintColor: '#666',
+      tabBarLabelStyle: {
+        fontSize: 12,
+        marginBottom: 4,
+      },
       tabBarStyle: ((state) => {
         const navigationState = navigation.getState();
-        
-        // Get the current route name
         const currentRouteName = navigationState.routes[navigationState.index].state?.routes?.slice(-1)[0]?.name;
 
-        // List of routes where tab bar should be hidden
         const hideTabBarRoutes = [
           'Search',
           'PostDisplay',
           'createPost',
-          'Forums',
           'IndividualForum',
           'Chatroom',
           'CreateChat',
@@ -230,85 +255,107 @@ const TabNavigator = () => (
           'Feedback'
         ];
 
-        // Hide tab bar if we're in one of the specified routes
         if (hideTabBarRoutes.includes(currentRouteName)) {
           return { display: 'none' };
         }
 
-        // Show tab bar with styling
         return {
           display: 'flex',
           backgroundColor: '#fff',
           borderTopWidth: 1,
           borderTopColor: '#e0e0e0',
-          paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-          paddingTop: 10,
-          height: Platform.OS === 'ios' ? 85 : 65,
+          height: 60,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: -4,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 0,
         };
-      })()
+      })(),
+      tabBarIcon: ({ focused, color, size }) => {
+        let iconName;
+
+        if (route.name === 'Home') {
+          iconName = focused ? 'home' : 'home-outline';
+        } else if (route.name === 'Chats') {
+          iconName = focused ? 'chatbubble' : 'chatbubble-outline';
+        } else if (route.name === 'Create') {
+          return null; // Custom create button will be rendered separately
+        } else if (route.name === 'Forums') {
+          iconName = focused ? 'people' : 'people-outline';
+        } else if (route.name === 'Profile') {
+          iconName = focused ? 'person' : 'person-outline';
+        }
+
+        return <Ionicons name={iconName} size={24} color={color} />;
+      },
     })}
   >
     <Tab.Screen 
-      name="Posts" 
+      name="Home" 
       component={PostStackNavigator}
-      options={{
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => (
-          <Ionicons name="home" size={size} color={color} />
-        ),
-      }}
+      options={{ headerShown: false }}
     />
     <Tab.Screen 
-      name="CreatePost" 
+      name="Chats" 
+      component={ChatStackNavigator}
+      options={{ headerShown: false }}
+    />
+    <Tab.Screen 
+      name="Create" 
       component={EmptyComponent}
       options={({ navigation }) => ({
-        tabBarLabel: 'Create',
-        tabBarIcon: ({ color, size }) => (
-          <Feather name="plus" size={size} color={color} />
+        headerShown: false,
+        tabBarButton: () => (
+          <CreateButton navigation={navigation} />
         ),
-        tabBarButton: (props) => (
-          <TouchableOpacity
-            {...props}
-            onPress={() => {
-              navigation.navigate('Posts', { screen: 'createPost' });
-            }}
-          />
-        ),
+        tabBarLabel: () => null,
       })}
     />
     <Tab.Screen 
       name="Forums" 
       component={ForumStackNavigator}
-      options={{
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => (
-          <Feather name="message-circle" size={size} color={color} />
-        ),
-      }}
-    /> 
-    <Tab.Screen 
-      name="Chats" 
-      component={ChatStackNavigator}
-      options={{
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => (
-          <Feather name="message-circle" size={size} color={color} />
-        ),
-      }}
-    /> 
+      options={{ headerShown: false }}
+    />
     <Tab.Screen 
       name="Profile" 
       component={ProfileStackNavigator}
-      options={{
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => (
-          <Feather name="user" size={size} color={color} />
-        ),
-      }}
-    /> 
+      options={{ headerShown: false }}
+    />
   </Tab.Navigator>
 );
 
+const styles = StyleSheet.create({
+  createButton: {
+    top: -20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  createButtonInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#836FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#836FFF',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+});
 
 // Root Navigator - Handles authentication flow
 const RootNavigator = () => {

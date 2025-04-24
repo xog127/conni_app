@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Checkbox, HStack, Link } from 'native-base';
 
 const SignupScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -20,6 +21,8 @@ const SignupScreen = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword) {
@@ -29,6 +32,11 @@ const SignupScreen = ({ navigation }) => {
 
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (!termsAccepted || !privacyAccepted) {
+      Alert.alert('Error', 'Please accept both the Terms & Conditions and Privacy Policy');
       return;
     }
 
@@ -86,13 +94,47 @@ const SignupScreen = ({ navigation }) => {
           secureTextEntry
         />
 
+        <View style={styles.checkboxContainer}>
+          <HStack space={2} alignItems="flex-start">
+            <Checkbox
+              value="terms"
+              isChecked={termsAccepted}
+              onChange={setTermsAccepted}
+              accessibilityLabel="Accept terms and conditions"
+            />
+            <Text style={styles.checkboxText}>
+              I agree to the{' '}
+              <Text style={styles.linkText} onPress={() => navigation.navigate('Terms')}>
+                Terms & Conditions
+              </Text>
+            </Text>
+          </HStack>
+        </View>
+
+        <View style={styles.checkboxContainer}>
+          <HStack space={2} alignItems="flex-start">
+            <Checkbox
+              value="privacy"
+              isChecked={privacyAccepted}
+              onChange={setPrivacyAccepted}
+              accessibilityLabel="Accept privacy policy"
+            />
+            <Text style={styles.checkboxText}>
+              I agree to the{' '}
+              <Text style={styles.linkText} onPress={() => navigation.navigate('Privacy')}>
+                Privacy Policy
+              </Text>
+            </Text>
+          </HStack>
+        </View>
+
         <TouchableOpacity 
           style={styles.button}
           onPress={handleSignup}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color="#836FFF" />
           ) : (
             <Text style={styles.buttonText}>Sign Up</Text>
           )}
@@ -103,7 +145,7 @@ const SignupScreen = ({ navigation }) => {
           onPress={() => navigation.navigate('Login')}
         >
           <Text style={styles.signupText}>
-            Already have an account? <Text style={styles.signupTextBold} >Login</Text>
+            Already have an account? <Text style={styles.signupTextBold}>Login</Text>
           </Text>
         </TouchableOpacity>
       </View>
@@ -136,7 +178,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#836FFF',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -161,11 +203,23 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: 14,
-    color: '#666',
+    color: '#6A707C',
   },
   signupTextBold: {
-    color: '#FF6B6B',
+    color: '#6A707C',
     fontWeight: 'bold',
+  },
+  checkboxContainer: {
+    marginBottom: 15,
+  },
+  checkboxText: {
+    fontSize: 14,
+    color: '#6A707C',
+    flex: 1,
+  },
+  linkText: {
+    color: '#6A707C',
+    textDecorationLine: 'underline',
   },
 });
 

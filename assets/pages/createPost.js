@@ -31,7 +31,7 @@ import {KeyboardAwareScrollView} from "react-native-keyboard-aware-scroll-view"
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { addRef, getCollections } from "../firebase/queries";
 import * as ImagePicker from 'expo-image-picker';
-import { doc, updateDoc, arrayUnion, Timestamp } from "firebase/firestore";
+import { doc, Timestamp } from "firebase/firestore";
 import CreatePostFields from "./createPostFields";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "../firebase/firebaseConfig";
@@ -92,12 +92,12 @@ const ActionBar = ({ options, onOptionToggle }) => {
         <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('addImage')}>
           <Feather name="image" size={22} color="#836fff" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('addPoll')}>
+      <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('addPoll')}>
           <Feather name="bar-chart-2" size={22} color="#836fff" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('addChat')}>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.iconButton} onPress={() => onOptionToggle('addChat')}>
           <Feather name="message-circle" size={22} color="#836fff" />
-        </TouchableOpacity>
+      </TouchableOpacity>
       </View>
       <TouchableOpacity 
         style={[styles.iconButton, styles.anonymousButton]} 
@@ -289,7 +289,6 @@ const CreatePost = ({ navigation }) => {
       setIsSubmitting(true);
       const genreDoc = doc(db, "genres", selectedForum.id);
       const userDoc = doc(db, 'users', user.uid);
-
       
       // Initialize all arrays to empty arrays
       const postData = {
@@ -306,33 +305,26 @@ const CreatePost = ({ navigation }) => {
         } : null,
         anonymous,
         time_posted: Timestamp.now(),
-        forum_type: selectedForum.name,
-        forum_details: formData || {},
+        requirements: formData || {},
         num_likes: 0,
         num_comments: 0,
         views: 0,
         post_user: userDoc,
+        like_userref: [], // Initialize empty array for likes
         liked_user_ref: [], // Initialize empty array for liked users
+        chatRefs: [], // Initialize empty array for chat references
         commentedPostsRef: [], // Initialize empty array for commented posts
+        postsRef: [], // Initialize empty array for user's posts
         voters: [], // Initialize empty array for poll voters
         comments: [] // Initialize empty array for comments
       };
+      
+      console.log("Posting data:", JSON.stringify(postData, null, 2));
       
       // Add the post to Firestore
       const postRef = await addRef({ 
         collectionName: "posts", 
         data: postData 
-      });
-
-      console.log("Post reference:", postRef);
-
-      await updateDoc(genreDoc, {
-        postsRef: arrayUnion(postRef),
-      });
-  
-      // ? Update user's postsRef
-      await updateDoc(userDoc, {
-        postsRef: arrayUnion(postRef),
       });
       
       console.log("Post created successfully:", postRef);
@@ -381,39 +373,39 @@ const CreatePost = ({ navigation }) => {
 
   return (
     <SafeAreaViewRN style={{ flex: 1, backgroundColor: 'white' }}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
         keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
-      >
-        {/* Header */}
+    >
+            {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Feather name="x" size={24} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.postButton,
+                <Feather name="x" size={24} color="#666" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.postButton,
               (!title || !selectedForum || isSubmitting) && styles.disabledButton
-            ]}
-            onPress={addPost}
+                ]}
+                onPress={addPost}
             disabled={!title || !selectedForum || isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.postButtonText}>Post</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.postButtonText}>Post</Text>
+                )}
+              </TouchableOpacity>
+            </View>
 
-        {/* Forum Selector */}
+              {/* Forum Selector */}
         <View style={styles.forumSelectorContainer}>
-          <ForumSelector
-            forums={forums}
-            selectedForum={selectedForum}
-            onForumSelect={handleForumSelect}
-          />
+              <ForumSelector 
+                forums={forums}
+                selectedForum={selectedForum}
+                onForumSelect={handleForumSelect}
+              />
         </View>
 
         {/* Content Area */}
@@ -422,37 +414,38 @@ const CreatePost = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          <TextInput
-            style={styles.titleInput}
-            placeholder="Title"
-            value={title}
-            onChangeText={setTitle}
-            multiline
-          />
-          <TextInput
-            style={styles.descriptionInput}
+              <TextInput
+                style={styles.titleInput}
+                placeholder="Title"
+                value={title}
+                onChangeText={setTitle}
+                multiline
+              />
+
+              <TextInput
+            style={styles.bodyInput}
             placeholder="What's on your mind?"
-            value={description}
+                value={description}
             onChangeText={setDescription}
-            multiline
-            textAlignVertical="top"
-          />
+                multiline
+                textAlignVertical="top"
+              />
 
           <View style={styles.contentExtrasContainer}>
-            {/* Image Preview */}
-            {addImage && image && (
+              {/* Image Preview */}
+              {addImage && image && (
               <View style={styles.imageContainer}>
                 <Image source={{ uri: image }} style={styles.imagePreview} />
-                <TouchableOpacity 
-                  style={styles.removeImageButton}
-                  onPress={() => {
-                    setAddImage(false);
-                    setImage(null);
-                  }}
-                >
-                  <Feather name="x" size={20} color="#666" />
-                </TouchableOpacity>
-              </View>
+                    <TouchableOpacity 
+                      style={styles.removeImageButton}
+                      onPress={() => {
+                        setAddImage(false);
+                        setImage(null);
+                      }}
+                    >
+                      <Feather name="x" size={20} color="#666" />
+                    </TouchableOpacity>
+                  </View>
             )}
 
             {/* Forum Details */}
@@ -462,32 +455,32 @@ const CreatePost = ({ navigation }) => {
                   onChange={handleFormChange} 
                   selectedForum={selectedForum.name}
                   onValidationChange={handleValidationChange}
-                />
-              </View>
-            )}
+                  />
+                </View>
+              )}
           </View>
 
-          {/* Poll Options */}
-          {addPoll && (
+              {/* Poll Options */}
+              {addPoll && (
             <View style={styles.pollContainer}>
-              <PollOptions 
-                pollOptions={pollOptions}
-                onAddOption={addPollOption}
-                onRemoveOption={removePollOption}
-              />
-            </View>
-          )}
+                  <PollOptions 
+                    pollOptions={pollOptions}
+                    onAddOption={addPollOption}
+                    onRemoveOption={removePollOption}
+                  />
+                </View>
+              )}
         </ScrollView>
-
+            
         {/* Action Bar */}
         <View style={styles.actionBarContainer}>
           <View style={styles.divider} />
-          <ActionBar 
-            options={{ addChat, addPoll, addImage, anonymous }}
-            onOptionToggle={toggleOption}
-          />
-        </View>
-      </KeyboardAvoidingView>
+              <ActionBar 
+                options={{ addChat, addPoll, addImage, anonymous }}
+                onOptionToggle={toggleOption}
+              />
+            </View>
+    </KeyboardAvoidingView>
     </SafeAreaViewRN>
   );
 };
@@ -504,22 +497,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  backButton: {
-    padding: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   postButton: {
     backgroundColor: '#836fff',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 20,
   },
   postButtonText: {
     color: '#fff',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   disabledButton: {
     opacity: 0.6,
@@ -533,24 +522,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   titleInput: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '500',
+    paddingVertical: 8,
     marginBottom: 8,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 8,
   },
-  descriptionInput: {
+  bodyInput: {
     fontSize: 16,
-    lineHeight: 24,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 8,
-    minHeight: 100,
-    textAlignVertical: 'top',
-    marginBottom: 8,
+    minHeight: 120,
+    paddingTop: 8,
   },
   contentExtrasContainer: {
     flexDirection: 'row',
