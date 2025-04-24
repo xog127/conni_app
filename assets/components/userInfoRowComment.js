@@ -12,12 +12,13 @@ import { Feather, AntDesign } from '@expo/vector-icons';
 import { timeAgo } from '../customFunctions/time';
 import { arrayRemove, arrayUnion, doc, deleteDoc } from 'firebase/firestore';
 import { updateSubRef, deleteDocument, fetchReferenceData} from '../firebase/queries';
-import { db } from '../firebase/firebaseConfig';
+import { useAuth } from '../services/authContext';
 
 const UserInfoRowComment = ({ 
   commentData, postData, onDeletePress, docu
 }) => {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
+  const [commentuser, setUser] = useState(null);
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [likes, setLikes] = useState(0);
   const [userName, setUserName] = useState('');
@@ -31,7 +32,7 @@ const UserInfoRowComment = ({
         await updateSubRef({
           docu: docu,
           updateFields: {
-            "liked_user_ref": arrayRemove(commentData.createdby_ref)
+            "num_likes": increment(1)
           },
         });
         setLiked(false);
@@ -68,7 +69,9 @@ const UserInfoRowComment = ({
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        setRelativeTime(timeAgo(commentData.date_created));
+                if (commentData.date_created) {
+                  setRelativeTime(timeAgo(commentData.date_created));
+                }
         
         const data = await fetchReferenceData(commentData.createdby_ref);
         if (data) {
@@ -80,9 +83,8 @@ const UserInfoRowComment = ({
           }
           
           // Check if comment is liked
-          if (commentData.liked_user_ref && Array.isArray(commentData.liked_user_ref)) {
-            setLiked(commentData.liked_user_ref.includes(commentData.createdby_ref));
-          }
+          let likedFromUser = false;
+          const likedPostsRef = currentuser?.liked_posts_ref || [];
         }
       } catch (error) {
         console.error('Error fetching user:', error);
@@ -105,15 +107,15 @@ const UserInfoRowComment = ({
   return (
     <View style={styles.container}>
       <View style={styles.userInfoLeft}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={handleProfilePress}
           disabled={postData?.anonymous}
           style={styles.imageContainer}
         >
           <Image
             source={
-              user?.photo_url
-                ? { uri: user.photo_url }
+              commentuser?.photo_url
+                ? { uri: commentuser.photo_url }
                 : require('../images/Blankprofile.png')
             }
             style={styles.userImage}
@@ -126,36 +128,39 @@ const UserInfoRowComment = ({
       </View>
       
       <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          onPress={handleLike} 
+        <TouchableOpacity
+          onPress={handleLike}
           style={styles.actionButton}
         >
-          <AntDesign 
-            name={isLiked ? "heart" : "hearto"}
-            size={14} 
-            color={isLiked ? "red" : "red"}
-          />
+          <View style={styles.likeContainer}>
+            <AntDesign
+              name={isLiked ? "heart" : "hearto"}
+              size={16}
+              color={isLiked ? "red" : "red"}
+            />
+            <Text style={styles.likeCount}>{commentData?.num_likes || 0}</Text>
+          </View>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          onPress={() => setOptionsVisible(true)} 
+        
+        <TouchableOpacity
+          onPress={() => setOptionsVisible(true)}
           style={styles.actionButton}
         >
           <Feather name="more-vertical" size={14} color="#666" />
         </TouchableOpacity>
-
+        
         <Modal
           animationType="fade"
           transparent={true}
           visible={optionsVisible}
           onRequestClose={() => setOptionsVisible(false)}
         >
-          <Pressable 
+          <Pressable
             style={styles.modalOverlay}
             onPress={() => setOptionsVisible(false)}
           >
             <View style={styles.optionsContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.optionItem}
                 onPress={() => {
                   onReport?.();
@@ -165,9 +170,9 @@ const UserInfoRowComment = ({
                 <Feather name="flag" size={20} color="#666" />
                 <Text style={styles.optionText}>Report</Text>
               </TouchableOpacity>
-
+              
               {(commentData.createdby_ref == commentData.createdby_ref) && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.optionItem, styles.deleteOption]}
                   onPress={handleDelete}
                 >
@@ -223,6 +228,15 @@ const styles = StyleSheet.create({
   actionButton: {
     marginLeft: 12,
     padding: 4,
+  },
+  likeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  likeCount: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#666',
   },
   modalOverlay: {
     flex: 1,
