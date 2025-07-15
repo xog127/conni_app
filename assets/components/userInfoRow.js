@@ -9,7 +9,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Feather, AntDesign } from '@expo/vector-icons';
-import { fetchReferenceData } from '../firebase/queries';
+import { fetchReferenceData, sendPostNotification } from '../firebase/queries';
 import { timeAgo } from '../customFunctions/time';
 import { db } from '../firebase/firebaseConfig';
 import { doc, increment, arrayRemove, arrayUnion } from 'firebase/firestore';
@@ -73,6 +73,12 @@ const UserInfoRow = ({
         });
         setLiked(true);
         setLikes(prev => prev + 1);
+        sendPostNotification({
+          senderId: user.uid,
+          receiverRef: postData.post_user,
+          type: 0,
+          postRef : postDoc
+        });
       }
     } catch (error) {
       console.error('Error updating like:', error);
@@ -91,7 +97,6 @@ const UserInfoRow = ({
       const likedPostsRef = user.liked_posts_ref || [];
       const liked = likedPostsRef.some(ref => ref?.path === postDoc.path);
       setLiked(liked);
-      console.log('?? Updated like status from fresh user:', liked);
     }
   }, [user, postDoc?.path]);
   

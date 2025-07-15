@@ -28,7 +28,6 @@ export default function ProfileScreen({ navigation }) {
 
   useEffect(() => {
     const fetchPostRefs = async () => {
-      console.log("current user is", currentUser);
       try {
         if (currentUser) {
           const userData = await getRef({
@@ -47,7 +46,6 @@ export default function ProfileScreen({ navigation }) {
               (a, b) => b.time_posted - a.time_posted
             )
           );
-          console.log("ProfileScreen navigation:", navigation);
         }
       } catch (error) {
         console.error("Error fetching post references:", error.message);

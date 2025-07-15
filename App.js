@@ -26,6 +26,7 @@ import ChatRoom from './assets/pages/chatRoom';
 import ChatInfo from './assets/pages/chatInfo';
 import ForumScreen from './assets/pages/ForumScreen';
 import NewSearchScreen from './assets/pages/NewSearchScreen';
+import NotificationScreen from './assets/pages/notification';
 import { NativeBaseProvider, Box } from 'native-base';
 
 
@@ -160,6 +161,15 @@ const PostStackNavigator = () => (
       }}
     />
     <PostStack.Screen 
+      name="Notification" 
+      component={NotificationScreen}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      } 
+      }
+    />
+    <PostStack.Screen 
       name="PostDisplay" 
       component={PostDisplay}
       options={{ 
@@ -244,6 +254,7 @@ const TabNavigator = () => (
 
         const hideTabBarRoutes = [
           'Search',
+          'Notification',
           'PostDisplay',
           'createPost',
           'IndividualForum',

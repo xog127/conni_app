@@ -189,8 +189,10 @@ export default function MainPage({ navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "white" }} 
-      edges={['top', 'left', 'right']}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: "white" }}
+        edges={["top", "left", "right"]}
+      >
         <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
         <Box flex={1}>
           <HStack px={4} py={3} alignItems="center" space={3}>
@@ -221,8 +223,10 @@ export default function MainPage({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }} 
-    edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "white" }}
+      edges={["top", "left", "right"]}
+    >
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       <Box flex={1}>
         <HStack px={4} py={3} alignItems="center" space={3}>
@@ -231,7 +235,7 @@ export default function MainPage({ navigation }) {
           </Pressable>
           <ConniIcon />
           <Spacer />
-          <Pressable>
+          <Pressable onPress={() => navigation.navigate("Notification")}>
             <Icon
               as={Ionicons}
               name="notifications"

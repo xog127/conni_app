@@ -1,5 +1,5 @@
 import { db, collection } from "./firebaseConfig";
-import { doc, getDoc, updateDoc, addDoc, getDocs } from "firebase/firestore";
+import { doc, getDoc, updateDoc, addDoc, getDocs, query,where,serverTimestamp } from "firebase/firestore";
 
 const getCollections = async ({ collectionName }) => {
   try {
@@ -282,9 +282,52 @@ const addRef = async ({ collectionName, data }) => {
     };
   
   };
+
+  const sendPostNotification = async ({ senderId, receiverRef, type, postRef }) => {
+    console.log(senderId, receiverRef, type, postRef)
+ try {
+    const senderUserRef = doc(db, "users", senderId);
+
+    const receiverSnapshot = await getDoc(receiverRef);
+    if (!receiverSnapshot.exists()) {
+      console.error("Receiver user does not exist:", receiverRef.path);
+      return;
+    }
+
+    const receiverNotificationsRef = collection(receiverRef, "notification");
+
+    // Step 1: Query for existing matching notification
+    const q = query(
+      receiverNotificationsRef,
+      where("user_sent_ref", "==", senderUserRef),
+      where("post_ref", "==", postRef),
+      where("type", "==", type)
+    );
+
+    const existingNotifications = await getDocs(q);
+
+    if (!existingNotifications.empty) {
+      console.log("Duplicate notification exists. Skipping addDoc.");
+      return;
+    }
+
+    await addDoc(receiverNotificationsRef, {
+      read: false,
+      type,
+      user_sent_ref: senderUserRef,
+      post_ref: postRef,
+      created_at: serverTimestamp(),
+    });
+
+    console.log("Notification sent successfully.");
+  } catch (error) {
+    console.error("Error sending notification:", error);
+  }
+};
+
   
   
 
 
-export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections, getAnyCollection, fetchUserPosts, getPostsWithPagination};
+export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections, getAnyCollection, fetchUserPosts, getPostsWithPagination, sendPostNotification};
 
