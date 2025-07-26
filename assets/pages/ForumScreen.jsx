@@ -36,14 +36,33 @@ export default function ForumScreen({ route, navigation }) {
       // Fetch all posts
       const postsData = await getAnyCollection("posts");
 
-      // Filter posts by genre
-      const filteredPosts = postsData.filter((post) => {
-        if (post.post_genre_ref) {
-          const genreRefId = post.post_genre_ref.id || post.post_genre_ref.path;
-          return genreRefId === genreref;
-        }
-        return false;
-      });
+      // Filter posts by genre and include forum details
+      const filteredPosts = await Promise.all(
+        postsData
+          .filter((post) => {
+            if (post.post_genre_ref) {
+              const genreRefId = post.post_genre_ref.id || post.post_genre_ref.path;
+              return genreRefId === genreref;
+            }
+            return false;
+          })
+          .map(async (post) => {
+            try {
+              const forumData = await getRef({
+                id: post.post_genre_ref.id || post.post_genre_ref.path,
+                collectionName: "genres",
+              });
+              return {
+                ...post,
+                forum_details: post.forum_details || {},
+                forum_type: forumData?.name || "General",
+              };
+            } catch (error) {
+              console.error("Error fetching forum data:", error);
+              return post;
+            }
+          })
+      );
 
       // Sort posts by time
       const sortedPosts = filteredPosts.sort(
