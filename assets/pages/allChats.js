@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, FlatList, View, Text, TouchableOpacity, SafeAreaView } from 'react-native';
+import { StyleSheet, FlatList, View, Text, TouchableOpacity } from 'react-native';
 import { collection, getDoc, getDocs, onSnapshot, doc } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import { timeAgo } from '../customFunctions/time';

@@ -26,8 +26,19 @@ import ChatRoom from './assets/pages/chatRoom';
 import ChatInfo from './assets/pages/chatInfo';
 import ForumScreen from './assets/pages/ForumScreen';
 import NewSearchScreen from './assets/pages/NewSearchScreen';
+import NotificationScreen from './assets/pages/notification';
 import { NativeBaseProvider, Box } from 'native-base';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+
+import { BackHandler } from 'react-native';
+
+// Patch to prevent crash on deprecated usage
+if (!BackHandler.removeEventListener) {
+  BackHandler.removeEventListener = () => {};
+}
+import React from 'react';
+import theme from './theme'; // Make sure path matches
 
 // Create navigation stacks
 const Stack = createStackNavigator();
@@ -160,6 +171,15 @@ const PostStackNavigator = () => (
       }}
     />
     <PostStack.Screen 
+      name="Notification" 
+      component={NotificationScreen}
+      options={{ 
+        headerShown: false,
+        tabBarStyle: { display: 'none' }
+      } 
+      }
+    />
+    <PostStack.Screen 
       name="PostDisplay" 
       component={PostDisplay}
       options={{ 
@@ -244,6 +264,7 @@ const TabNavigator = () => (
 
         const hideTabBarRoutes = [
           'Search',
+          'Notification',
           'PostDisplay',
           'createPost',
           'IndividualForum',
@@ -407,13 +428,14 @@ const RootNavigator = () => {
 // Main App component
 export default function App() {
   return (
-    <NativeBaseProvider>
-      <AuthProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
-      </AuthProvider>
+    <NativeBaseProvider theme = {theme}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </AuthProvider>
+      </SafeAreaProvider>
     </NativeBaseProvider>
-
   );
 }

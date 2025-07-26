@@ -126,17 +126,17 @@ export default function NewSearchScreen({ navigation }) {
   const renderHeader = () => (
     <Box>
       {/* Search Bar with Back Button */}
-      <Box px={4} py={3} flexDirection="row" alignItems="center" style = {{outlineWidth: 0}}>
+      <Box px={4} py={3} flexDirection="row" alignItems="center" style = {{borderWidth: 0}}>
         <Pressable onPress={() => navigation.goBack()} mr={3}>
-          <Ionicons name="arrow-back" size={24} color="black" style = {{outlineWidth: 1}} />
+          <Ionicons name="arrow-back" size={24} color="black" style = {{borderWidth: 1}} />
         </Pressable>
         <Input
           placeholder="Search posts..."
           value={searchQuery}
           onChangeText={handleSearchChange}
-          style={{ outlineWidth: 0 }}
-          _input={{ outlineWidth: 0 }}
-          _focus={{ outlineWidth: 0 }}
+          style={{ borderWidth: 0 }}
+          _input={{ borderWidth: 0 }}
+          _focus={{ borderWidth: 0 }}
         />
         
       </Box>

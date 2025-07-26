@@ -10,17 +10,19 @@ import {
 } from 'react-native';
 import { Feather, AntDesign } from '@expo/vector-icons';
 import { timeAgo } from '../customFunctions/time';
-import { arrayRemove, arrayUnion, doc, deleteDoc } from 'firebase/firestore';
-import { updateSubRef, deleteDocument, fetchReferenceData} from '../firebase/queries';
+import { db } from '../firebase/firebaseConfig';
+import { arrayRemove,increment, arrayUnion, doc, deleteDoc } from 'firebase/firestore';
+import { updateRef, updateSubRef,  fetchReferenceData} from '../firebase/queries';
 import { useAuth } from '../services/authContext';
 
 const UserInfoRowComment = ({ 
   commentData, postData, onDeletePress, docu
 }) => {
   const { user } = useAuth();
+  const commentDoc = doc(db, 'posts', postData.id, 'comments', commentData.id);
   const [commentuser, setUser] = useState(null);
   const [optionsVisible, setOptionsVisible] = useState(false);
-  const [likes, setLikes] = useState(0);
+  const [likes, setLikes] = useState(commentData?.num_likes || 0);
   const [userName, setUserName] = useState('');
   const [isLiked, setLiked] = useState(false);
   const [relativeTime, setRelativeTime] = useState('');
@@ -32,18 +34,34 @@ const UserInfoRowComment = ({
         await updateSubRef({
           docu: docu,
           updateFields: {
-            "num_likes": increment(1)
+            "num_likes": increment(-1),
+          },
+        });
+        await updateRef({
+          id: user.uid,
+          collectionName: "users",
+          updateFields: {
+            "liked_comments_ref": arrayRemove(commentDoc)
           },
         });
         setLiked(false);
+        setLikes(prev => prev - 1);
       } else {
         await updateSubRef({
           docu: docu,
           updateFields: {
-            "liked_user_ref": arrayUnion(commentData.createdby_ref)
+            "num_likes": increment(1),
+          },
+        });
+        await updateRef({
+          id: user.uid,
+          collectionName: "users",
+          updateFields: {
+            "liked_comments_ref": arrayUnion(commentDoc)
           },
         });
         setLiked(true);
+        setLikes(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error updating like:', error);
@@ -82,10 +100,13 @@ const UserInfoRowComment = ({
             setUserName(`${data.first_name} ${data.last_name}`);
           }
           
-          // Check if comment is liked
-          let likedFromUser = false;
-          const likedPostsRef = currentuser?.liked_posts_ref || [];
+        if (user && commentDoc?.path) {
+          const likedCommentsRef = user.liked_comments_ref || [];
+          const liked = likedCommentsRef.some(ref => ref?.path === commentDoc.path);
+          setLiked(liked);
         }
+      }
+
       } catch (error) {
         console.error('Error fetching user:', error);
       } finally {
@@ -138,7 +159,7 @@ const UserInfoRowComment = ({
               size={16}
               color={isLiked ? "red" : "red"}
             />
-            <Text style={styles.likeCount}>{commentData?.num_likes || 0}</Text>
+            <Text style={styles.likeCount}>{likes || 0}</Text>
           </View>
         </TouchableOpacity>
         

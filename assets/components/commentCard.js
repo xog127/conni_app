@@ -10,10 +10,11 @@ import { Feather } from '@expo/vector-icons';
 import UserInfoRowComment from './userInfoRowComment';
 import { getSubRefAll } from '../firebase/queries'; // Import your query function
 import { collection, doc } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import { db,getDoc } from '../firebase/firebaseConfig';
 
-const CommentCard = ({ postData, comment, userRef, onReply, onDelete, onTrigger, isReply = false, docu }) => {
+const CommentCard = ({ postData, comment, onReply, onDelete, onTrigger, isReply = false, docu }) => {
   const [replies, setReplies] = useState([]);
+  
 
   const fetchReplies = async () => {
     try {
@@ -25,10 +26,26 @@ const CommentCard = ({ postData, comment, userRef, onReply, onDelete, onTrigger,
       console.error('Error fetching replies:', error);
     }
   };
+  const handleReplyPress = async () => {
+  try {
+    const userSnap = await getDoc(comment.createdby_ref);
+    console.log("User snapshot:", userSnap);
+    const authorName = userSnap.exists() ? userSnap.data().first_name +' '+  userSnap.data().last_name : "Hello";
+    console.log("Author's name:", authorName);
+    onReply({ ...comment, authorName });
+  } catch (error) {
+    console.error("Failed to get author's name:", error);
+    onReply({ ...comment, authorName: "Unknown" });
+  }
+};
 
   useEffect(() => {
-    fetchReplies();
-  }, [comment.id, onTrigger]);
+    try{
+      fetchReplies();
+    } catch (error) {
+      console.error('Error fetching replies:', error);
+    } 
+  }, []);
 
   return (
     <View style={[styles.container, isReply && styles.replyContainer]}>
@@ -48,8 +65,8 @@ const CommentCard = ({ postData, comment, userRef, onReply, onDelete, onTrigger,
         
         {!isReply && (
           <TouchableOpacity 
-            onPress={() => onReply(comment)}
-            style={styles.replyButton}
+  onPress={handleReplyPress}
+  style={styles.replyButton}
           >
           <Feather name="message-circle" size={16} color="#666" />
           <Text style={styles.replyButtonText}>Reply</Text>
@@ -62,7 +79,6 @@ const CommentCard = ({ postData, comment, userRef, onReply, onDelete, onTrigger,
             key={reply.id}
             postData={postData}
             comment={reply}
-            userRef={reply.createdby_ref}
             onReply={onReply}
             onTrigger={onTrigger}
             isReply={true}

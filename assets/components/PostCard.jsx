@@ -12,22 +12,27 @@ const PostCard = ({ item, navigation }) => {
   // Convert timestamp to relative time
   const getTimeAgo = (timestamp) => {
     if (!timestamp) return "Just now";
-    
+
     // If it's a Firebase timestamp
     if (timestamp.seconds) {
       return timeAgo(timestamp);
     }
-    
+
     // If it's already in milliseconds
-    if (typeof timestamp === 'number') {
+    if (typeof timestamp === "number") {
       return timeAgo({ seconds: Math.floor(timestamp / 1000) });
     }
-    
+
     return "Just now";
   };
 
   const renderForumDetails = React.useMemo(() => {
-    if (!item?.forum_details || !item?.forum_type || item?.forum_type === "General") return null;
+    if (
+      !item?.forum_details ||
+      !item?.forum_type ||
+      item?.forum_type === "General"
+    )
+      return null;
 
     // Helper functions inside useMemo to ensure proper scope
     const renderLabel = (label, value, prefix = "", suffix = "") => {
@@ -38,7 +43,9 @@ const PostCard = ({ item, navigation }) => {
             <Text style={styles.detailLabel}>{label}:</Text>
           </View>
           <Text style={styles.detailValue}>
-            {prefix}{value}{suffix}
+            {prefix}
+            {value}
+            {suffix}
           </Text>
         </View>
       );
@@ -99,7 +106,11 @@ const PostCard = ({ item, navigation }) => {
         content = (
           <View>
             {renderEmphasis(ticketType)}
-            {item.forum_details.Date && renderLabel("Date", new Date(item.forum_details.Date).toISOString().split('T')[0])}
+            {item.forum_details.Date &&
+              renderLabel(
+                "Date",
+                new Date(item.forum_details.Date).toISOString().split("T")[0]
+              )}
             {renderLabel("Price", item.forum_details.Price, "£")}
             {renderLabel("Quantity", item.forum_details.Quantity)}
           </View>
@@ -110,8 +121,20 @@ const PostCard = ({ item, navigation }) => {
         content = (
           <View>
             {renderEmphasis(item.forum_details["Rent type"])}
-            {item.forum_details["Move in Date"] && renderLabel("Move in Date", new Date(item.forum_details["Move in Date"]).toISOString().split('T')[0])}
-            {item.forum_details["Move out Date"] && renderLabel("Move out Date", new Date(item.forum_details["Move out Date"]).toISOString().split('T')[0])}
+            {item.forum_details["Move in Date"] &&
+              renderLabel(
+                "Move in Date",
+                new Date(item.forum_details["Move in Date"])
+                  .toISOString()
+                  .split("T")[0]
+              )}
+            {item.forum_details["Move out Date"] &&
+              renderLabel(
+                "Move out Date",
+                new Date(item.forum_details["Move out Date"])
+                  .toISOString()
+                  .split("T")[0]
+              )}
             {renderLabel("Location", item.forum_details.Location)}
             {renderLabel("Price", item.forum_details.Price, "£", " per week")}
           </View>
@@ -123,8 +146,12 @@ const PostCard = ({ item, navigation }) => {
         content = (
           <View>
             {renderLabel("Incentive", incentive)}
-            {incentive === "Other" && item.forum_details.CustomIncentive && 
-              renderLabel("Custom incentive", item.forum_details.CustomIncentive)}
+            {incentive === "Other" &&
+              item.forum_details.CustomIncentive &&
+              renderLabel(
+                "Custom incentive",
+                item.forum_details.CustomIncentive
+              )}
             {renderSkillChips(item.forum_details.Skills)}
           </View>
         );
@@ -140,8 +167,10 @@ const PostCard = ({ item, navigation }) => {
   if (!item) return null;
 
   return (
-    <Pressable 
-      onPress={() => navigation?.navigate('PostDisplay', { postRef: item.id, navigation })}
+    <Pressable
+      onPress={() =>
+        navigation?.navigate("PostDisplay", { postRef: item.id, navigation })
+      }
     >
       <Box
         bg="white"
@@ -165,20 +194,20 @@ const PostCard = ({ item, navigation }) => {
           lineHeight="24px"
           fontWeight="500"
         >
-          {item?.post_title || 'Untitled Post'}
+          {item?.post_title || "Untitled Post"}
         </Text>
 
         <Text noOfLines={4} fontSize="sm" color="gray.700">
-          {item?.post_data || 'No content'}
+          {item?.post_data || "No content"}
         </Text>
 
-        {item?.forum_details && item?.forum_type && item.forum_type !== "General" && (
-          <Box mt={2}>
-            <View style={styles.forumDetailsBox}>
-              {renderForumDetails}
-            </View>
-          </Box>
-        )}
+        {item?.forum_details &&
+          item?.forum_type &&
+          item.forum_type !== "General" && (
+            <Box mt={2}>
+              <View style={styles.forumDetailsBox}>{renderForumDetails}</View>
+            </Box>
+          )}
 
         {item?.post_photo && (
           <Box mt={4}>
@@ -201,7 +230,7 @@ const PostCard = ({ item, navigation }) => {
               <HStack alignItems="center">
                 <HeartIcon size={20} color="#FF5963" />
                 <Text fontSize="xs" color="gray.700" ml={1}>
-                  {item?.likes?.length || 0}
+                  {item?.num_likes || 0}
                 </Text>
               </HStack>
             </Pressable>
@@ -238,8 +267,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   detailLine: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 10,
   },
   labelContainer: {
