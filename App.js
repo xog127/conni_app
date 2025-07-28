@@ -389,6 +389,7 @@ const RootNavigator = () => {
         user.isOnboarded ? (
           <>
           <Stack.Screen name="MainTabs" component={TabNavigator} />
+          <Stack.Screen name="MainPage" component={MainPage} />
           <Stack.Screen 
           name="Feedback" 
           component={Feedback} 

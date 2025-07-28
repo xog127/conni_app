@@ -19,6 +19,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { checkUsernameExists } from "../firebase/queries"; // You may need to implement this
 import theme from '../../theme'; // Make sure path matches
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DUMMY_COURSES = [
   "MSc Mathematics",
@@ -41,6 +42,7 @@ export default function ProfileEditScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [usernameError, setUsernameError] = useState("");
   const toast = useToast();
+  const insets = useSafeAreaInsets();
   const inputRefs = useRef({});
 
   const handleSave = async () => {
@@ -111,8 +113,6 @@ export default function ProfileEditScreen({ navigation }) {
   };
 
   return (
-    <NativeBaseProvider >
-      <ProfileEditScreen />
       <Box flex={1} bg="white">
         {/* Header */}
         <HStack
@@ -120,7 +120,7 @@ export default function ProfileEditScreen({ navigation }) {
           justifyContent="space-between"
           alignItems="center"
           alignSelf="stretch"
-          pt={"10%"}
+          pt={insets.top}
           px={4}
         >
           <Pressable onPress={() => navigation.goBack()}>
@@ -152,7 +152,7 @@ export default function ProfileEditScreen({ navigation }) {
               size="2xl"
               source={avatar ? { uri: avatar } : require("../images/Blankprofile.png")}
             >
-              {displayName?.[0] || "U"}
+              {displayName ? displayName[0].toUpperCase() : "U"}
             </Avatar>
             <HStack justifyContent="center" mt={2} space={2}>
               <Button
@@ -264,7 +264,7 @@ export default function ProfileEditScreen({ navigation }) {
             <Modal.Header>Request Change</Modal.Header>
             <Modal.Body>
               <Text>
-                To change your {modalType}, please contact the company.
+                To change your {modalType}, please reach out via the Feedback page. We'll review and apply your request as needed.
               </Text>
             </Modal.Body>
             <Modal.Footer>
@@ -278,7 +278,6 @@ export default function ProfileEditScreen({ navigation }) {
           </Modal.Content>
         </Modal>
       </Box>
-    </NativeBaseProvider>
   );
 }
 // Helper: implement checkUsernameExists in your firebase/queries.js

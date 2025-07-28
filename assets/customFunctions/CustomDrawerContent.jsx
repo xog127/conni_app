@@ -12,6 +12,7 @@ import {
   Icon,
   useTheme,
 } from "native-base";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../services/authContext";
 
@@ -79,98 +80,95 @@ function CustomDrawerContent(props) {
   );
 
   return (
-    <DrawerContentScrollView
-      {...props}
-      contentContainerStyle={{ 
-        flexGrow: 1,
-        paddingTop: Platform.OS === 'ios' ? 0 : 20
-      }}
-    >
-      <VStack space={6} flex={1} px={4}>
-        {/* User Profile Section */}
-        <Box pt={4} pb={6}>
-          <Pressable 
-            onPress={() => props.navigation.navigate("Profile")}
-          >
-            <HStack space={3} alignItems="center">
-              <Avatar
-                size="lg"
-                source={
-                  user?.photo_url
-                    ? { uri: user.photo_url }
-                    : require("../images/Blankprofile.png")
-                }
-                bg="gray.300"
-              />
-              <VStack>
-                <Text fontSize="lg" fontWeight="semibold" color="gray.800">
-                  {user?.first_name} {user?.last_name}
-                </Text>
-                <HStack space={1} alignItems="center">
-                  <Text fontSize="sm" color="gray.500">
-                    View Profile
-                  </Text>
-                  <Icon 
-                    as={Ionicons}
-                    name="chevron-forward" 
-                    size={4} 
-                    color="gray.400"
-                  />
-                </HStack>
-              </VStack>
-            </HStack>
-          </Pressable>
-        </Box>
-
-        <Divider bg="gray.200" />
-
-        {/* Quick Links */}
-        <VStack space={3}>
-          <Text 
-            fontSize="xs" 
-            fontWeight="bold" 
-            color="gray.500"
-            letterSpacing="xl"
-            pl={2}
-          >
-            QUICK LINKS
-          </Text>
-          <VStack space={2}>
-            {quickLinks.map(renderQuickLink)}
-          </VStack>
-        </VStack>
-
-        <Box flex={1} />
-
-        {/* Feedback Button */}
-        <Box pb={6}>
-          <Pressable
-            onPress={() => props.navigation.navigate("Feedback")}
-          >
-            <HStack
-              space={3}
-              py={3}
-              px={4}
-              borderRadius="2xl"
-              bg="#836FFF15"
-              alignItems="center"
-              borderWidth={1}
-              borderColor="#836FFF20"
+    <SafeAreaView style = {{flex: 1}}>
+      <DrawerContentScrollView
+        {...props}>
+        <VStack space={6} flex={1} px={4}>
+          {/* User Profile Section */}
+          <Box pt={4} pb={6}>
+            <Pressable 
+              onPress={() => props.navigation.navigate("Profile")}
             >
-              <Icon 
-                as={Ionicons}
-                name="chatbubble-ellipses-outline" 
-                size={5} 
-                color="#836FFF"
-              />
-              <Text fontSize="md" fontWeight="medium" color="#836FFF">
-                Give Feedback
-              </Text>
-            </HStack>
-          </Pressable>
-        </Box>
-      </VStack>
-    </DrawerContentScrollView>
+              <HStack space={3} alignItems="center">
+                <Avatar
+                  size="lg"
+                  source={
+                    user?.photo_url
+                      ? { uri: user.photo_url }
+                      : require("../images/Blankprofile.png")
+                  }
+                  bg="gray.300"
+                />
+                <VStack>
+                  <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                    {user?.first_name} {user?.last_name}
+                  </Text>
+                  <HStack space={1} alignItems="center">
+                    <Text fontSize="sm" color="gray.500">
+                      View Profile
+                    </Text>
+                    <Icon 
+                      as={Ionicons}
+                      name="chevron-forward" 
+                      size={4} 
+                      color="gray.400"
+                    />
+                  </HStack>
+                </VStack>
+              </HStack>
+            </Pressable>
+          </Box>
+
+          <Divider bg="gray.200" />
+
+          {/* Quick Links */}
+          <VStack space={3}>
+            <Text 
+              fontSize="xs" 
+              fontWeight="bold" 
+              color="gray.500"
+              letterSpacing="xl"
+              pl={2}
+            >
+              QUICK LINKS
+            </Text>
+            <VStack space={2}>
+              {quickLinks.map(renderQuickLink)}
+            </VStack>
+          </VStack>
+
+          <Box flex={1} />
+
+          {/* Feedback Button */}
+          <Box pb={6}>
+            <Pressable
+              onPress={() => props.navigation.navigate("Feedback")}
+            >
+              <HStack
+                space={3}
+                py={3}
+                px={4}
+                borderRadius="2xl"
+                bg="#836FFF15"
+                alignItems="center"
+                borderWidth={1}
+                borderColor="#836FFF20"
+              >
+                <Icon 
+                  as={Ionicons}
+                  name="chatbubble-ellipses-outline" 
+                  size={5} 
+                  color="#836FFF"
+                />
+                <Text fontSize="md" fontWeight="medium" color="#836FFF">
+                  Give Feedback
+                </Text>
+              </HStack>
+            </Pressable>
+          </Box>
+        </VStack>
+      </DrawerContentScrollView>
+    </SafeAreaView>
   );
 }
 
