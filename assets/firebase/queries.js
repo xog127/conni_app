@@ -272,9 +272,9 @@ const addRef = async ({ collectionName, data }) => {
   };
   
   const fetchUserPosts = async (userId) => {
-    const posts = await fetchUserPostList(userId, "postsRef");
-    const likedPosts = await fetchUserPostList(userId, "likedPostsRef");
-    const commentedPosts = await fetchUserPostList(userId, "commentedPostsRef");
+    const posts = await fetchUserPostList(userId, "posts_ref");
+    const likedPosts = await fetchUserPostList(userId, "liked_posts_ref");
+    const commentedPosts = await fetchUserPostList(userId, "commented_posts_ref");
     return {
       posts,
       likedPosts,

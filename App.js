@@ -283,13 +283,9 @@ const TabNavigator = () => (
         return {
           display: 'flex',
           backgroundColor: '#fff',
-          borderTopWidth: 1,
-          borderTopColor: '#e0e0e0',
+          borderTopWidth: 0,
+          borderTopColor: 'transparent',
           height: 60,
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
           elevation: 8,
           shadowColor: '#000',
           shadowOffset: {

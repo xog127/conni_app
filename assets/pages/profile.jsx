@@ -23,8 +23,10 @@ export default function ProfileScreen({ navigation }) {
   const [likedPosts, setLikedPosts] = useState([]);
   const [commentedPosts, setCommentedPosts] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("Your Posts");
+  const [selectedOption, setSelectedOption] = useState("Posts");
   const options = ["Posts", "Liked", "Commented"];
+  const [tabLayouts, setTabLayouts] = useState([]);
+  const selectedIndex = options.indexOf(selectedOption);
 
   useEffect(() => {
     const fetchPostRefs = async () => {
@@ -34,7 +36,9 @@ export default function ProfileScreen({ navigation }) {
             id: currentUser.uid,
             collectionName: "users",
           });
+          console.log("👤 userData:", userData);
           const userPosts = await fetchUserPosts(currentUser.uid);
+          console.log(userData.postRef);
           setPosts(
             userPosts.posts.sort((a, b) => b.time_posted - a.time_posted)
           );
@@ -61,7 +65,7 @@ export default function ProfileScreen({ navigation }) {
       : selectedOption === "Liked"
       ? likedPosts
       : commentedPosts;
-
+  console.log("🔍 displayedPosts for", selectedOption, ":", displayedPosts);
   return (
     <NativeBaseProvider>
       <Box
@@ -170,19 +174,23 @@ export default function ProfileScreen({ navigation }) {
           </HStack>
         </VStack>
       </Box>
-      <ScrollView backgroundColor="white" flex={1}>
+      <ScrollView backgroundColor="white" >
         <Box bg="white" pt="8px">
-          <HStack
-            justifyContent="space-around"
-            borderBottomWidth={1}
-            borderBottomColor="gray.200"
-            position="relative"
-          >
+          <HStack justifyContent="space-between" px="16px">
             {options.map((option, index) => (
               <Pressable
                 key={index}
+                flex={1} //
+                alignItems="center"
                 onPress={() => setSelectedOption(option)}
-                flex={1}
+                onLayout={(event) => {
+                  const { x, width } = event.nativeEvent.layout;
+                  setTabLayouts((prev) => {
+                    const copy = [...prev];
+                    copy[index] = { x, width };
+                    return copy;
+                  });
+                }}
               >
                 <VStack alignItems="center" py={2}>
                   <Text
@@ -207,21 +215,25 @@ export default function ProfileScreen({ navigation }) {
             ))}
 
             {/* Animated Underline */}
-            <MotiView
-              style={{
-                position: "absolute",
-                bottom: 0,
-                height: 2,
-                backgroundColor: "#836fff",
-                borderRadius: 2,
-              }}
-              from={{ translateX: 0 }}
-              animate={{
-                translateX: options.indexOf(selectedOption) * 100 + "%",
-              }}
-              transition={{ type: "timing", duration: 200 }}
-              width={`${100 / options.length}%`}
-            />
+            {selectedIndex >= 0 &&
+              tabLayouts[selectedIndex]?.x !== undefined &&
+              tabLayouts[selectedIndex]?.width !== undefined && (
+                <MotiView
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    height: 2,
+                    backgroundColor: "#836fff",
+                    borderRadius: 2,
+                  }}
+                  from={{ translateX: 0, width: 0 }}
+                  animate={{
+                    translateX: tabLayouts[selectedIndex].x,
+                    width: tabLayouts[selectedIndex].width,
+                  }}
+                  transition={{ type: "timing", duration: 200 }}
+                />
+            )}
           </HStack>
         </Box>
 
