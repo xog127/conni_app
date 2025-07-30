@@ -28,7 +28,7 @@ import ForumScreen from './assets/pages/ForumScreen';
 import NewSearchScreen from './assets/pages/NewSearchScreen';
 import NotificationScreen from './assets/pages/notification';
 import { NativeBaseProvider, Box } from 'native-base';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 import { BackHandler } from 'react-native';
@@ -425,14 +425,15 @@ const RootNavigator = () => {
 // Main App component
 export default function App() {
   return (
-    <NativeBaseProvider theme = {theme}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <NavigationContainer>
-            <RootNavigator />
-          </NavigationContainer>
-        </AuthProvider>
-      </SafeAreaProvider>
+  <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+    <NativeBaseProvider>
+      <AuthProvider>
+        <NavigationContainer>
+          <RootNavigator />
+        </NavigationContainer>
+      </AuthProvider>
     </NativeBaseProvider>
+  </SafeAreaView>
+
   );
 }

@@ -279,7 +279,6 @@ const PostDisplay = () => {
 
   return (
     <KeyboardAvoidingView behavior="padding" style={styles.safeArea}>
-    <SafeAreaView style={styles.safeArea}>
       {/* Header with Genre and Back Button */}
       <View style={styles.header}>
         <TouchableOpacity onPress={navigation.goBack} style={styles.backButton}>
@@ -382,7 +381,6 @@ const PostDisplay = () => {
         onClose={() => setShowReportModal(false)}
         postId={postRef}
       />
-    </SafeAreaView>
     </KeyboardAvoidingView>
   );
 };
