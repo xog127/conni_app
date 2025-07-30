@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import UserInfoRow from '../components/userInfoRow';
@@ -24,7 +24,6 @@ import { Box } from 'native-base';
 import { useAuth } from '../services/authContext';
 import ReportModal from '../components/ReportModal';
 
-const authUser = "Psychology 1st Year";
 
 const PostDisplay = () => {
   const { user } = useAuth();
@@ -37,7 +36,6 @@ const PostDisplay = () => {
   const inputRef = useRef(null);
   const [replyingTo, setReplyingTo] = useState(null);
   const route = useRoute();
-  console.log(route.params)
   const { postRef, navigation } = route.params || {};
   const handleReply = (comment) => {
     setReplyingTo(comment);
@@ -54,7 +52,7 @@ const PostDisplay = () => {
       {replyingTo && (
         <View style={styles.replyingToContainer}>
           <Text style={styles.replyingToText}>
-            Replying to <Text style={styles.replyingToName}>{authUser}</Text>
+            Replying to <Text style={styles.replyingToName}>{replyingTo?.authorName || "Unknown"}</Text>
           </Text>
           <TouchableOpacity onPress={cancelReply} style={styles.cancelReplyButton}>
             <Feather name="x" size={16} color="#666" />
@@ -127,7 +125,7 @@ const PostDisplay = () => {
   const getComments = async () => {
     try {
       const commentsData = await getSubRefAll({collection: collection(db, 'posts', postRef, 'comments')});
-      console.log('Comments:', commentsData);
+      
       setComments(commentsData);
   
     } catch (error) {
@@ -163,21 +161,7 @@ const PostDisplay = () => {
   };
 
   const renderForumRequirements = () => {
-    console.log('Rendering requirements. Post:', {
-      forum_details: post?.forum_details,
-      forum_type: post?.forum_type,
-      genre: genre?.name
-    });
     
-    if (!post?.forum_details || !post?.forum_type || !genre || post.forum_type === "General") {
-      console.log('Requirements not shown because:', {
-        hasForumDetails: !!post?.forum_details,
-        hasForumType: !!post?.forum_type,
-        hasGenre: !!genre,
-        isGeneral: post?.forum_type === "General"
-      });
-      return null;
-    }
 
 
     const renderSkillChips = (skills) => {
@@ -268,16 +252,20 @@ const PostDisplay = () => {
     const fetchPostData = async () => {
       try {
         const postData = await getRef({ id: postRef, collectionName: "posts" });
-        console.log('Post Data:', postData);
-        console.log('Post Requirements:', postData?.requirements);
         setPost(postData);
     
         const genreData = await fetchReferenceData(postData.post_genre_ref);
-        console.log('Genre Data:', genreData);
         setGenre(genreData);
 
         getComments();
     
+        updateRef({
+          id: postData.id,
+          collectionName: "posts",
+          updateFields: {
+          views: increment(1),
+          },
+        });
       } catch (error) {
         console.error('Error fetching post:', error);
       } finally {
@@ -355,7 +343,6 @@ const PostDisplay = () => {
                     pollOption={pollOption}
                     hasVoted={pollOption.voters?.includes(authUser)}
                     onChoose={() => {
-                      console.log('Voted for:', pollOption.option);
                       handleSelectPoll(index);
                     }}
                   />
@@ -384,7 +371,7 @@ const PostDisplay = () => {
             )}
           </>
         }
-        renderItem={({ item }) => <CommentCard onReply={handleReply} comment={item} userRef={item.createdby_ref} postData={post} onTrigger = {getComments} docu={doc(db, 'posts', post.id, 'comments', item.id)}/>}
+        renderItem={({ item }) => <CommentCard onReply={handleReply} comment={item} postData={post} onTrigger = {getComments} docu={doc(db, 'posts', post.id, 'comments', item.id)}/>}
         contentContainerStyle={styles.flatListContent}
       />
       

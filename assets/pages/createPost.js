@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
