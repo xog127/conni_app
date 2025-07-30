@@ -177,7 +177,7 @@ export default function SearchScreen({ navigation }) {
       {/* Search Bar with Back Button */}
       <Box px={4} py={3} flexDirection="row" alignItems="center">
         <Pressable onPress={() => navigation.goBack()} mr={3}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color="black" style = {{ borderWidth : 1 }}/>
         </Pressable>
         <Input
           ref={searchInputRef}
@@ -186,7 +186,7 @@ export default function SearchScreen({ navigation }) {
           value={searchQuery}
           onChangeText={handleSearchChange}
           variant="filled"
-          borderRadius="10"
+          borderRadius= {10}
           py={3}
           fontSize="md"
           returnKeyType="search"

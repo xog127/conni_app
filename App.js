@@ -31,6 +31,15 @@ import { NativeBaseProvider, Box } from 'native-base';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
+import { BackHandler } from 'react-native';
+
+// Patch to prevent crash on deprecated usage
+if (!BackHandler.removeEventListener) {
+  BackHandler.removeEventListener = () => {};
+}
+import React from 'react';
+import theme from './theme'; // Make sure path matches
+
 // Create navigation stacks
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -274,13 +283,9 @@ const TabNavigator = () => (
         return {
           display: 'flex',
           backgroundColor: '#fff',
-          borderTopWidth: 1,
-          borderTopColor: '#e0e0e0',
+          borderTopWidth: 0,
+          borderTopColor: 'transparent',
           height: 60,
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
           elevation: 8,
           shadowColor: '#000',
           shadowOffset: {
@@ -380,6 +385,7 @@ const RootNavigator = () => {
         user.isOnboarded ? (
           <>
           <Stack.Screen name="MainTabs" component={TabNavigator} />
+          <Stack.Screen name="MainPage" component={MainPage} />
           <Stack.Screen 
           name="Feedback" 
           component={Feedback} 

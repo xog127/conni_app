@@ -153,6 +153,9 @@ function ChatRoom({ route, navigation }) {
   const handleSend = async () => {
     if ((!newMessage.trim() && !imageUri) || uploadingImage) return;
     
+    
+    const messageText = newMessage.trim();
+    setNewMessage('');
     try {
       // If there's an image, upload it first
       if (imageUri) {
@@ -179,7 +182,6 @@ function ChatRoom({ route, navigation }) {
       });
       
       // Reset input fields
-      setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
       Alert.alert('Error', 'Failed to send message. Please try again.');
@@ -398,7 +400,7 @@ function ChatRoom({ route, navigation }) {
       {/* Chat Messages */}
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         {loading ? (

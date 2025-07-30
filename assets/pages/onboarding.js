@@ -16,7 +16,11 @@ import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import CustomDropdown from '../components/dropdown';
 import { useAuth } from '../services/authContext';
-import { getStorage } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import SearchableDropdown from '../components/SearchableDropdown';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { ActivityIndicator } from 'react-native';
+
 
 const SECONDARY_COLOR = "#836FFF";
 
@@ -33,24 +37,68 @@ const countryOptions = [
   { label: 'UK', value: 'UK' },
   { label: 'USA', value: 'USA' },
 ];
+const universityOptions = [
+  { label: 'Imperial College London', value: 'Imperial College London' },
+  { label: 'University College London', value: 'University College London' },
+  { label: "King's College London", value: "King's College London" },
+  { label: 'University Arts London', value: 'University Arts London' },
+];
+
+const courseOptions = [
+  { label: 'BSc Psychology', value: 'BSc Psychology' },
+  { label: 'BSc Mathematics', value: 'BSc Mathematics' },
+  { label: 'BSc Computer Science', value: 'BSc Computer Science' },
+];
+
+import { getDocs, collection, query, where } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig'; // adjust if needed
+
+// 🔽 PLACE THIS RIGHT HERE
+const checkUsernameExists = async (username) => {
+  const q = query(collection(db, 'users'), where('username', '==', username));
+  const querySnapshot = await getDocs(q);
+  return !querySnapshot.empty;
+};
+
 
 const OnboardingPage = ({ navigation }) => {
   const { user, updateProfile, completeOnboarding } = useAuth();
   const scrollViewRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [profileImage, setProfileImage] = useState(null);
+  const [courseQuery, setCourseQuery] = useState('');
+  const filteredCourseOptions = courseOptions.filter((course) =>
+    course.label.toLowerCase().includes(courseQuery.toLowerCase())
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Fixed property names to match with what's being rendered
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
+    username: '',
     gender: '',
     nationality: '',
     university: '',
     course: '',
     graduation_year: '',
   });
-
+  useEffect(() => {
+    if (!formData.username.trim()) {
+      return;
+    }
+  
+    const timeout = setTimeout(async () => {
+      const taken = await checkUsernameExists(formData.username);
+      if (taken) {
+        setErrors((prev) => ({ ...prev, username: 'This username is already taken' }));
+      } else {
+        setErrors((prev) => ({ ...prev, username: null }));
+      }
+    }, 500); // 500ms debounce
+  
+    return () => clearTimeout(timeout); // clear previous timer
+  }, [formData.username]);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -121,6 +169,11 @@ const OnboardingPage = ({ navigation }) => {
   };
 
   const handleSubmit = async () => {
+    const usernameTaken = await checkUsernameExists(formData.username);
+    if (usernameTaken) {
+      setErrors((prev) => ({ ...prev, username: 'This username is already taken' }));
+      return;
+    }
     try {
       await updateProfile({
         ...formData,
@@ -154,8 +207,7 @@ const OnboardingPage = ({ navigation }) => {
         setIsSubmitting(true);
         const uri = result.assets[0].uri;
         const imageUrl = await uploadImageToFirebase(uri);
-        setImage(imageUrl);
-        setAddImage(true);
+        setProfileImage(imageUrl);
         setIsSubmitting(false);
       }
     } catch (error) {
@@ -244,12 +296,14 @@ const OnboardingPage = ({ navigation }) => {
             >
               {/* Page 1: Basic Info */}
               <View style={styles.page}>
-                <ScrollView 
-                  nestedScrollEnabled={true}
+                <KeyboardAwareScrollView
+                  enableOnAndroid
                   keyboardShouldPersistTaps="handled"
+                  contentContainerStyle={{ flexGrow : 1 }}
                 >
                   {renderInputField('first_name', 'First Name', 'Enter your first name')}
                   {renderInputField('last_name', 'Last Name', 'Enter your last name')}
+                  {renderInputField('username', 'Username', 'Choose a unique username')}
                   <CustomDropdown
                     label="Gender"
                     data={genderOptions}
@@ -272,26 +326,55 @@ const OnboardingPage = ({ navigation }) => {
                     containerStyle={styles.dropdownContainer}
                     labelStyle={styles.label}
                   />
-                </ScrollView>
+                </KeyboardAwareScrollView>
               </View>
 
               {/* Page 2: University Details */}
               <View style={styles.page}>
-                <ScrollView 
-                  nestedScrollEnabled={true}
+                <KeyboardAwareScrollView
+                  enableOnAndroid
                   keyboardShouldPersistTaps="handled"
+                  contentContainerStyle={{ flexGrow : 1 }}
                 >
-                  {renderInputField('university', 'University Name', 'Enter your university name')}
-                  {renderInputField('course', 'Course', 'Enter your course name')}
+                  <CustomDropdown
+                    label="University"
+                    data={universityOptions}
+                    value={formData.university}
+                    onSelect={(item) => {
+                      setFormData({ ...formData, university: item.value });
+                      setErrors({ ...errors, university: null });
+                    }}
+                    placeholder="Select university"
+                    required={true}
+                    errorText={errors.university}
+                    containerStyle={styles.dropdownContainer}
+                    labelStyle={styles.label}
+                  />
+                  <SearchableDropdown
+                    label="Course"
+                    data={courseOptions}
+                    value={formData.course}
+                    onSelect={(item) => {
+                      setFormData({ ...formData, course: item.value });
+                      setErrors({ ...errors, course: null });
+                    }}
+                    placeholder="Search your course"
+                    errorText={errors.course}
+                  />
                   {renderInputField('graduation_year', 'Graduation Year', 'YYYY', 'numeric')}
-                </ScrollView>
+                </KeyboardAwareScrollView>
               </View>
 
               {/* Page 3: Profile Picture */}
               <View style={styles.page}>
                 <View style={styles.profileImageContainer}>
                   <TouchableOpacity onPress={pickImage} style={styles.imagePickerButton}>
-                    {profileImage ? (
+                    {isSubmitting ? (
+                      <View style={styles.spinnerContainer}>
+                        <ActivityIndicator size="large" color={SECONDARY_COLOR} />
+                        <Text style={styles.placeholderText}>Uploading...</Text>
+                      </View>
+                    ) : profileImage ? (
                       <Image source={{ uri: profileImage }} style={styles.profileImage} />
                     ) : (
                       <View style={styles.placeholderContainer}>

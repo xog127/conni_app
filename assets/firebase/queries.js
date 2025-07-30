@@ -1,5 +1,5 @@
 import { db, collection } from "./firebaseConfig";
-import { doc, getDoc, updateDoc, addDoc, getDocs, query,where,serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, updateDoc, addDoc, getDocs, query,where,serverTimestamp, getFirestore } from "firebase/firestore";
 
 const getCollections = async ({ collectionName }) => {
   try {
@@ -272,9 +272,9 @@ const addRef = async ({ collectionName, data }) => {
   };
   
   const fetchUserPosts = async (userId) => {
-    const posts = await fetchUserPostList(userId, "postsRef");
-    const likedPosts = await fetchUserPostList(userId, "likedPostsRef");
-    const commentedPosts = await fetchUserPostList(userId, "commentedPostsRef");
+    const posts = await fetchUserPostList(userId, "posts_ref");
+    const likedPosts = await fetchUserPostList(userId, "liked_posts_ref");
+    const commentedPosts = await fetchUserPostList(userId, "commented_posts_ref");
     return {
       posts,
       likedPosts,
@@ -324,6 +324,16 @@ const addRef = async ({ collectionName, data }) => {
     console.error("Error sending notification:", error);
   }
 };
+
+export async function submitFeedback({ userId = "anonymous", title, description, receiveBy }) {
+  return await addDoc(collection(db, "feedback"), {
+    userId,
+    title,
+    description,
+    receiveBy,
+    createdAt: serverTimestamp(),
+  });
+}
 
   
   

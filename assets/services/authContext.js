@@ -111,6 +111,7 @@ export const AuthProvider = ({ children }) => {
         email,
         createdAt: new Date().toISOString(),
         isOnboarded: false,
+        username,
         // Add any additional user fields you want to store
       });
       

@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import UserInfoRow from '../components/userInfoRow';

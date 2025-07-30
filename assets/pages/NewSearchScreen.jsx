@@ -126,29 +126,19 @@ export default function NewSearchScreen({ navigation }) {
   const renderHeader = () => (
     <Box>
       {/* Search Bar with Back Button */}
-      <Box px={4} py={3} flexDirection="row" alignItems="center">
+      <Box px={4} py={3} flexDirection="row" alignItems="center" style = {{borderWidth: 0}}>
         <Pressable onPress={() => navigation.goBack()} mr={3}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color="black" style = {{borderWidth: 1}} />
         </Pressable>
         <Input
-          ref={searchInputRef}
-          flex={1}
           placeholder="Search posts..."
           value={searchQuery}
           onChangeText={handleSearchChange}
-          variant="filled"
-          borderRadius="10"
-          py={3}
-          fontSize="md"
-          returnKeyType="search"
-          autoCapitalize="none"
-          autoCorrect={false}
-          InputLeftElement={
-            <Box pl={3}>
-              <Ionicons name="search" size={20} color="gray" />
-            </Box>
-          }
+          style={{ borderWidth: 0 }}
+          _input={{ borderWidth: 0 }}
+          _focus={{ borderWidth: 0 }}
         />
+        
       </Box>
 
       {/* Forum Chips */}

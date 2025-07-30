@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -63,92 +65,94 @@ const SignupScreen = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
     >
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Create Account</Text>
+      <TouchableWithoutFeedback onPress ={Keyboard.dismiss}>
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>Create Account</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+          />
 
-        <View style={styles.checkboxContainer}>
-          <HStack space={2} alignItems="flex-start">
-            <Checkbox
-              value="terms"
-              isChecked={termsAccepted}
-              onChange={setTermsAccepted}
-              accessibilityLabel="Accept terms and conditions"
-            />
-            <Text style={styles.checkboxText}>
-              I agree to the{' '}
-              <Text style={styles.linkText} onPress={() => navigation.navigate('Terms')}>
-                Terms & Conditions
+          <View style={styles.checkboxContainer}>
+            <HStack space={2} alignItems="flex-start">
+              <Checkbox
+                value="terms"
+                isChecked={termsAccepted}
+                onChange={setTermsAccepted}
+                accessibilityLabel="Accept terms and conditions"
+              />
+              <Text style={styles.checkboxText}>
+                I agree to the{' '}
+                <Text style={styles.linkText} onPress={() => navigation.navigate('Terms')}>
+                  Terms & Conditions
+                </Text>
               </Text>
-            </Text>
-          </HStack>
-        </View>
+            </HStack>
+          </View>
 
-        <View style={styles.checkboxContainer}>
-          <HStack space={2} alignItems="flex-start">
-            <Checkbox
-              value="privacy"
-              isChecked={privacyAccepted}
-              onChange={setPrivacyAccepted}
-              accessibilityLabel="Accept privacy policy"
-            />
-            <Text style={styles.checkboxText}>
-              I agree to the{' '}
-              <Text style={styles.linkText} onPress={() => navigation.navigate('Privacy')}>
-                Privacy Policy
+          <View style={styles.checkboxContainer}>
+            <HStack space={2} alignItems="flex-start">
+              <Checkbox
+                value="privacy"
+                isChecked={privacyAccepted}
+                onChange={setPrivacyAccepted}
+                accessibilityLabel="Accept privacy policy"
+              />
+              <Text style={styles.checkboxText}>
+                I agree to the{' '}
+                <Text style={styles.linkText} onPress={() => navigation.navigate('Privacy')}>
+                  Privacy Policy
+                </Text>
               </Text>
+            </HStack>
+          </View>
+
+          <TouchableOpacity 
+            style={styles.button}
+            onPress={handleSignup}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#836FFF" />
+            ) : (
+              <Text style={styles.buttonText}>Sign Up</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.signupLink}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={styles.signupText}>
+              Already have an account? <Text style={styles.signupTextBold}>Login</Text>
             </Text>
-          </HStack>
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={handleSignup}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#836FFF" />
-          ) : (
-            <Text style={styles.buttonText}>Sign Up</Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.signupLink}
-          onPress={() => navigation.navigate('Login')}
-        >
-          <Text style={styles.signupText}>
-            Already have an account? <Text style={styles.signupTextBold}>Login</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 };

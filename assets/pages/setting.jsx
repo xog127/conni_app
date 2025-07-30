@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { TextInput } from "react-native";
 import {
   Box,
   Avatar,
@@ -14,6 +15,8 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "../services/authContext";
 import { Modal, View, StyleSheet } from "react-native";
+import { getAuth, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
+
 
 export default function UserSettingsScreen({ navigation }) {
   const { logout, user, deleteAccount } = useAuth();
@@ -32,15 +35,33 @@ export default function UserSettingsScreen({ navigation }) {
       console.error("Error logging out:", error.message);
     }
   };
+  const handleConfirmDelete = async () => {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
 
   const handleDeleteAccount = async () => {
     const result = await deleteAccount();
     navigation.navigate("Login");
     if (!result.success) {
       console.error(result.error);
+    try {
+      const credential = EmailAuthProvider.credential(currentUser.email, password);
+      await reauthenticateWithCredential(currentUser, credential);
+      await deleteUser(currentUser);
+      setPasswordPromptVisible(false);
+      navigation.navigate("Login");
+    } catch (error) {
+      console.error("Delete account error:", error);
+      Alert.alert("Error", error.message);
     }
   };
 
+  const handleDeleteAccount = () => {
+    setDeleteAccountConfirmationVisible(false); // hide initial modal
+    setPasswordPromptVisible(true); // show password prompt
+  };
+  const [passwordPromptVisible, setPasswordPromptVisible] = useState(false);
+  const [password, setPassword] = useState('');
   return (
     <NativeBaseProvider>
       <ScrollView flex={1}>
@@ -193,6 +214,37 @@ export default function UserSettingsScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+      
+      {/* Modal for Delet Account confirmation using password re-enter*/}
+      <Modal isOpen={passwordPromptVisible} onClose={() => setPasswordPromptVisible(false)}>
+        <Modal.Content maxWidth="400px">
+          <Modal.Header>Re-enter Password</Modal.Header>
+          <Modal.Body>
+            <Text>Enter your password to confirm deletion:</Text>
+            <TextInput
+              secureTextEntry
+              value={password}
+              onChangeText={(text) => setPassword(text)}
+              style = {{
+                borderWidth: 1,
+                borderColour: '#ccc',
+                padding: 10,
+                marginTop: 12,
+                borderRadius: 8,
+              }}
+            />
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="ghost" onPress={() => setPasswordPromptVisible(false)}>
+              Cancel
+            </Button>
+            <Button colorScheme="red" onPress={handleConfirmDelete}>
+              Confirm Delete
+            </Button>
+          </Modal.Footer>
+        </Modal.Content>
+      </Modal>
+
 
       {/* Delete Account Confirmation Modal */}
       <Modal
