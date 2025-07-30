@@ -28,6 +28,7 @@ import ForumScreen from './assets/pages/ForumScreen';
 import NewSearchScreen from './assets/pages/NewSearchScreen';
 import NotificationScreen from './assets/pages/notification';
 import { NativeBaseProvider, Box } from 'native-base';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 // Create navigation stacks
@@ -418,6 +419,7 @@ const RootNavigator = () => {
 // Main App component
 export default function App() {
   return (
+  <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
     <NativeBaseProvider>
       <AuthProvider>
         <NavigationContainer>
@@ -425,6 +427,7 @@ export default function App() {
         </NavigationContainer>
       </AuthProvider>
     </NativeBaseProvider>
+  </SafeAreaView>
 
   );
 }

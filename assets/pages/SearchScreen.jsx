@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Box, Text, Input, HStack, Pressable, VStack, Divider, Spinner, Center } from "native-base";
+import {
+  Box,
+  Text,
+  Input,
+  HStack,
+  Pressable,
+  VStack,
+  Divider,
+  Spinner,
+  Center,
+} from "native-base";
 import { ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getAnyCollection } from "../firebase/queries";
 import PostPreviews from "../components/postPreviews";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 // Number of posts to load per batch
 const POSTS_PER_LOAD = 10;
@@ -39,18 +48,20 @@ export default function SearchScreen({ navigation }) {
         setLoading(true);
         const [postsData, forumsData] = await Promise.all([
           getAnyCollection("posts"),
-          getAnyCollection("genres")
+          getAnyCollection("genres"),
         ]);
 
         // Sort posts by time_posted in descending order
-        const sortedPosts = postsData.sort((a, b) => b.time_posted - a.time_posted);
+        const sortedPosts = postsData.sort(
+          (a, b) => b.time_posted - a.time_posted
+        );
         setAllPosts(sortedPosts);
-        
+
         // Load only the first batch
         const initialPosts = sortedPosts.slice(0, POSTS_PER_LOAD);
         setFilteredPosts(initialPosts);
         setCurrentIndex(POSTS_PER_LOAD);
-        
+
         // Calculate trending posts
         const sortedByLikes = [...postsData]
           .sort((a, b) => {
@@ -60,7 +71,7 @@ export default function SearchScreen({ navigation }) {
           })
           .slice(0, 10);
         setTrendingPosts(sortedByLikes);
-        
+
         setForums(forumsData);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -80,16 +91,20 @@ export default function SearchScreen({ navigation }) {
       // Apply search filter
       if (debouncedQuery) {
         const lowercaseQuery = debouncedQuery.toLowerCase();
-        filtered = filtered.filter(post => {
-          const titleMatch = post?.post_title ? post.post_title.toLowerCase().includes(lowercaseQuery) : false;
-          const dataMatch = post?.post_data ? post.post_data.toLowerCase().includes(lowercaseQuery) : false;
+        filtered = filtered.filter((post) => {
+          const titleMatch = post?.post_title
+            ? post.post_title.toLowerCase().includes(lowercaseQuery)
+            : false;
+          const dataMatch = post?.post_data
+            ? post.post_data.toLowerCase().includes(lowercaseQuery)
+            : false;
           return titleMatch || dataMatch;
         });
       }
 
       // Apply forum filter
       if (selectedForum) {
-        filtered = filtered.filter(post => {
+        filtered = filtered.filter((post) => {
           if (!post?.post_genre_ref) return false;
           const genreRefId = post.post_genre_ref.id || post.post_genre_ref.path;
           return genreRefId === selectedForum.id;
@@ -107,25 +122,29 @@ export default function SearchScreen({ navigation }) {
 
   const loadMorePosts = useCallback(() => {
     if (loadingMore || currentIndex >= allPosts.length) return;
-    
+
     setLoadingMore(true);
-    
+
     setTimeout(() => {
       let filtered = [...allPosts];
 
       // Apply search filter
       if (debouncedQuery) {
         const lowercaseQuery = debouncedQuery.toLowerCase();
-        filtered = filtered.filter(post => {
-          const titleMatch = post?.post_title ? post.post_title.toLowerCase().includes(lowercaseQuery) : false;
-          const dataMatch = post?.post_data ? post.post_data.toLowerCase().includes(lowercaseQuery) : false;
+        filtered = filtered.filter((post) => {
+          const titleMatch = post?.post_title
+            ? post.post_title.toLowerCase().includes(lowercaseQuery)
+            : false;
+          const dataMatch = post?.post_data
+            ? post.post_data.toLowerCase().includes(lowercaseQuery)
+            : false;
           return titleMatch || dataMatch;
         });
       }
 
       // Apply forum filter
       if (selectedForum) {
-        filtered = filtered.filter(post => {
+        filtered = filtered.filter((post) => {
           if (!post?.post_genre_ref) return false;
           const genreRefId = post.post_genre_ref.id || post.post_genre_ref.path;
           return genreRefId === selectedForum.id;
@@ -133,10 +152,13 @@ export default function SearchScreen({ navigation }) {
       }
 
       // Get the next batch of posts
-      const nextBatch = filtered.slice(currentIndex, currentIndex + POSTS_PER_LOAD);
-      
-      setFilteredPosts(prevPosts => [...prevPosts, ...nextBatch]);
-      setCurrentIndex(prevIndex => prevIndex + POSTS_PER_LOAD);
+      const nextBatch = filtered.slice(
+        currentIndex,
+        currentIndex + POSTS_PER_LOAD
+      );
+
+      setFilteredPosts((prevPosts) => [...prevPosts, ...nextBatch]);
+      setCurrentIndex((prevIndex) => prevIndex + POSTS_PER_LOAD);
       setLoadingMore(false);
     }, 500);
   }, [allPosts, currentIndex, loadingMore, debouncedQuery, selectedForum]);
@@ -180,10 +202,14 @@ export default function SearchScreen({ navigation }) {
 
       {/* Forum Chips */}
       <Box>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, marginBottom: 12 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            marginBottom: 12,
+          }}
         >
           <HStack space={2}>
             {forums.map((forum) => (
@@ -195,10 +221,14 @@ export default function SearchScreen({ navigation }) {
                   px={4}
                   py={2}
                   borderRadius="full"
-                  bg={selectedForum?.id === forum.id ? "primary.500" : "gray.100"}
+                  bg={
+                    selectedForum?.id === forum.id ? "primary.500" : "gray.100"
+                  }
                 >
                   <Text
-                    color={selectedForum?.id === forum.id ? "white" : "gray.700"}
+                    color={
+                      selectedForum?.id === forum.id ? "white" : "gray.700"
+                    }
                     fontWeight="medium"
                   >
                     {forum.name}
@@ -237,14 +267,12 @@ export default function SearchScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-      <PostPreviews
-        data={filteredPosts.length > 0 ? filteredPosts : trendingPosts}
-        renderHeader={renderHeader}
-        navigation={navigation}
-        isMarketView={false}
-        ListEmptyComponent={renderNoResults}
-      />
-    </SafeAreaView>
+    <PostPreviews
+      data={filteredPosts.length > 0 ? filteredPosts : trendingPosts}
+      renderHeader={renderHeader}
+      navigation={navigation}
+      isMarketView={false}
+      ListEmptyComponent={renderNoResults}
+    />
   );
 }
