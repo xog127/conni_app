@@ -9,6 +9,7 @@ import HeartIcon from "../customIcon/HeartIcon.js";
 import CommentIcon from "../customIcon/CommentIcon.js";
 import ViewIcon from "../customIcon/ViewIcon.js";
 import PostCard from "../components/PostCard.jsx";
+import { TextInput } from "react-native";
 
 export default function NewSearchScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -128,9 +129,9 @@ export default function NewSearchScreen({ navigation }) {
       {/* Search Bar with Back Button */}
       <Box px={4} py={3} flexDirection="row" alignItems="center" style = {{borderWidth: 0}}>
         <Pressable onPress={() => navigation.goBack()} mr={3}>
-          <Ionicons name="arrow-back" size={24} color="black" style = {{borderWidth: 1}} />
+          <Ionicons name="arrow-back" size={24} color="black"/>
         </Pressable>
-        <Input
+        <TextInput
           placeholder="Search posts..."
           value={searchQuery}
           onChangeText={handleSearchChange}

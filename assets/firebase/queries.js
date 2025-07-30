@@ -1,5 +1,5 @@
 import { db, collection } from "./firebaseConfig";
-import { doc, getDoc, updateDoc, addDoc, getDocs, query,where,serverTimestamp, getFirestore } from "firebase/firestore";
+import { doc, getDoc, updateDoc, addDoc, getDocs, query, where, serverTimestamp, getFirestore } from "firebase/firestore";
 
 const getCollections = async ({ collectionName }) => {
   try {
@@ -335,9 +335,38 @@ export async function submitFeedback({ userId = "anonymous", title, description,
   });
 }
 
+export const startOrGetDirectChat = async ({ currentUserId, otherUserId }) => {
+  const currentRef = doc(db, 'users', currentUserId);
+  const otherRef = doc(db, 'users', otherUserId);
+  const chatsRef = collection(db, 'chats');
+
+  const q = query(chatsRef, where('members', 'array-contains', currentRef));
+  const snapshot = await getDocs(q);
+
+  for (const chatDoc of snapshot.docs) {
+    const data = chatDoc.data();
+    const members = data.members || [];
+    const hasOther = members.find((m) => m?.path === otherRef.path);
+    if (hasOther && members.length === 2) {
+      return { chatId: chatDoc.id, chatRef: chatDoc.ref, created: false, chatData: data };
+    }
+  }
+
+  const chatData = {
+    group_name: 'Chat',
+    description: '',
+    isAnonymous: false,
+    createdAt: serverTimestamp(),
+    createdBy: currentRef,
+    members: [currentRef, otherRef],
+    lastMessage: '',
+    lastMessageTime: null,
+  };
+
+  const chatDocRef = await addDoc(chatsRef, chatData);
+  return { chatId: chatDocRef.id, chatRef: chatDocRef, created: true, chatData };
+};
   
   
-
-
-export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections, getAnyCollection, fetchUserPosts, getPostsWithPagination, sendPostNotification};
+export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections, getAnyCollection, fetchUserPosts, getPostsWithPagination, sendPostNotification,};
 

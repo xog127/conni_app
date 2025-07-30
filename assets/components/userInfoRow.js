@@ -15,6 +15,7 @@ import { db } from '../firebase/firebaseConfig';
 import { doc, increment, arrayRemove, arrayUnion } from 'firebase/firestore';
 import { updateRef } from '../firebase/queries';
 import { useAuth } from '../services/authContext';
+import UserSummaryModal from '../pages/UserSummaryModals';
 
 const UserInfoRow = ({ 
   userRef, postData,
@@ -29,6 +30,7 @@ const UserInfoRow = ({
   const [isLiked, setLiked] = useState(false);
   const [relativeTime, setRelativeTime] = useState('');
   const [loading, setLoading] = useState(true);
+  const [profileVisible, setProfileVisible] = useState(false);
 
   const handleLike = async () => {
     if (!postData?.id || !userRef) {
@@ -88,7 +90,7 @@ const UserInfoRow = ({
 
   const handleProfilePress = () => {
     if (!postData?.anonymous) {
-      onProfilePress?.();
+      setProfileVisible(true);
     }
   };
 
@@ -204,6 +206,11 @@ const UserInfoRow = ({
           </Pressable>
         </Modal>
       </View>
+      <UserSummaryModal
+        visible={profileVisible}
+        onClose={() => setProfileVisible(false)}
+        user={postuser}
+      />
     </View>
   );
 };

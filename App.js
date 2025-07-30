@@ -407,6 +407,11 @@ const RootNavigator = () => {
         tabBarStyle: { display: 'none' }
       }}
     />
+        <Stack.Screen 
+      name="Chatroom" 
+      component={ChatRoom} 
+      options={{ headerShown: false }}
+    />
         </>
         ) : (
           <Stack.Screen 
