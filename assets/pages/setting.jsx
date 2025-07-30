@@ -15,8 +15,12 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "../services/authContext";
 import { Modal, View, StyleSheet } from "react-native";
-import { getAuth, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
-
+import {
+  getAuth,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  deleteUser,
+} from "firebase/auth";
 
 export default function UserSettingsScreen({ navigation }) {
   const { logout, user, deleteAccount } = useAuth();
@@ -35,33 +39,28 @@ export default function UserSettingsScreen({ navigation }) {
       console.error("Error logging out:", error.message);
     }
   };
-  const handleConfirmDelete = async () => {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
 
   const handleDeleteAccount = async () => {
     const result = await deleteAccount();
     navigation.navigate("Login");
     if (!result.success) {
       console.error(result.error);
-    try {
-      const credential = EmailAuthProvider.credential(currentUser.email, password);
-      await reauthenticateWithCredential(currentUser, credential);
-      await deleteUser(currentUser);
-      setPasswordPromptVisible(false);
-      navigation.navigate("Login");
-    } catch (error) {
-      console.error("Delete account error:", error);
-      Alert.alert("Error", error.message);
+      try {
+        const credential = EmailAuthProvider.credential(
+          currentUser.email,
+          password
+        );
+        await reauthenticateWithCredential(currentUser, credential);
+        await deleteUser(currentUser);
+        setPasswordPromptVisible(false);
+        navigation.navigate("Login");
+      } catch (error) {
+        console.error("Delete account error:", error);
+        Alert.alert("Error", error.message);
+      }
     }
   };
 
-  const handleDeleteAccount = () => {
-    setDeleteAccountConfirmationVisible(false); // hide initial modal
-    setPasswordPromptVisible(true); // show password prompt
-  };
-  const [passwordPromptVisible, setPasswordPromptVisible] = useState(false);
-  const [password, setPassword] = useState('');
   return (
     <NativeBaseProvider>
       <ScrollView flex={1}>
@@ -214,9 +213,12 @@ export default function UserSettingsScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-      
+
       {/* Modal for Delet Account confirmation using password re-enter*/}
-      <Modal isOpen={passwordPromptVisible} onClose={() => setPasswordPromptVisible(false)}>
+      <Modal
+        isOpen={passwordPromptVisible}
+        onClose={() => setPasswordPromptVisible(false)}
+      >
         <Modal.Content maxWidth="400px">
           <Modal.Header>Re-enter Password</Modal.Header>
           <Modal.Body>
@@ -225,9 +227,9 @@ export default function UserSettingsScreen({ navigation }) {
               secureTextEntry
               value={password}
               onChangeText={(text) => setPassword(text)}
-              style = {{
+              style={{
                 borderWidth: 1,
-                borderColour: '#ccc',
+                borderColour: "#ccc",
                 padding: 10,
                 marginTop: 12,
                 borderRadius: 8,
@@ -235,7 +237,10 @@ export default function UserSettingsScreen({ navigation }) {
             />
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="ghost" onPress={() => setPasswordPromptVisible(false)}>
+            <Button
+              variant="ghost"
+              onPress={() => setPasswordPromptVisible(false)}
+            >
               Cancel
             </Button>
             <Button colorScheme="red" onPress={handleConfirmDelete}>
@@ -244,7 +249,6 @@ export default function UserSettingsScreen({ navigation }) {
           </Modal.Footer>
         </Modal.Content>
       </Modal>
-
 
       {/* Delete Account Confirmation Modal */}
       <Modal
