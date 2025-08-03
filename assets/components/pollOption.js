@@ -1,60 +1,95 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
-const PollOption = ({ pollOption, onChoose, hasVoted }) => {
-  // Calculate the background color based on vote status
-  const OptionContainer = hasVoted ? (
-    <View style={[styles.pollOption, styles.pollOptionUnchosen]}>
-      <Text style={styles.pollOptionText}>{pollOption.option}</Text>
+export const PollOptions = ({ pollOptions, onAddOption, onRemoveOption }) => {
+  const [localOptions, setLocalOptions] = useState(pollOptions.length >= 2 ? pollOptions : [
+    { option: '', votes: 0 },
+    { option: '', votes: 0 },
+  ]);
+
+  // Sync back to parent
+  useEffect(() => {
+    onAddOption(localOptions);
+  }, [localOptions]);
+
+  const handleOptionChange = (text, index) => {
+    const updated = [...localOptions];
+    updated[index].option = text;
+    setLocalOptions(updated);
+  };
+
+  const handleAdd = () => {
+    if (localOptions.length < 10) {
+      setLocalOptions([...localOptions, { option: '', votes: 0 }]);
+    }
+  };
+
+  const handleRemove = (index) => {
+    if (localOptions.length > 2) {
+      const updated = localOptions.filter((_, i) => i !== index);
+      setLocalOptions(updated);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {localOptions.map((opt, index) => (
+        <View key={index} style={styles.optionWrapper}>
+          <TextInput
+            style={styles.optionBox}
+            placeholder={`Option ${index + 1}`}
+            value={opt.option}
+            onChangeText={(text) => handleOptionChange(text, index)}
+          />
+          {index >= 2 && (
+            <TouchableOpacity style={styles.removeButton} onPress={() => handleRemove(index)}>
+              <Feather name="x" size={20} color="#666" />
+            </TouchableOpacity>
+          )}
+        </View>
+      ))}
+
+      {localOptions.length < 10 && (
+        <TouchableOpacity style={styles.addBox} onPress={handleAdd}>
+          <Text style={styles.addText}>+ Add Option</Text>
+        </TouchableOpacity>
+      )}
     </View>
-  ) : (
-    <TouchableOpacity onPress={onChoose} style={styles.touchable}>
-      <View style={[styles.pollOption, styles.pollOptionChosen]}>
-        <Text style={[styles.pollOptionText, styles.votableText]}>{pollOption.option}</Text>
-        <Text style={[styles.pollOptionText, styles.votesText]}>{pollOption.votes}</Text>
-      </View>
-    </TouchableOpacity>
-    
-    
   );
-
-  return <View style={styles.container}>{OptionContainer}</View>;
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 4,
+    marginTop: 16,
   },
-  touchable: {
-    width: '100%',
+  optionWrapper: {
+    position: 'relative',
+    marginBottom: 12,
   },
-  pollOption: {
-    flexDirection: 'row',
-    borderRadius: 20,
+  optionBox: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
+    fontSize: 16,
+  },
+  removeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 4,
+  },
+  addBox: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#999',
+    borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
   },
-  pollOptionUnchosen: {
-    backgroundColor: '#E8E8E8',
-  },
-  pollOptionChosen: {
-    backgroundColor: '#836FFF',
-  },
-  pollOptionText: {
-    fontSize: 14,
-  },
-  votableText: {
-    color: '#FFFFFF',
-    flex: 1,
-  },
-  votesText: {
-    color: '#FFFFFF',
-    marginLeft: 8,
-    fontWeight: '600',
+  addText: {
+    color: '#666',
+    fontSize: 16,
   },
 });
-
-export default PollOption;

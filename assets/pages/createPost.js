@@ -299,7 +299,7 @@ const CreatePost = ({ navigation }) => {
         addPoll,
         addImage,
         pollOptions: addPoll ? { 
-          pollOptions: pollOptions.map(option => ({ option, votes: 0 })), 
+          ptions: pollOptions.map(option => ({ option, votes: 0 })), 
           voters: [] 
         } : null,
         anonymous,
@@ -459,16 +459,16 @@ const CreatePost = ({ navigation }) => {
               )}
           </View>
 
-              {/* Poll Options */}
-              {addPoll && (
-            <View style={styles.pollContainer}>
-                  <PollOptions 
-                    pollOptions={pollOptions}
-                    onAddOption={addPollOption}
-                    onRemoveOption={removePollOption}
-                  />
-                </View>
-              )}
+          {/* Poll Options */}
+        {addPoll && (
+          <View style={styles.pollContainer}>
+            <PollOptions
+              pollOptions={pollOptions}
+              onAddOption={(options) => setPollOptions(options)}
+              onRemoveOption={() => {}}
+            />
+          </View>
+          )}
         </ScrollView>
             
         {/* Action Bar */}
