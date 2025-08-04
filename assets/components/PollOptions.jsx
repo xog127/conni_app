@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import uuid from 'react-native-uuid'
 
-export const PollOptions = ({ pollOptions, onAddOption, onRemoveOption }) => {
-  const [localOptions, setLocalOptions] = useState(pollOptions.length >= 2 ? pollOptions : [
-    { option: '', votes: 0 },
-    { option: '', votes: 0 },
-  ]);
-
+const PollOptions = ({ pollOptions = [], onOptionsChange = () => {} }) => {
+  const [localOptions, setLocalOptions] = useState(() => {
+    const initial = Array.isArray(pollOptions) && pollOptions.length >= 2
+      ? pollOptions
+      : [
+          { id: uuid.v4(), option: '', votes: 0 },
+          { id: uuid.v4(), option: '', votes: 0 },
+        ];
+    return initial;
+  });
   // Sync back to parent
   useEffect(() => {
-    onAddOption(localOptions);
+    onOptionsChange(localOptions);
   }, [localOptions]);
 
   const handleOptionChange = (text, index) => {
@@ -21,7 +26,7 @@ export const PollOptions = ({ pollOptions, onAddOption, onRemoveOption }) => {
 
   const handleAdd = () => {
     if (localOptions.length < 10) {
-      setLocalOptions([...localOptions, { option: '', votes: 0 }]);
+      setLocalOptions([...localOptions, { id: uuid.v4(), option: '', votes: 0 }]);
     }
   };
 
@@ -35,7 +40,7 @@ export const PollOptions = ({ pollOptions, onAddOption, onRemoveOption }) => {
   return (
     <View style={styles.container}>
       {localOptions.map((opt, index) => (
-        <View key={index} style={styles.optionWrapper}>
+        <View key={opt.id} style={styles.optionWrapper}>
           <TextInput
             style={styles.optionBox}
             placeholder={`Option ${index + 1}`}
@@ -93,3 +98,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
+PollOptions.defaultProps = {
+  pollOptions: [],
+}
+
+export default PollOptions;

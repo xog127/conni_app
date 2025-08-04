@@ -11,22 +11,26 @@ import {
   NativeBaseProvider,
   Divider,
   ScrollView,
-  Modal,
 } from "native-base";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "../services/authContext";
-import { getAuth, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
-
+import { Modal, View, StyleSheet } from "react-native";
+import {
+  getAuth,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  deleteUser,
+} from "firebase/auth";
 
 export default function UserSettingsScreen({ navigation }) {
   const { logout, user, deleteAccount } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
   const [logoutConfirmationVisible, setLogoutConfirmationVisible] =
-    useState(false); // State for logout confirmation modal
+    useState(false);
   const [
     deleteAccountConfirmationVisible,
     setDeleteAccountConfirmationVisible,
-  ] = useState(false); // State for delete account modal
+  ] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -35,33 +39,32 @@ export default function UserSettingsScreen({ navigation }) {
       console.error("Error logging out:", error.message);
     }
   };
-  const handleConfirmDelete = async () => {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
 
-    try {
-      const credential = EmailAuthProvider.credential(currentUser.email, password);
-      await reauthenticateWithCredential(currentUser, credential);
-      await deleteUser(currentUser);
-      setPasswordPromptVisible(false);
-      navigation.navigate("Login");
-    } catch (error) {
-      console.error("Delete account error:", error);
-      Alert.alert("Error", error.message);
+  const handleDeleteAccount = async () => {
+    const result = await deleteAccount();
+    navigation.navigate("Login");
+    if (!result.success) {
+      console.error(result.error);
+      try {
+        const credential = EmailAuthProvider.credential(
+          currentUser.email,
+          password
+        );
+        await reauthenticateWithCredential(currentUser, credential);
+        await deleteUser(currentUser);
+        setPasswordPromptVisible(false);
+        navigation.navigate("Login");
+      } catch (error) {
+        console.error("Delete account error:", error);
+        Alert.alert("Error", error.message);
+      }
     }
   };
 
-  const handleDeleteAccount = () => {
-    setDeleteAccountConfirmationVisible(false); // hide initial modal
-    setPasswordPromptVisible(true); // show password prompt
-  };
-  const [passwordPromptVisible, setPasswordPromptVisible] = useState(false);
-  const [password, setPassword] = useState('');
   return (
     <NativeBaseProvider>
       <ScrollView flex={1}>
         <Box safeArea p={4} w="full" maxW="md" mx="auto" bg="gray.100">
-          {/* Profile Section */}
           <VStack space={4} alignItems="center" mb={4}>
             <Avatar
               size="xl"
@@ -79,7 +82,6 @@ export default function UserSettingsScreen({ navigation }) {
             </Pressable>
           </VStack>
 
-          {/* Setting Options Wrapped in White Box */}
           <Box bg="white" borderRadius="lg" p={4} shadow={2}>
             <VStack space={3}>
               <Pressable
@@ -116,7 +118,7 @@ export default function UserSettingsScreen({ navigation }) {
                 justifyContent="space-between"
                 borderRadius="md"
                 _pressed={{ bg: "coolGray.100" }}
-                onPress={() => setModalVisible(true)} // Open modal for Privacy Policy
+                onPress={() => setModalVisible(true)}
               >
                 <Text fontSize="md">Privacy Policy</Text>
                 <Icon as={MaterialIcons} name="privacy-tip" size={5} />
@@ -130,7 +132,7 @@ export default function UserSettingsScreen({ navigation }) {
                 justifyContent="space-between"
                 borderRadius="md"
                 _pressed={{ bg: "coolGray.100" }}
-                onPress={() => setModalVisible(true)} // Open modal for Terms and Conditions
+                onPress={() => setModalVisible(true)}
               >
                 <Text fontSize="md">Terms and Conditions</Text>
                 <Icon as={MaterialIcons} name="gavel" size={5} />
@@ -138,7 +140,6 @@ export default function UserSettingsScreen({ navigation }) {
             </VStack>
           </Box>
 
-          {/* Logout & Delete Account Wrapped in Another White Box */}
           <Box bg="white" borderRadius="lg" p={4} shadow={2} mt={6}>
             <VStack space={3}>
               <Pressable
@@ -148,7 +149,7 @@ export default function UserSettingsScreen({ navigation }) {
                 justifyContent="space-between"
                 borderRadius="md"
                 _pressed={{ bg: "coolGray.100" }}
-                onPress={() => setLogoutConfirmationVisible(true)} // Show logout confirmation modal
+                onPress={() => setLogoutConfirmationVisible(true)}
               >
                 <Text color="red.500" fontWeight="bold">
                   Log out
@@ -169,7 +170,7 @@ export default function UserSettingsScreen({ navigation }) {
                 justifyContent="space-between"
                 borderRadius="md"
                 _pressed={{ bg: "coolGray.100" }}
-                onPress={() => setDeleteAccountConfirmationVisible(true)} // Show delete account confirmation modal
+                onPress={() => setDeleteAccountConfirmationVisible(true)}
               >
                 <Text color="red.500" fontWeight="bold">
                   Delete account
@@ -186,32 +187,38 @@ export default function UserSettingsScreen({ navigation }) {
         </Box>
       </ScrollView>
 
-      {/* Modal for Logout Confirmation */}
+      {/* Logout Confirmation Modal */}
       <Modal
-        isOpen={logoutConfirmationVisible}
-        onClose={() => setLogoutConfirmationVisible(false)}
+        transparent
+        visible={logoutConfirmationVisible}
+        animationType="fade"
       >
-        <Modal.Content maxWidth="400px">
-          <Modal.Header>Log out</Modal.Header>
-          <Modal.Body>
-            <Text>You will be redirected to the login page.</Text>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              variant="ghost"
-              onPress={() => setLogoutConfirmationVisible(false)}
-            >
-              Cancel
-            </Button>
-            <Button colorScheme="blue" onPress={handleLogout}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalBox}>
+            <Text fontSize="lg" fontWeight="bold" mb={2}>
               Log out
-            </Button>
-          </Modal.Footer>
-        </Modal.Content>
+            </Text>
+            <Text>You will be redirected to the login page.</Text>
+            <View style={styles.modalButtonGroup}>
+              <Button
+                variant="ghost"
+                onPress={() => setLogoutConfirmationVisible(false)}
+              >
+                Cancel
+              </Button>
+              <Button colorScheme="blue" onPress={handleLogout}>
+                Log out
+              </Button>
+            </View>
+          </View>
+        </View>
       </Modal>
-      
+
       {/* Modal for Delet Account confirmation using password re-enter*/}
-      <Modal isOpen={passwordPromptVisible} onClose={() => setPasswordPromptVisible(false)}>
+      <Modal
+        isOpen={passwordPromptVisible}
+        onClose={() => setPasswordPromptVisible(false)}
+      >
         <Modal.Content maxWidth="400px">
           <Modal.Header>Re-enter Password</Modal.Header>
           <Modal.Body>
@@ -220,9 +227,9 @@ export default function UserSettingsScreen({ navigation }) {
               secureTextEntry
               value={password}
               onChangeText={(text) => setPassword(text)}
-              style = {{
+              style={{
                 borderWidth: 1,
-                borderColour: '#ccc',
+                borderColour: "#ccc",
                 padding: 10,
                 marginTop: 12,
                 borderRadius: 8,
@@ -230,7 +237,10 @@ export default function UserSettingsScreen({ navigation }) {
             />
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="ghost" onPress={() => setPasswordPromptVisible(false)}>
+            <Button
+              variant="ghost"
+              onPress={() => setPasswordPromptVisible(false)}
+            >
               Cancel
             </Button>
             <Button colorScheme="red" onPress={handleConfirmDelete}>
@@ -240,53 +250,75 @@ export default function UserSettingsScreen({ navigation }) {
         </Modal.Content>
       </Modal>
 
-
-      {/* Modal for Delete Account Confirmation */}
+      {/* Delete Account Confirmation Modal */}
       <Modal
-        isOpen={deleteAccountConfirmationVisible}
-        onClose={() => setDeleteAccountConfirmationVisible(false)}
+        transparent
+        visible={deleteAccountConfirmationVisible}
+        animationType="fade"
       >
-        <Modal.Content maxWidth="400px">
-          <Modal.Header>Delete Account</Modal.Header>
-          <Modal.Body>
-            <Text>
-              When you delete your account, all information associated with it
-              is permanently removed. This process is irreversible, and you
-              won't be able to recover your account or any of the data linked to
-              it.
+        <View style={styles.modalContainer}>
+          <View style={styles.modalBox}>
+            <Text fontSize="lg" fontWeight="bold" mb={2}>
+              Delete Account
             </Text>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              variant="ghost"
-              onPress={() => setDeleteAccountConfirmationVisible(false)}
-            >
-              Cancel
-            </Button>
-            <Button colorScheme="red" onPress={handleDeleteAccount}>
-              Delete
-            </Button>
-          </Modal.Footer>
-        </Modal.Content>
+            <Text mb={2}>
+              Deleting your account will permanently remove all associated data.
+              This cannot be undone.
+            </Text>
+            <View style={styles.modalButtonGroup}>
+              <Button
+                variant="ghost"
+                onPress={() => setDeleteAccountConfirmationVisible(false)}
+              >
+                Cancel
+              </Button>
+              <Button colorScheme="red" onPress={handleDeleteAccount}>
+                Delete
+              </Button>
+            </View>
+          </View>
+        </View>
       </Modal>
 
-      {/* Modal for Privacy Policy and Terms */}
-      <Modal isOpen={modalVisible} onClose={() => setModalVisible(false)}>
-        <Modal.Content maxWidth="400px">
-          <Modal.Header>Continue to Policy</Modal.Header>
-          <Modal.Body>
+      {/* Privacy / Terms Modal */}
+      <Modal transparent visible={modalVisible} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalBox}>
+            <Text fontSize="lg" fontWeight="bold" mb={2}>
+              Continue to Policy
+            </Text>
             <Text>The document will open in a browser view.</Text>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="ghost" onPress={() => setModalVisible(false)}>
-              Cancel
-            </Button>
-            <Button colorScheme="blue" onPress={() => setModalVisible(false)}>
-              Yes
-            </Button>
-          </Modal.Footer>
-        </Modal.Content>
+            <View style={styles.modalButtonGroup}>
+              <Button variant="ghost" onPress={() => setModalVisible(false)}>
+                Cancel
+              </Button>
+              <Button colorScheme="blue" onPress={() => setModalVisible(false)}>
+                Yes
+              </Button>
+            </View>
+          </View>
+        </View>
       </Modal>
     </NativeBaseProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    padding: 20,
+  },
+  modalBox: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    elevation: 5,
+  },
+  modalButtonGroup: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 16,
+  },
+});

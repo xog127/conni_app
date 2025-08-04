@@ -37,51 +37,7 @@ import { db } from "../firebase/firebaseConfig";
 import { useAuth } from "../services/authContext";
 import { ForumSelector } from "./forumselector";
 import { SafeAreaView as SafeAreaViewRN } from 'react-native-safe-area-context';
-
-// Poll Options Component
-export const PollOptions = ({ pollOptions, onAddOption, onRemoveOption }) => {
-  const [newOption, setNewOption] = useState("");
-
-  const handleAddOption = () => {
-    if (newOption.trim()) {
-      onAddOption(newOption.trim());
-      setNewOption("");
-    }
-  };
-
-  return (
-    <View style={styles.pollSection}>
-      <View style={styles.pollInputContainer}>
-        <TextInput
-          style={styles.pollOptionInput}
-          placeholder="Add poll option"
-          value={newOption}
-          onChangeText={setNewOption}
-        />
-        <TouchableOpacity 
-          style={styles.addOptionButton}
-          onPress={handleAddOption}
-        >
-          <Feather name="plus" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.pollOptionsContainer}>
-        {pollOptions.map((pollOption, index) => (
-          <View key={index} style={styles.pollOption}>
-            <Text style={styles.pollOptionText}>{pollOption.option}</Text>
-            <TouchableOpacity
-              onPress={() => onRemoveOption(index)}
-              style={styles.removeOptionButton}
-            >
-              <Feather name="x" size={20} color="#666" />
-            </TouchableOpacity>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-};
+import PollOptions from "../components/PollOptions";
 
 // Action Bar Component
 const ActionBar = ({ options, onOptionToggle }) => {
@@ -298,8 +254,10 @@ const CreatePost = ({ navigation }) => {
         addChat,
         addPoll,
         addImage,
-        pollOptions: addPoll ? { 
-          ptions: pollOptions.map(option => ({ option, votes: 0 })), 
+        pollOptions: addPoll ? {
+          options: Array.isArray(pollOptions)
+            ? pollOptions.map(({ option, votes }) => ({ option, votes }))
+            : Object.values(pollOptions).map(({option, votes }) => ({ option, votes})),
           voters: [] 
         } : null,
         anonymous,
@@ -325,7 +283,10 @@ const CreatePost = ({ navigation }) => {
         collectionName: "posts", 
         data: postData 
       });
-      
+      console.log("pollOptions before saving:", pollOptions);
+      console.log("Type of pollOptions:", typeof pollOptions);
+      console.log("IsArray:", Array.isArray(pollOptions));
+
       console.log("Post created successfully:", postRef);
       navigation.goBack();
     } catch (error) {
@@ -464,8 +425,7 @@ const CreatePost = ({ navigation }) => {
           <View style={styles.pollContainer}>
             <PollOptions
               pollOptions={pollOptions}
-              onAddOption={(options) => setPollOptions(options)}
-              onRemoveOption={() => {}}
+              onOptionsChange={setPollOptions}
             />
           </View>
           )}

@@ -18,7 +18,7 @@ import { getRef, fetchReferenceData, getSubRefAll, addRef, updateRef } from '../
 import CommentCard from '../components/commentCard.js';
 import { addDoc, db } from '../firebase/firebaseConfig';
 import { Timestamp, doc, collection, arrayUnion, increment} from 'firebase/firestore';
-import PollOption from '../components/pollOption.js';
+import PollOption from '../components/PollOption';
 import { useRoute } from '@react-navigation/native';
 import { Box } from 'native-base';
 import { useAuth } from '../services/authContext';
@@ -137,19 +137,31 @@ const PostDisplay = () => {
 
   const handleSelectPoll = async (index) => {
     try {
+      // Make a copy of current options
+      const updatedOptions = [...post.pollOptions.options];
+      updatedOptions[index].votes += 1;
+  
+      const updatedVoters = [...(post.pollOptions.voters || []), user.uid];
+  
       await updateRef({
         id: post.id,
         collectionName: "posts",
         updateFields: {
-          [`pollOptions.pollOptions.${index}.votes`]: increment(1),
-          "pollOptions.voters": arrayUnion(post.user_ref)
+          "pollOptions": {
+            options: updatedOptions,
+            voters: updatedVoters
+          }
         }
       });
-      useEffect();
+  
+      // Refresh the post
+      const updatedPost = await getRef({ id: postRef, collectionName: "posts" });
+      setPost(updatedPost);
     } catch (error) {
       console.error('Error updating poll:', error);
     }
   };
+  
 
   const handleReport = () => {
     setShowReportModal(true);
@@ -279,7 +291,6 @@ const PostDisplay = () => {
 
   return (
     <KeyboardAvoidingView behavior="padding" style={styles.safeArea}>
-    <SafeAreaView style={styles.safeArea}>
       {/* Header with Genre and Back Button */}
       <View style={styles.header}>
         <TouchableOpacity onPress={navigation.goBack} style={styles.backButton}>
@@ -335,18 +346,28 @@ const PostDisplay = () => {
                     />
                   </Box>
                 )}
+                console.log("post.pollOptions =", post.pollOptions);
+                console.log("post.pollOptions.options =", post.pollOptions?.options);
 
                 {/* Polls Content */}
-                {post.addPoll && post.pollOptions?.pollOptions?.map((pollOption, index) => (
-                  <PollOption
-                    key={index}
-                    pollOption={pollOption}
-                    hasVoted={pollOption.voters?.includes(authUser)}
-                    onChoose={() => {
-                      handleSelectPoll(index);
-                    }}
-                  />
-                ))}
+                {Array.isArray(post.pollOptions?.options) &&
+                  post.addPoll && post.pollOptions?.options?.map((pollOption, index) => {
+                    const hasVoted = post.pollOptions?.voters?.includes(user.uid);
+                    const isSelected = hasVoted && user.uid && post.pollOptions.voters?.includes(user.uid) && index ===
+                    post.pollOptions.options.findIndex(opt => opt.votes > pollOption.votes - 1); 
+
+                    return (
+                      <PollOption
+                        key={index}
+                        pollOption={pollOption}
+                        hasVoted = {hasVoted}
+                        isSelected={isSelected}
+                        onChoose={() => {
+                          handleSelectPoll(index);
+                        }}
+                      />
+                      );
+                  })}
 
                 {/* Post Stats */}
                 <View style={styles.statsContainer}>
@@ -382,7 +403,6 @@ const PostDisplay = () => {
         onClose={() => setShowReportModal(false)}
         postId={postRef}
       />
-    </SafeAreaView>
     </KeyboardAvoidingView>
   );
 };
