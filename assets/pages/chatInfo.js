@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
+import { Image } from 'native-base';
+import { fetchReferenceData } from '../firebase/queries';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import {
@@ -47,36 +49,48 @@ function ChatInfo({ route, navigation }) {
         const data = chatDoc.data();
         setChatData(data);
         
-        // Fetch members data
-        const memberPromises = [];
-        if (data.members && Array.isArray(data.members)) {
-          // For each member reference, fetch the user data
-          for (const memberRef of data.members) {
-            try {
-              if (memberRef && memberRef.path) {
-                // If memberRef is a document reference
-                memberPromises.push(getDoc(memberRef));
-              } else if (typeof memberRef === 'string') {
-                // If memberRef is a string (user ID)
-                memberPromises.push(getDoc(doc(db, 'users', memberRef)));
-              }
-            } catch (error) {
-              console.error('Error preparing member fetch:', error);
+        const memberRefs = data.members || [];
+        const memberDocs = await Promise.all(
+        memberRefs.map(async (entry) => {
+          try {
+            if (entry?.path) {
+              // Firebase document reference
+              const snapshot = await getDoc(entry);
+              return { id: snapshot.id, ref: entry, data: snapshot.exists() ? snapshot.data() : null };
+            } else if (typeof entry === 'string') {
+              // Just a user ID, reconstruct the reference
+              const userDocRef = doc(db, 'users', entry);
+              const snapshot = await getDoc(userDocRef);
+              return { id: entry, ref: userDocRef, data: snapshot.exists() ? snapshot.data() : null };
+            } else {
+              console.warn('Unexpected member entry:', entry);
+              return null;
             }
+          } catch (error) {
+            console.error('Error fetching member:', error);
+            return null;
           }
-        }
-        
-        const memberDocs = await Promise.all(memberPromises);
-        const memberData = memberDocs.map(doc => {
-          if (doc.exists()) {
+        })
+        );
+
+        const memberData = memberDocs.map(entry => {
+          if (!entry || !entry.data) {
             return {
-              id: doc.id,
-              ...doc.data()
+              id: entry?.id || 'unknown',
+              first_name: null,
+              last_name: null,
+              course: null,
+              graduation_year: null,
+              photo_url: null,
+              __unresolved: true // for debugging or placeholder fallback
             };
           }
-          return null;
-        }).filter(Boolean); // Remove null entries
-        
+          return {
+            id: entry.id,
+            ...entry.data
+          };
+        });
+
         setMembers(memberData);
       } catch (error) {
         console.error('Error fetching chat info:', error);
@@ -136,29 +150,32 @@ function ChatInfo({ route, navigation }) {
     );
   };
 
+  
   const renderMember = ({ item }) => {
     const isCurrentUser = item.id === user.uid;
-    
-    // Determine name to display based on chat anonymity setting
+  
+    // Determine name to display
     let displayedName;
     if (chatData?.isAnonymous) {
-      // In anonymous chat, use firstName and lastName
-      displayedName = item.firstName && item.lastName 
-        ? `${item.firstName} ${item.lastName}`
-        : (item.firstName || item.lastName || 'Anonymous User');
+      displayedName = item.course && item.graduation_year
+        ? `${item.course} ${item.graduation_year}`
+        : 'Anonymous User';
     } else {
-      // In regular chat, use displayName
-      displayedName = item.displayName || 'Unknown User';
+      displayedName = item.first_name && item.last_name
+        ? `${item.first_name} ${item.last_name}`
+        : 'Unknown User';
     }
-    
-    // Get first letter for avatar
-    const firstLetter = displayedName.charAt(0).toUpperCase();
-    
+    const profileImage = item.photo_url
+      ? { uri: item.photo_url }
+      : require('../images/default_profile.png'); // <-- add your own image here
+  
     return (
       <View style={styles.memberItem}>
-        <View style={styles.memberAvatar}>
-          <Text style={styles.avatarText}>{firstLetter}</Text>
-        </View>
+        <Image
+          source={profileImage}
+          alt="Profile"
+          style={styles.memberAvatarImage}
+        />
         <Text style={styles.memberName}>
           {displayedName}
           {isCurrentUser ? ' (You)' : ''}
@@ -166,6 +183,7 @@ function ChatInfo({ route, navigation }) {
       </View>
     );
   };
+  
 
   if (loading) {
     return (
@@ -299,6 +317,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 36,
     fontWeight: 'bold',
+  },
+  memberAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 16,
   },
   chatName: {
     fontSize: 22,

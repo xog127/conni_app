@@ -14,6 +14,7 @@ import { db } from '../firebase/firebaseConfig';
 import { arrayRemove,increment, arrayUnion, doc, deleteDoc } from 'firebase/firestore';
 import { updateRef, updateSubRef,  fetchReferenceData} from '../firebase/queries';
 import { useAuth } from '../services/authContext';
+import UserSummaryModal from '../pages/UserSummaryModals';
 
 const UserInfoRowComment = ({ 
   commentData, postData, onDeletePress, docu
@@ -27,6 +28,7 @@ const UserInfoRowComment = ({
   const [isLiked, setLiked] = useState(false);
   const [relativeTime, setRelativeTime] = useState('');
   const [loading, setLoading] = useState(true);
+  const [profileVisible, setProfileVisible] = useState(false);
 
   const handleLike = async () => {
     try {
@@ -80,7 +82,7 @@ const UserInfoRowComment = ({
 
   const handleProfilePress = () => {
     if (!postData.anonymous) {
-      onProfilePress?.();
+      setProfileVisible(true);
     }
   };
 
@@ -205,6 +207,11 @@ const UserInfoRowComment = ({
           </Pressable>
         </Modal>
       </View>
+      <UserSummaryModal
+        visible={profileVisible}
+        onClose={() => setProfileVisible(false)}
+        user={commentuser}
+      />
     </View>
   );
 };
