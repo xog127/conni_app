@@ -121,7 +121,7 @@ const ForumStackNavigator = () => (
 const ChatStackNavigator = () => (
   <ChatStack.Navigator>
     <ChatStack.Screen 
-      name="ChatsList" 
+      name="AllChats" 
       component={AllChats} 
       options={{ headerShown: false }}
     />

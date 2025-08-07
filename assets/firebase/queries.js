@@ -1,6 +1,7 @@
 import { db, collection } from "./firebaseConfig";
 import { doc, getDoc, updateDoc, addDoc, getDocs, query, where, serverTimestamp, getFirestore } from "firebase/firestore";
 
+
 const getCollections = async ({ collectionName }) => {
   try {
 
@@ -334,12 +335,12 @@ export async function submitFeedback({ userId = "anonymous", title, description,
     createdAt: serverTimestamp(),
   });
 }
-
-export const startOrGetDirectChat = async ({ currentUserId, otherUserId }) => {
+export const startOrGetDirectChat = async ({ currentUserId, otherUserId, groupName = 'Chat' }) => {
   const currentRef = doc(db, 'users', currentUserId);
   const otherRef = doc(db, 'users', otherUserId);
   const chatsRef = collection(db, 'chats');
 
+  // Check for existing direct chat
   const q = query(chatsRef, where('members', 'array-contains', currentRef));
   const snapshot = await getDocs(q);
 
@@ -348,24 +349,38 @@ export const startOrGetDirectChat = async ({ currentUserId, otherUserId }) => {
     const members = data.members || [];
     const hasOther = members.find((m) => m?.path === otherRef.path);
     if (hasOther && members.length === 2) {
-      return { chatId: chatDoc.id, chatRef: chatDoc.ref, created: false, chatData: data };
+      return {
+        chatId: chatDoc.id,
+        chatRef: chatDoc.ref,
+        created: false,
+        chatData: data
+      };
     }
   }
 
+  // Create new direct chat
   const chatData = {
-    group_name: 'Chat',
+    group_name: groupName,              // 🟢 Set meaningful group name
     description: '',
     isAnonymous: false,
+    isDirect: true,                     // 🟢 Mark as direct chat
+    memberIds: [currentUserId, otherUserId], // 🟢 Optional for future use
+    members: [currentRef, otherRef],
     createdAt: serverTimestamp(),
     createdBy: currentRef,
-    members: [currentRef, otherRef],
     lastMessage: '',
     lastMessageTime: null,
   };
 
   const chatDocRef = await addDoc(chatsRef, chatData);
-  return { chatId: chatDocRef.id, chatRef: chatDocRef, created: true, chatData };
+  return {
+    chatId: chatDocRef.id,
+    chatRef: chatDocRef,
+    created: true,
+    chatData
+  };
 };
+
   
   
 export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections, getAnyCollection, fetchUserPosts, getPostsWithPagination, sendPostNotification,};

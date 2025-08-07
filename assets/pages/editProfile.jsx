@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { TextInput } from "react-native";
 import {
   Box,
   Text,
@@ -18,6 +19,7 @@ import { updateProfile } from "../firebase/queries";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { checkUsernameExists } from "../firebase/queries"; // You may need to implement this
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import theme from '../../theme'; // Make sure path matches
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -31,8 +33,8 @@ const DUMMY_YEARS = ["Year 1", "Year 2", "Year 3", "Year 4"];
 
 export default function ProfileEditScreen({ navigation }) {
   const { user } = useAuth();
-  const [displayName, setDisplayName] = useState(user.displayName || "");
-  const [username, setUsername] = useState(user.username || "");
+  const [displayName, setDisplayName] = useState(user.displayName ?? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim());
+  const [username, setUsername] = useState(user.username ?? "");
   const [bio, setBio] = useState(user.bio || "");
   const [avatar, setAvatar] = useState(user.avatar || null);
   const [course] = useState(user.course || DUMMY_COURSES[0]);
@@ -145,7 +147,12 @@ export default function ProfileEditScreen({ navigation }) {
             Save
           </Button>
         </HStack>
-        <VStack space={5} p={4}>
+        <KeyboardAwareScrollView
+          contentContainerStyle={{ padding: 16 }}
+          extraScrollHeight={100}
+          enableOnAndroid
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Profile Picture */}
           <Box alignSelf="center" mb={2}>
             <Avatar
@@ -173,39 +180,71 @@ export default function ProfileEditScreen({ navigation }) {
               </Button>
             </HStack>
           </Box>
+          {/* Name */}
+          <Box mb={4}>
+            <Text fontSize={16} fontWeight="bold" mb={1}>
+              Name
+            </Text>
+            <TextInput
+              value={displayName}
+              onChangeText={setDisplayName}
+              placeholder="Name"
+              style={{
+                borderWidth: 1,
+                borderColor: '#ccc',
+                padding: 12,
+                borderRadius: 10,
+                fontSize: 16,
+              }}
+            />
+          </Box>
           {/* Username */}
-          <Box>
+          <Box mb={4}>
             <Text fontSize={16} fontWeight="bold" mb={1}>
               Username
             </Text>
-            <Input
+            <TextInput
               ref={(el) => (inputRefs.current.username = el)}
               value={username}
               onChangeText={setUsername}
               placeholder="Username"
-              fontSize={16}
               autoCapitalize="none"
               autoCorrect={false}
-              borderRadius={10}
-              isInvalid={!!usernameError}
+              style={{
+                borderWidth: 1,
+                borderColor: usernameError ? '#EF4444' : '#ccc',
+                padding: 12,
+                borderRadius: 10,
+                fontSize: 16,
+              }}
             />
             {usernameError ? (
-              <Text color="red.500" fontSize={12} mt={1}>
+              <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 4 }}>
                 {usernameError}
               </Text>
             ) : null}
           </Box>
-          {/* Name */}
-          <Box>
+
+          {/* Bio */}
+          <Box mb={4}>
             <Text fontSize={16} fontWeight="bold" mb={1}>
-              Name
+              Bio
             </Text>
-            <Input
-              value={displayName}
-              onChangeText={setDisplayName}
-              placeholder="Name"
-              fontSize={16}
-              borderRadius={10}
+            <TextInput
+              value={bio}
+              onChangeText={setBio}
+              placeholder="Tell others a bit about you..."
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              style={{
+                borderWidth: 1,
+                borderColor: '#ccc',
+                padding: 12,
+                borderRadius: 10,
+                fontSize: 16,
+                minHeight: 100, // Optional: enforce a larger text area feel
+              }}
             />
           </Box>
           {/* Course (disabled) */}
@@ -240,23 +279,7 @@ export default function ProfileEditScreen({ navigation }) {
               />
             </Pressable>
           </Box>
-          {/* Bio */}
-          <Box>
-            <Text fontSize={16} fontWeight="bold" mb={1}>
-              Bio
-            </Text>
-            <Input
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Bio"
-              fontSize={16}
-              borderRadius={10}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-          </Box>
-        </VStack>
+        </KeyboardAwareScrollView>
         {/* Modal for Course/Year change request */}
         <Modal isOpen={modalVisible} onClose={closeModal}>
           <Modal.Content>

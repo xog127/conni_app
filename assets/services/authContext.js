@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }) => {
         email,
         createdAt: new Date().toISOString(),
         isOnboarded: false,
-        username,
+        username: displayName.toLowerCase().replace(/\s+/g, "_")
         // Add any additional user fields you want to store
       });
       
