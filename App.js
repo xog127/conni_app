@@ -168,7 +168,7 @@ const PostStackNavigator = () => (
       component={NotificationScreen}
       options={{ 
         headerShown: false,
-        tabBarStyle: { display: 'none' }
+        tabBarVisible: false
       } 
       }
     />
