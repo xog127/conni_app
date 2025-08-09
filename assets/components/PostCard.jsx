@@ -9,31 +9,38 @@ import { timeAgo } from "../customFunctions/time.js";
 import { StyleSheet, View } from "react-native";
 import ForumDetails from "../components/ForumDetails";
 
-const PostCard = ({ item, navigation }) => {
-  // Convert timestamp to relative time
-  const getTimeAgo = (timestamp) => {
-    if (!timestamp) return "Just now";
+// Convert timestamp to relative time
+const getTimeAgo = (timestamp) => {
+  if (!timestamp) return "Just now";
 
-    // If it's a Firebase timestamp
-    if (timestamp.seconds) {
-      return timeAgo(timestamp);
+  // If it's a Firebase timestamp
+  if (timestamp.seconds) {
+    return timeAgo(timestamp);
+  }
+
+  // If it's already in milliseconds
+  if (typeof timestamp === "number") {
+    return timeAgo({ seconds: Math.floor(timestamp / 1000) });
+  }
+
+  return "Just now";
+};
+
+const PostCard = ({ item, navigation, onReport }) => {
+  const handleReport = () => {
+    if (onReport) {
+      onReport(); // This calls the parent with the specific post ID
     }
-
-    // If it's already in milliseconds
-    if (typeof timestamp === "number") {
-      return timeAgo({ seconds: Math.floor(timestamp / 1000) });
-    }
-
-    return "Just now";
   };
-
-  if (!item) return null;
+    if (!item) return null;
 
   return (
     <Pressable
       onPress={() =>
-        navigation?.navigate("PostDisplay", { postRef: item.id, navigation })
-      }
+        navigation?.navigate("PostDisplay", { postRef: item.id, navigation })}
+        accessible={true}
+        accessibilityLabel={`Post titled ${item?.post_title}`}
+        accessibilityRole="button"
     >
       <Box
         bg="white"
@@ -47,12 +54,13 @@ const PostCard = ({ item, navigation }) => {
           anonymous={item?.anonymous}
           date_posted={getTimeAgo(item?.time_posted)}
           forumRef={item?.post_genre_ref}
+          onMorePress = {handleReport}
         />
 
         <Text
           isTruncated
           maxW="1000"
-          fontSize="16px"
+          fontSize="18px"
           mb={1}
           lineHeight="24px"
           fontWeight="500"
@@ -60,7 +68,7 @@ const PostCard = ({ item, navigation }) => {
           {item?.post_title || "Untitled Post"}
         </Text>
 
-        <Text noOfLines={4} fontSize="sm" color="gray.700">
+        <Text noOfLines={8} fontSize="14px" lineHeight="20px" color="gray.700">
           {item?.post_data || "No content"}
         </Text>
 
@@ -86,6 +94,7 @@ const PostCard = ({ item, navigation }) => {
               }}
               contentFit="cover"
               transition={200}
+              placeholder = "Loading..."
             />
           </Box>
         )}
@@ -122,57 +131,4 @@ const PostCard = ({ item, navigation }) => {
     </Pressable>
   );
 };
-
-const styles = StyleSheet.create({
-  emphasis: {
-    fontWeight: "600",
-    color: "#836fff",
-    fontSize: 14,
-  },
-  emphasisContainer: {
-    marginBottom: 10,
-  },
-  detailLine: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 10,
-  },
-  labelContainer: {
-    width: 100, // Fixed width for labels
-    marginRight: 8,
-  },
-  detailLabel: {
-    color: "#666",
-    fontWeight: "500",
-    fontSize: 14,
-  },
-  detailValue: {
-    color: "#333",
-    fontSize: 14,
-    flex: 1,
-  },
-  skillsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    flex: 1,
-  },
-  skillChip: {
-    backgroundColor: "#f0f0f0",
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 6,
-    marginBottom: 6,
-  },
-  skillChipText: {
-    fontSize: 12,
-    color: "#666",
-  },
-  forumDetailsBox: {
-    padding: 12,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-  },
-});
-
 export default PostCard;

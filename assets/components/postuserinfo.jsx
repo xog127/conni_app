@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Box, Text, HStack, VStack, Pressable } from "native-base";
+import { Box, Text, HStack, VStack, Pressable, Icon } from "native-base";
+import { Ionicons } from "@expo/vector-icons";
 import { fetchReferenceData } from "../firebase/queries";
 import { Image } from "expo-image";
 
-const postuserinfo = ({ userRef, anonymous, date_posted, forumRef }) => {
+const postuserinfo = ({ userRef, anonymous, date_posted, forumRef, onMorePress }) => {
   const [postUser, setPostUser] = useState(null);
   const [forum, setForum] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +43,7 @@ const postuserinfo = ({ userRef, anonymous, date_posted, forumRef }) => {
     fetchUserData();
     forumData();
   }, [userRef]);
+  
   if (loading) {
     return <Text>Loading...</Text>;
   }
@@ -94,20 +96,23 @@ const postuserinfo = ({ userRef, anonymous, date_posted, forumRef }) => {
           </VStack>
         </HStack>
       </Box>
-      <Box
-        px={2.5} // Horizontal padding (10px)
-        py={1.5} // Vertical padding (6px)
-        borderWidth={1}
-        borderColor="#B9B9B9"
-        borderRadius="16px"
-        alignItems="center"
-        justifyContent="center"
-        alignSelf="flex-start"
+      
+      {/* Replace forum name box with report button */}
+      <Pressable
+        onPress={onMorePress}
+        p={2}
+        borderRadius="full"
+        _pressed={{
+          bg: "gray.100"
+        }}
       >
-        <Text fontSize="10px" color="#242424" fontWeight="400" font="normal">
-          {forum?.name}
-        </Text>
-      </Box>
+        <Icon 
+          as={Ionicons} 
+          name="ellipsis-vertical" 
+          size={5} 
+          color="gray.500" 
+        />
+      </Pressable>
     </HStack>
   );
 };

@@ -5,33 +5,20 @@ import { View, Text, StyleSheet } from "react-native";
 const ForumDetails = ({ forumType, forumDetails }) => {
   if (!forumType || !forumDetails || forumType === "General") return null;
 
-  const renderLabel = (label, value, prefix = "", suffix = "") => {
+  const renderLabel = (label, value) => {
     if (!value) return null;
     return (
       <View style={styles.detailLine}>
         <View style={styles.labelContainer}>
           <Text style={styles.detailLabel}>{label}:</Text>
         </View>
-        <Text style={styles.detailValue}>
-          {prefix}
-          {value}
-          {suffix}
-        </Text>
-      </View>
-    );
-  };
-
-  const renderEmphasis = (text) => {
-    if (!text) return null;
-    return (
-      <View style={[styles.detailLine, styles.emphasisContainer]}>
-        <Text style={styles.emphasis}>{text}</Text>
+        <Text style={styles.detailValue}>{String(value)}</Text>
       </View>
     );
   };
 
   const renderSkillChips = (skills) => {
-    if (!skills || !skills.length) return null;
+    if (!skills || !Array.isArray(skills) || skills.length === 0) return null;
     return (
       <View style={styles.detailLine}>
         <View style={styles.labelContainer}>
@@ -40,7 +27,7 @@ const ForumDetails = ({ forumType, forumDetails }) => {
         <View style={styles.skillsContainer}>
           {skills.map((skill, index) => (
             <View key={index} style={styles.skillChip}>
-              <Text style={styles.skillChipText}>{skill}</Text>
+              <Text style={styles.skillChipText}>{String(skill)}</Text>
             </View>
           ))}
         </View>
@@ -48,133 +35,200 @@ const ForumDetails = ({ forumType, forumDetails }) => {
     );
   };
 
-  let content = null;
+  // Get forum type config
+  const getForumTypeConfig = (type) => {
+    const configs = {
+      Market: { icon: "🛍️", color: "#4CAF50" },
+      Research: { icon: "🔬", color: "#2196F3" },
+      Ticket: { icon: "🎟️", color: "#FF9800" },
+      Flat: { icon: "🏠", color: "#9C27B0" },
+      Project: { icon: "💼", color: "#FF5722" },
+    };
+    return configs[type] || { icon: "📝", color: "#836fff" };
+  };
 
-  switch (forumType) {
-    case "Market":
-      const marketType = forumDetails["Buy or Sell"] || "Sell";
-      content = (
-        <>
-          {renderEmphasis(marketType)}
-          {renderLabel("Item", forumDetails.Item)}
-          {renderLabel("Price", forumDetails.Price, "£")}
-        </>
-      );
-      break;
+  const config = getForumTypeConfig(forumType);
 
-    case "Research":
-      content = (
-        <>
-          {renderLabel("Duration", forumDetails.Duration)}
-          {renderLabel("Eligibilities", forumDetails.Eligibilities)}
-        </>
-      );
-      break;
+  // Get header emphasis
+  const getHeaderEmphasis = () => {
+    if (forumType === "Market" || forumType === "Ticket") {
+      return forumDetails["Buy or Sell"] || "Sell";
+    }
+    if (forumType === "Flat") {
+      return forumDetails["Rent type"] || "";
+    }
+    return null;
+  };
 
-    case "Ticket":
-      const ticketType = forumDetails["Buy or Sell"] || "Sell";
-      content = (
-        <>
-          {renderEmphasis(ticketType)}
-          {forumDetails.Date &&
-            renderLabel(
-              "Date",
-              new Date(forumDetails.Date).toISOString().split("T")[0]
-            )}
-          {renderLabel("Price", forumDetails.Price, "£")}
-          {renderLabel("Quantity", forumDetails.Quantity)}
-        </>
-      );
-      break;
+  const headerEmphasis = getHeaderEmphasis();
 
-    case "Flat":
-      content = (
-        <>
-          {renderEmphasis(forumDetails["Rent type"])}
-          {renderLabel(
-            "Move in Date",
-            new Date(forumDetails["Move in Date"]).toISOString().split("T")[0]
-          )}
-          {renderLabel(
-            "Move out Date",
-            new Date(forumDetails["Move out Date"]).toISOString().split("T")[0]
-          )}
-          {renderLabel("Location", forumDetails.Location)}
-          {renderLabel("Price", forumDetails.Price, "£", " per week")}
-        </>
-      );
-      break;
+  // Render content based on forum type
+  const renderContent = () => {
+    try {
+      switch (forumType) {
+        case "Market":
+          return (
+            <>
+              {renderLabel("Item", forumDetails.Item)}
+              {forumDetails.Price && renderLabel("Price", `£${forumDetails.Price}`)}
+            </>
+          );
 
-    case "Project":
-      const incentive = forumDetails.Incentive || "Money";
-      content = (
-        <>
-          {renderLabel("Incentive", incentive)}
-          {incentive === "Other" &&
-            forumDetails.CustomIncentive &&
-            renderLabel("Custom incentive", forumDetails.CustomIncentive)}
-          {renderSkillChips(forumDetails.Skills)}
-        </>
-      );
-      break;
+        case "Research":
+          return (
+            <>
+              {renderLabel("Duration", forumDetails.Duration)}
+              {renderLabel("Eligibilities", forumDetails.Eligibilities)}
+            </>
+          );
 
-    default:
+        case "Ticket":
+          return (
+            <>
+              {forumDetails.Date && renderLabel("Date", new Date(forumDetails.Date).toLocaleDateString())}
+              {forumDetails.Price && renderLabel("Price", `£${forumDetails.Price}`)}
+              {renderLabel("Quantity", forumDetails.Quantity)}
+            </>
+          );
+
+        case "Flat":
+          return (
+            <>
+              {forumDetails["Move in Date"] && renderLabel("Move in", new Date(forumDetails["Move in Date"]).toLocaleDateString())}
+              {forumDetails["Move out Date"] && renderLabel("Move out", new Date(forumDetails["Move out Date"]).toLocaleDateString())}
+              {renderLabel("Location", forumDetails.Location)}
+              {forumDetails.Price && renderLabel("Price", `£${forumDetails.Price}/week`)}
+            </>
+          );
+
+        case "Project":
+          const incentive = forumDetails.Incentive || "Money";
+          return (
+            <>
+              {renderLabel("Incentive", incentive)}
+              {incentive === "Other" && forumDetails.CustomIncentive && 
+                renderLabel("Details", forumDetails.CustomIncentive)}
+              {renderSkillChips(forumDetails.Skills)}
+            </>
+          );
+
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.error("Error rendering forum details content:", error);
       return null;
-  }
+    }
+  };
 
-  return <View style={styles.forumDetailsBox}>{content}</View>;
+  return (
+    <View style={[styles.forumDetailsBox, { borderLeftColor: config.color }]}>
+      <View style={styles.headerRow}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.forumIcon}>{config.icon}</Text>
+          <Text style={[styles.forumType, { color: config.color }]}>
+            {forumType}
+          </Text>
+        </View>
+        {headerEmphasis && (
+          <View style={[styles.emphasisPill, { backgroundColor: config.color }]}>
+            <Text style={styles.emphasis}>{headerEmphasis}</Text>
+          </View>
+        )}
+      </View>
+      {renderContent()}
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
   forumDetailsBox: {
-    marginTop: 8,
-    padding: 12,
-    backgroundColor: "#F9F9F9",
-    borderRadius: 8,
-    borderColor: "#eee",
+    marginTop: 12,
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderLeftWidth: 4,
     borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  forumIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  forumType: {
+    fontSize: 16,
+    fontWeight: "600",
   },
   detailLine: {
     flexDirection: "row",
-    marginBottom: 6,
-    alignItems: "center",
+    marginBottom: 8,
+    alignItems: "flex-start",
   },
   labelContainer: {
-    minWidth: 90,
+    minWidth: 80,
+    marginRight: 12,
   },
   detailLabel: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#666",
+    color: "#6B7280",
   },
   detailValue: {
     fontSize: 14,
-    color: "#333",
+    color: "#111827",
+    flex: 1,
+    fontWeight: "400",
   },
-  emphasisContainer: {
-    marginBottom: 8,
+  emphasisPill: {
+    backgroundColor: "#836fff",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   emphasis: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: "600",
-    color: "#836fff",
+    color: "#FFFFFF",
   },
   skillsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
     flex: 1,
   },
   skillChip: {
-    backgroundColor: "#836fff20",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: "#EEF2FF",
+    borderColor: "#C7D2FE",
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 16,
     marginRight: 6,
-    marginTop: 4,
+    marginBottom: 4,
   },
   skillChipText: {
-    color: "#836fff",
+    color: "#4338CA",
     fontSize: 12,
     fontWeight: "500",
   },
