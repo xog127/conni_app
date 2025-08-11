@@ -121,7 +121,7 @@ const ForumStackNavigator = () => (
 const ChatStackNavigator = () => (
   <ChatStack.Navigator>
     <ChatStack.Screen 
-      name="ChatsList" 
+      name="AllChats" 
       component={AllChats} 
       options={{ headerShown: false }}
     />
@@ -162,13 +162,6 @@ const PostStackNavigator = () => (
     <PostStack.Screen 
       name="MainFeed" 
       component={DrawerNavigator} 
-    />
-    <PostStack.Screen 
-      name="Search" 
-      component={NewSearchScreen} 
-      options={{ 
-        presentation: 'modal',
-      }}
     />
     <PostStack.Screen 
       name="Notification" 
@@ -306,8 +299,8 @@ const TabNavigator = () => (
           iconName = focused ? 'chatbubble' : 'chatbubble-outline';
         } else if (route.name === 'Create') {
           return null; // Custom create button will be rendered separately
-        } else if (route.name === 'Forums') {
-          iconName = focused ? 'people' : 'people-outline';
+        } else if (route.name === 'Search') {
+          return <Ionicons name={focused ? 'search' : 'search-outline'} size={24} color={color} />;
         } else if (route.name === 'Profile') {
           iconName = focused ? 'person' : 'person-outline';
         }
@@ -338,9 +331,9 @@ const TabNavigator = () => (
       })}
     />
     <Tab.Screen 
-      name="Forums" 
-      component={ForumStackNavigator}
-      options={{ headerShown: false }}
+      name="Search" 
+      component={NewSearchScreen}
+      options={{ headerShown: false}}
     />
     <Tab.Screen 
       name="Profile" 

@@ -12,10 +12,29 @@ import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-cont
 function AllChats({navigation}) {
   const [chats, setChats] = useState([]);
   const { user } = useAuth();
+
+  const resolveTitle = async (chatData) => {
+    if (!chatData || !chatData.members || chatData.members.length !== 2) return 'Chat';
+  
+    const otherMemberRef = chatData.members.find(
+      (ref) => ref?.id !== user.uid && !ref?.path?.includes(user.uid)
+    );
+  
+    if (otherMemberRef) {
+      const snapshot = await getDoc(otherMemberRef);
+      if (snapshot.exists()) {
+        const otherUser = snapshot.data();
+        return `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || 'Chat';
+      }
+    }
+  
+    return 'Chat';
+  };
+  
   
   const onPressLogic = ({item}) => {
     console.log("Chat item pressed:", item);
-    navigation.navigate('Chatroom', { chatId: item.id, chatName: item.group_name });
+    navigation.navigate('Chatroom', { chatId: item.id, title: item.title });
   };
 
   const renderItem = ({item}) => {
@@ -23,7 +42,7 @@ function AllChats({navigation}) {
     const timeDisplay = item.lastMessageTime ? timeAgo(item.lastMessageTime) : '';
     
     // Get the first letter of the chat name for the avatar
-    const avatarLetter = item.group_name ? item.group_name.charAt(0).toUpperCase() : '?';
+    const avatarLetter = item.title ? item.title.charAt(0).toUpperCase() : '?';
     console.log("Chat item:", item);
     return (
       <TouchableOpacity style={styles.chatItem} onPress={() => onPressLogic({item})}>
@@ -34,7 +53,7 @@ function AllChats({navigation}) {
         </View>
         <View style={styles.chatContent}>
           <View style={styles.chatHeader}>
-            <Text style={styles.chatName}>{item.group_name || 'Unnamed Chat'}</Text>
+            <Text style={styles.chatName}>{item.title || 'Unnamed Chat'}</Text>
             <Text style={styles.timestamp}>{timeDisplay}</Text>
           </View>
           <Text style={styles.lastMessage} numberOfLines={1} ellipsizeMode="tail">
@@ -62,83 +81,66 @@ function AllChats({navigation}) {
       
       // Setup listeners for each chat
       user.chatRefs.forEach(chatRef => {
-        console.log("Setting up listener for chat:", chatRef);
-        
         try {
-          
-          // Set up listener for the chat document
-          const chatUnsubscribe = onSnapshot(chatRef, 
-            (docSnapshot) => {
-              if (docSnapshot.exists()) {
-                const chatData = {
-                  id: docSnapshot.id,
-                  ...docSnapshot.data()
-                };
-                console.log("Chat data:", chatData);
-                // Update the chats state while preserving existing chats
-                setChats(prevChats => {
-                  const existingIndex = prevChats.findIndex(chat => chat.id === chatData.id);
-                  if (existingIndex >= 0) {
-                    // Replace existing chat with updated data
-                    const updatedChats = [...prevChats];
-                    updatedChats[existingIndex] = chatData;
-                    return updatedChats;
-                  } else {
-                    // Add new chat
-                    return [...prevChats, chatData];
+          const chatUnsubscribe = onSnapshot(chatRef, async (docSnapshot) => {
+            if (docSnapshot.exists()) {
+              const chatDocData = docSnapshot.data();
+      
+              // Compute title
+              const title = await resolveTitle(chatDocData);
+      
+              const chatData = {
+                id: docSnapshot.id,
+                ...chatDocData,
+                title,
+              };
+      
+              setChats(prevChats => {
+                const existingIndex = prevChats.findIndex(chat => chat.id === chatData.id);
+                if (existingIndex >= 0) {
+                  const updatedChats = [...prevChats];
+                  updatedChats[existingIndex] = chatData;
+                  return updatedChats;
+                } else {
+                  return [...prevChats, chatData];
+                }
+              });
+      
+              // ✅ Messages listener
+              const messagesUnsubscribe = onSnapshot(
+                collection(db, "chats", chatData.id, "messages"),
+                querySnapshot => {
+                  if (!querySnapshot.empty) {
+                    const latestMessage = querySnapshot.docs[0].data();
+      
+                    setChats(prevChats =>
+                      prevChats.map(chat =>
+                        chat.id === chatData.id
+                          ? {
+                              ...chat,
+                              lastMessage: latestMessage.text || latestMessage.content || "New message",
+                              lastMessageTime: latestMessage.timestamp,
+                            }
+                          : chat
+                      )
+                    );
                   }
-                });
-                
-                console.log("Chat updated:", chatData);
-              } else {
-                console.log("Chat does not exist:", chatRef);
-              }
-            },
-            (error) => {
-              console.error("Error in chat listener:", error);
+                },
+                error => console.error("Error in messages listener:", error)
+              );
+      
+              unsubscribers.push(messagesUnsubscribe);
+            } else {
+              console.log("Chat does not exist:", chatRef);
             }
-          );
-          
+          });
+      
           unsubscribers.push(chatUnsubscribe);
-          
-          // Also set up a listener for the latest message in this chat
-          const messagesUnsubscribe = onSnapshot(
-            collection(db, "chats", chatData.id, "messages"),
-            { limit: 1, orderBy: "timestamp", desc: true },
-            (querySnapshot) => {
-              if (!querySnapshot.empty) {
-                const latestMessage = querySnapshot.docs[0];
-                const messageData = latestMessage.data();
-                
-                // Update the specific chat with the latest message info
-                setChats(prevChats => {
-                  console.log("prev chats", prevChats)
-                  return prevChats.map(chat => {
-                    if (chat.id === chatData.id) {
-                      return {
-                        ...chat,
-                        lastMessage: messageData.text || messageData.content || "New message",
-                        lastMessageTime: messageData.timestamp
-                      };
-                    }
-                    return chat;
-                  });
-                });
-                
-                console.log("Latest message updated for chat:", chatData.id);
-              }
-            },
-            (error) => {
-              console.error("Error in messages listener:", error);
-            }
-          );
-          
-          unsubscribers.push(messagesUnsubscribe);
-          
         } catch (error) {
           console.error("Error setting up listeners for chat:", error);
         }
       });
+      
       
       // Initial fetch to populate the list
       const initialFetch = async () => {
@@ -149,12 +151,14 @@ function AllChats({navigation}) {
             try {
               const chatDoc = await fetchReferenceData(chatRef);
               if (chatDoc) {
-                chatData.push(chatDoc);
+                const title = await resolveTitle(chatDoc);
+                chatData.push({ ...chatDoc, title });
               }
             } catch (error) {
               console.error(`Error fetching chat ${chatRef}:`, error);
             }
           }
+          
           
           setChats(chatData);
           console.log("Initial chat data loaded:", chatData);
@@ -193,7 +197,6 @@ function AllChats({navigation}) {
           data={chats}
           renderItem={(item) => renderItem(item)}
           keyExtractor={(item) => item.id}
-          key={(item) => item.id}
           style={styles.list}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={

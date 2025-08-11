@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Box, Text, Input, HStack, Pressable, Spinner, Center, ScrollView, FlatList, VStack, Image } from "native-base";
+import { Box, Text, HStack, Pressable, Spinner, ScrollView, FlatList } from "native-base";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { TextInput } from "react-native";
 import { getAnyCollection, getRef } from "../firebase/queries";
 import { timeAgo } from "../customFunctions/time.js";
 import PostUserInfo from "../components/postuserinfo.jsx";
@@ -9,7 +10,6 @@ import HeartIcon from "../customIcon/HeartIcon.js";
 import CommentIcon from "../customIcon/CommentIcon.js";
 import ViewIcon from "../customIcon/ViewIcon.js";
 import PostCard from "../components/PostCard.jsx";
-import { TextInput } from "react-native";
 
 export default function NewSearchScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -124,22 +124,38 @@ export default function NewSearchScreen({ navigation }) {
     setSearchQuery(text);
   };
 
-  const renderHeader = () => (
-    <Box>
-      {/* Search Bar with Back Button */}
-      <Box px={4} py={3} flexDirection="row" alignItems="center" style = {{borderWidth: 0}}>
-        <Pressable onPress={() => navigation.goBack()} mr={3}>
-          <Ionicons name="arrow-back" size={24} color="black"/>
-        </Pressable>
-        <TextInput
-          placeholder="Search posts..."
-          value={searchQuery}
-          onChangeText={handleSearchChange}
-          style={{ borderWidth: 0 }}
-          _input={{ borderWidth: 0 }}
-          _focus={{ borderWidth: 0 }}
-        />
-        
+  const renderStickyHeader = () => (
+    <Box bg="white" shadow={1} zIndex={10}>
+      {/* Instagram-style Search Bar */}
+      <Box px={4} py={3}>
+        <HStack
+          alignItems="center"
+          bg="#F2F3F5"
+          borderRadius={10}
+          px={4}
+          py={3}
+          space={3}
+        >
+          <Ionicons name="search" size={16} color="#8E8E93" />
+          <TextInput
+            ref={searchInputRef}
+            value={searchQuery}
+            onChangeText={handleSearchChange}
+            placeholder="Search posts..."
+            placeholderTextColor="#8E8E93"
+            style={{
+              flex: 1,
+              paddingVertical: 0,
+              fontSize: 16,
+              color: '#000',
+              backgroundColor: 'transparent',
+            }}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+            underlineColorAndroid="transparent"
+          />
+        </HStack>
       </Box>
 
       {/* Forum Chips */}
@@ -193,7 +209,10 @@ export default function NewSearchScreen({ navigation }) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top', 'left', 'right']}>
       <Box flex={1}>
-        {renderHeader()}
+        {/* Sticky Header */}
+        {renderStickyHeader()}
+        
+        {/* Scrollable Content */}
         <Box flex={1} position="relative">
           {filtering && (
             <Box 
@@ -225,10 +244,11 @@ export default function NewSearchScreen({ navigation }) {
               renderItem={renderPost}
               keyExtractor={item => item.id}
               contentContainerStyle={{ paddingBottom: 20 }}
+              showsVerticalScrollIndicator={false}
             />
           )}
         </Box>
       </Box>
     </SafeAreaView>
   );
-} 
+}

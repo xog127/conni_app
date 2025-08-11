@@ -27,13 +27,31 @@ import { db } from '../firebase/firebaseConfig';
 import { useAuth } from '../services/authContext';
 
 function ChatInfo({ route, navigation }) {
-  const { chatId, chatName } = route.params;
+  const { chatId} = route.params;
   const [chatData, setChatData] = useState(null);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const [title, setTitle] = useState('Chat');
 
   useEffect(() => {
+    const fetchTitle = async (chatInfoData) => {
+      if (!chatInfoData || !chatInfoData.members || chatInfoData.members.length !== 2) return;
+    
+      const otherMemberRef = chatInfoData.members.find(
+        (ref) => ref?.id !== user.uid && !ref?.path?.includes(user.uid)
+      );
+    
+      if (otherMemberRef) {
+        const snapshot = await getDoc(otherMemberRef);
+        if (snapshot.exists()) {
+          const otherUser = snapshot.data();
+          const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim();
+          if (fullName) setTitle(fullName);
+        }
+      }
+    };
+    
     const fetchChatInfo = async () => {
       try {
         setLoading(true);
@@ -48,6 +66,8 @@ function ChatInfo({ route, navigation }) {
         
         const data = chatDoc.data();
         setChatData(data);
+        await fetchTitle(data);
+
         
         const memberRefs = data.members || [];
         const memberDocs = await Promise.all(
@@ -136,7 +156,7 @@ function ChatInfo({ route, navigation }) {
                 });
               }
               
-              Alert.alert('Success', 'You have left the chat');
+              Alert.alert('Chat removed', 'You have left the chat');
               navigation.navigate('AllChats'); // Navigate back to chat list
             } catch (error) {
               console.error('Error leaving chat:', error);
@@ -215,13 +235,13 @@ function ChatInfo({ route, navigation }) {
           <View style={styles.chatAvatarContainer}>
             <View style={styles.chatAvatar}>
               <Text style={styles.chatAvatarText}>
-                {chatName ? chatName.charAt(0).toUpperCase() : '?'}
+                {title ? title.charAt(0).toUpperCase() : '?'}
               </Text>
             </View>
           </View>
           
           <Text style={styles.chatName}>
-            {chatName || 'Unnamed Chat'}
+            {title || 'Unnamed Chat'}
           </Text>
           
           <Text style={styles.chatDescription}>

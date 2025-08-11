@@ -177,6 +177,7 @@ const OnboardingPage = ({ navigation }) => {
     try {
       await updateProfile({
         ...formData,
+        displayName:`${formData.first_name} ${formData.last_name}`,
         profileImage: profileImage,
       });
       await completeOnboarding();

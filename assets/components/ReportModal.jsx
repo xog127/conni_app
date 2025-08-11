@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: 'horizontal',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 16,

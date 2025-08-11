@@ -42,8 +42,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const MESSAGES_PER_LOAD = 20;
 
 function ChatRoom({ route, navigation }) {
-  const { chatId, chatName } = route.params;
-  console.log("ChatRoom received params:", route.params);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -57,6 +55,27 @@ function ChatRoom({ route, navigation }) {
   const lastMessageRef = useRef(null);
   const flatListRef = useRef(null);
   const { user } = useAuth();
+  const [title, setTitle] = useState('Chat');
+  useEffect(() => {
+    const fetchTitle = async () => {
+      if (!chatInfo || !chatInfo.members || chatInfo.members.length !== 2) return;
+  
+      const otherMemberRef = chatInfo.members.find(
+        (ref) => ref?.id !== user.uid && !ref?.path?.includes(user.uid)
+      );
+  
+      if (otherMemberRef) {
+        const snapshot = await getDoc(otherMemberRef);
+        if (snapshot.exists()) {
+          const otherUser = snapshot.data();
+          const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim();
+          if (fullName) setTitle(fullName);
+        }
+      }
+    };
+  
+    fetchTitle();
+  }, [chatInfo]);
 
   useEffect(() => {
     // Fetch chat info
@@ -373,7 +392,7 @@ function ChatRoom({ route, navigation }) {
       <View style={styles.appBar}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() =>navigation.goBack()}
         >
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
@@ -381,17 +400,17 @@ function ChatRoom({ route, navigation }) {
         <View style={styles.chatInfoContainer}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {chatName ? chatName.charAt(0).toUpperCase() : '?'}
+              {title ? title.charAt(0).toUpperCase() : '?'}
             </Text>
           </View>
           <Text style={styles.chatTitle} numberOfLines={1}>
-            {chatName || 'Chat'}
+            {title}
           </Text>
         </View>
         
         <TouchableOpacity 
           style={styles.infoButton}
-          onPress={() => navigation.navigate('Chatinfo', { chatId, chatName })}
+          onPress={() => navigation.navigate('Chatinfo', { chatId})}
         >
           <Feather name="info" size={24} color="#333" />
         </TouchableOpacity>

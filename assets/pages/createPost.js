@@ -266,6 +266,8 @@ const CreatePost = ({ navigation }) => {
         num_likes: 0,
         num_comments: 0,
         views: 0,
+        forum_type: selectedForum.name,
+        forum_details: formData || {}, 
         post_user: userDoc,
         like_userref: [], // Initialize empty array for likes
         liked_user_ref: [], // Initialize empty array for liked users
