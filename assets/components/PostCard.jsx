@@ -169,6 +169,7 @@ const PostCard = ({ item, navigation }) => {
   return (
     <Pressable
       onPress={() =>
+        console.log("Post pressed:", item.id) ||
         navigation?.navigate("PostDisplay", { postRef: item.id, navigation })
       }
     >
