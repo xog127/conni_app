@@ -1,84 +1,136 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Text,
   VStack,
   HStack,
   Pressable,
-  NativeBaseProvider,
+  ScrollView,
+  Spinner,
+  Icon,
 } from "native-base";
 import { useAuth } from "../services/authContext";
-import { updateProfile } from "../firebase/queries";
 import { Ionicons } from "@expo/vector-icons";
-import CommentCard from "../components/notificationcard"; // adjust path if needed
-
+import NotificationCard from "../components/notificationcard";
+import {
+  subscribeToNotifications,
+  formatNotificationForDisplay,
+  markNotificationAsRead,
+} from "../firebase/queries"; // Adjust path as needed
 export default function NotificationScreen({ navigation }) {
   const { user } = useAuth();
-  const [displayName, setDisplayName] = useState(user.displayName);
-  const [bio, setBio] = useState(user.bio);
-  const [location, setLocation] = useState(user.location);
-  const [website, setWebsite] = useState(user.website);
-  const [avatar, setAvatar] = useState(user.avatar);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = async () => {
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    // Subscribe to real-time notifications
+    const unsubscribe = subscribeToNotifications(
+      user.uid,
+      (rawNotifications) => {
+        // Format notifications for display
+        const formattedNotifications = rawNotifications.map(
+          formatNotificationForDisplay
+        );
+        setNotifications(formattedNotifications);
+        setLoading(false);
+      }
+    );
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  const handleNotificationPress = async (notification) => {
     try {
-      await updateProfile(user.uid, {
-        displayName,
-        bio,
-        location,
-        website,
-        avatar,
-      });
-      navigation.goBack();
+      // Mark notification as read
+      if (!notification.read) {
+        await markNotificationAsRead(user.uid, notification.id);
+      }
+      // Handle navigation based on notification type
+      switch (notification.type) {
+        case "comment":
+        case "like":
+          console.log("Navigating to post:", notification);
+          console.log("Post ID:", notification.postId);
+          // Use postId from the notification (it's at the top level)
+          if (notification.postId) {
+            navigation.navigate("PostDisplay", {
+              postRef: notification.postId,
+              navigation,
+            });
+          }
+          break;
+        case "message":
+          navigation.navigate("Messages");
+          break;
+        default:
+          console.log("Notification pressed:", notification);
+      }
     } catch (error) {
-      console.error("Error updating profile:", error.message);
+      console.error("Error handling notification press:", error);
     }
   };
 
   return (
     <Box flex={1} bg="white">
+      {/* Header */}
       <HStack
-        bg="white"
-        justifyContent="space-between"
+        px={4}
+        py={3}
         alignItems="center"
-        alignSelf="stretch"
-        pt={"10%"}
+        justifyContent="space-between"
+        borderBottomWidth={1}
+        borderBottomColor="gray.200"
       >
         <Pressable onPress={() => navigation.goBack()}>
-          <Box
-            width="48px"
-            height="48px"
-            justifyContent="center"
-            alignItems="center"
-          >
-            <Ionicons name="chevron-back" size={30} color="black" />
-          </Box>
+          <Icon as={Ionicons} name="arrow-back" size={6} color="black" />
         </Pressable>
-        <Text fontSize={20} fontWeight="bold">
+        <Text fontSize="lg" fontWeight="bold">
           Notification
         </Text>
-        <Box
-          width="48px"
-          height="48px"
-          justifyContent="center"
-          alignItems="center"
-        >
-          {/* Invisible placeholder */}
-          <Ionicons name="chevron-back" size={30} color="white" />
-        </Box>
+        <Box w={6} /> {/* Spacer for alignment */}
       </HStack>
 
-      <VStack space={1} mt={2}>
-        <CommentCard
-          message={`Comments on your post ?Trump vs Harris?`}
-          time="1 min ago"
-        />
-        <CommentCard
-          message={`Likes on your post ?Trump vs Harris?`}
-          time="1 min ago"
-        />
-        <CommentCard message={`You have unread messages`} time="1 min ago" />
-      </VStack>
+      {/* Notifications List */}
+      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+        {loading ? (
+          <Box flex={1} justifyContent="center" alignItems="center" mt={10}>
+            <Spinner size="lg" color="blue.500" />
+            <Text mt={4} color="gray.500">
+              Loading notifications...
+            </Text>
+          </Box>
+        ) : notifications.length === 0 ? (
+          <Box flex={1} justifyContent="center" alignItems="center" mt={10}>
+            <Ionicons name="notifications-outline" size={64} color="#9CA3AF" />
+            <Text mt={4} fontSize={18} color="gray.500">
+              No notifications yet
+            </Text>
+            <Text
+              mt={2}
+              fontSize={14}
+              color="gray.400"
+              textAlign="center"
+              px={8}
+            >
+              You'll see notifications here when someone interacts with your
+              posts
+            </Text>
+          </Box>
+        ) : (
+          <VStack space={0}>
+            {notifications.map((notification) => (
+              <NotificationCard
+                key={notification.id}
+                notification={notification}
+                onPress={handleNotificationPress}
+              />
+            ))}
+          </VStack>
+        )}
+      </ScrollView>
     </Box>
   );
 }
