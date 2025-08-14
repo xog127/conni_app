@@ -29,10 +29,20 @@ const UserSummaryModal = ({ visible, onClose, user }) => {
       }
 
       onClose();
-      navigation.navigate('Chatroom', {
-        chatId,
-        chatName: `${user.first_name} ${user.last_name}`,
+      onClose();
+      navigation.navigate('MainTabs', {
+        screen: 'Chats',
+        params: {
+          screen: 'Chatroom',
+          params: {
+            chatId,
+            title: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Chat',
+            fromUserModal: true // optional flag
+          }
+        }
       });
+      
+      
     } catch (error) {
       console.error('Error starting chat:', error);
     }

@@ -23,6 +23,7 @@ import { useRoute } from '@react-navigation/native';
 import { Box } from 'native-base';
 import { useAuth } from '../services/authContext';
 import ReportModal from '../components/ReportModal';
+import ForumDetails from "../components/ForumDetails";
 
 
 const PostDisplay = () => {
@@ -172,94 +173,6 @@ const PostDisplay = () => {
     handleReport();
   };
 
-  const renderForumRequirements = () => {
-    
-
-
-    const renderSkillChips = (skills) => {
-      if (!skills || !skills.length) return null;
-      return (
-        <View style={styles.requirementRow} key="skills">
-          <Text style={styles.requirementLabel}>Skills:</Text>
-          <View style={styles.skillsContainer}>
-            {skills.map((skill, index) => (
-              <View key={index} style={styles.skillChip}>
-                <Text style={styles.skillChipText}>{skill}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      );
-    };
-
-    switch (post.forum_type) {
-      case "Market":
-        const marketType = post.forum_details["Buy or Sell"] || "Sell";
-        content = (
-          <>
-            {renderEmphasis(marketType)}
-            {post.forum_details.Item && renderLabel("Item", post.forum_details.Item)}
-            {post.forum_details.Price && renderLabel("Price", post.forum_details.Price, "£")}
-          </>
-        );
-        break;
-
-      case "Research":
-        content = (
-          <>
-            {renderLabel("Duration", post.forum_details.Duration)}
-            {renderLabel("Eligibilities", post.forum_details.Eligibilities)}
-          </>
-        );
-        break;
-
-      case "Ticket":
-        const ticketType = post.forum_details["Buy or Sell"] || "Sell";
-        content = (
-          <>
-            {renderEmphasis(ticketType)}
-            {post.forum_details.Date && renderLabel("Date", new Date(post.forum_details.Date).toISOString().split('T')[0])}
-            {post.forum_details.Price && renderLabel("Price", post.forum_details.Price, "£")}
-            {post.forum_details.Quantity && renderLabel("Quantity", post.forum_details.Quantity)}
-          </>
-        );
-        break;
-
-      case "Flat":
-        content = (
-          <>
-            {renderEmphasis(post.forum_details["Rent type"])}
-            {renderLabel("Move in Date", new Date(post.forum_details["Move in Date"]).toISOString().split('T')[0])}
-            {renderLabel("Move out Date", new Date(post.forum_details["Move out Date"]).toISOString().split('T')[0])}
-            {renderLabel("Location", post.forum_details.Location)}
-            {renderLabel("Price", post.forum_details.Price, "£", " per week")}
-          </>
-        );
-        break;
-
-      case "Project":
-        const incentive = post.forum_details.Incentive || "Money";
-        content = (
-          <>
-            {renderLabel("Incentive", incentive)}
-            {incentive === "Other" && post.forum_details.CustomIncentive && 
-              renderLabel("Custom incentive", post.forum_details.CustomIncentive)}
-            {renderSkillChips(post.forum_details.Skills)}
-          </>
-        );
-        break;
-
-      default:
-        return null;
-    }
-
-    return (
-      <View style={styles.requirementsContainer}>
-        {content}
-      </View>
-    );
-  };
-
   useEffect(() => {
     const fetchPostData = async () => {
       try {
@@ -323,17 +236,39 @@ const PostDisplay = () => {
                 </View>
 
                 {/* Forum Requirements */}
-                {post.forum_details && post.forum_type && post.forum_type !== "General" && (
-                  <Box mt={2}>
-                    <View style={styles.requirementsContainer}>
-                      {renderForumRequirements()}
-                    </View>
+                {post.forum_type && post.forum_details && post.forum_type !== "General" && (
+                  <Box mt={2} px ={4}>
+                    <ForumDetails
+                      forumType={post.forum_type}
+                      forumDetails={post.forum_details}
+                    />
+                  </Box>
+                )}
+
+                {/* Polls Content */}
+                {Array.isArray(post.pollOptions?.options) && post.addPoll && (
+                  <Box mt={4} px={4}>
+                    {post.pollOptions.options.map((pollOption, index) => {
+                      const hasVoted = post.pollOptions?.voters?.includes(user.uid);
+                      const isSelected = hasVoted && user.uid && post.pollOptions.voters?.includes(user.uid) && index ===
+                        post.pollOptions.options.findIndex(opt => opt.votes > pollOption.votes - 1); 
+
+                      return (
+                        <PollOption
+                          key={index}
+                          pollOption={pollOption}
+                          hasVoted={hasVoted}
+                          isSelected={isSelected}
+                          onChoose={() => handleSelectPoll(index)}
+                        />
+                      );
+                    })}
                   </Box>
                 )}
 
                 {/* Post Image */}
                 {post.post_photo && (
-                  <Box mt={4}>
+                  <Box mt={4} px = {4}>
                     <Image
                       source={{ uri: post.post_photo}}
                       style={{
@@ -346,36 +281,14 @@ const PostDisplay = () => {
                     />
                   </Box>
                 )}
-                console.log("post.pollOptions =", post.pollOptions);
-                console.log("post.pollOptions.options =", post.pollOptions?.options);
 
-                {/* Polls Content */}
-                {Array.isArray(post.pollOptions?.options) &&
-                  post.addPoll && post.pollOptions?.options?.map((pollOption, index) => {
-                    const hasVoted = post.pollOptions?.voters?.includes(user.uid);
-                    const isSelected = hasVoted && user.uid && post.pollOptions.voters?.includes(user.uid) && index ===
-                    post.pollOptions.options.findIndex(opt => opt.votes > pollOption.votes - 1); 
-
-                    return (
-                      <PollOption
-                        key={index}
-                        pollOption={pollOption}
-                        hasVoted = {hasVoted}
-                        isSelected={isSelected}
-                        onChoose={() => {
-                          handleSelectPoll(index);
-                        }}
-                      />
-                      );
-                  })}
-
-                {/* Post Stats */}
+                {/* Post View */}
                 <View style={styles.statsContainer}>
                   <Text style={styles.statsText}>
                    {post.views || 0} views
                   </Text>
                 </View>
-
+                
                 <View style={styles.userSafetyInfoContainer}>
                   <Text style={styles.userSafetyInfoText}>
                     - Any comments that violate the guideline can be deleted without notice{'\n'}
@@ -541,56 +454,6 @@ const styles = StyleSheet.create({
   cancelReplyButton: {
     padding: 4,
   },
-    // Requirements styling
-    requirementsContainer: {
-      marginHorizontal: 16,
-      marginVertical: 12,
-      padding: 16,
-      backgroundColor: "#f9f9f9",
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: "#eee",
-    },
-    requirementRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginVertical: 4,
-    },
-    requirementLabel: {
-      fontSize: 14,
-      color: "#666",
-      fontWeight: "500",
-      marginRight: 8,
-      flex: 1,
-    },
-    requirementValue: {
-      fontSize: 14,
-      color: "#333",
-      flex: 2,
-    },
-    emphasisText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: "#836fff",
-      textAlign: "left",
-    },
-    skillsContainer: {
-      flex: 2,
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 8,
-    },
-    skillChip: {
-      backgroundColor: "#836fff20",
-      paddingHorizontal: 12,
-      paddingVertical: 4,
-      borderRadius: 16,
-    },
-    skillChipText: {
-      color: "#836fff",
-      fontSize: 12,
-      fontWeight: "500",
-    },
 });
 
 

@@ -266,6 +266,8 @@ const CreatePost = ({ navigation }) => {
         num_likes: 0,
         num_comments: 0,
         views: 0,
+        forum_type: selectedForum.name,
+        forum_details: formData || {}, 
         post_user: userDoc,
         like_userref: [], // Initialize empty array for likes
         liked_user_ref: [], // Initialize empty array for liked users
@@ -368,67 +370,74 @@ const CreatePost = ({ navigation }) => {
               />
         </View>
 
-        {/* Content Area */}
-        <ScrollView 
-          style={styles.contentContainer}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-        >
-              <TextInput
-                style={styles.titleInput}
-                placeholder="Title"
-                value={title}
-                onChangeText={setTitle}
-                multiline
-              />
+        {/* Fixed Title and Body */}
+        <View style={styles.fixedContentContainer}>
+          <TextInput
+            style={styles.titleInput}
+            placeholder="Title"
+            value={title}
+            onChangeText={setTitle}
+            multiline
+          />
 
-              <TextInput
+          <TextInput
             style={styles.bodyInput}
             placeholder="What's on your mind?"
-                value={description}
+            value={description}
             onChangeText={setDescription}
-                multiline
-                textAlignVertical="top"
-              />
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
 
+        {/* Scrollable Content Area */}
+        <ScrollView 
+          style={styles.scrollableContainer}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.contentExtrasContainer}>
-              {/* Image Preview */}
-              {addImage && image && (
-              <View style={styles.imageContainer}>
-                <Image source={{ uri: image }} style={styles.imagePreview} />
-                    <TouchableOpacity 
-                      style={styles.removeImageButton}
-                      onPress={() => {
-                        setAddImage(false);
-                        setImage(null);
-                      }}
-                    >
-                      <Feather name="x" size={20} color="#666" />
-                    </TouchableOpacity>
-                  </View>
-            )}
-
-            {/* Forum Details */}
-            {selectedForum && selectedForum.name !== "General" && (
-              <View style={styles.forumDetailsContainer}>
-                <CreatePostFields 
-                  onChange={handleFormChange} 
-                  selectedForum={selectedForum.name}
-                  onValidationChange={handleValidationChange}
-                  />
+            {/* Image Preview */}
+            {addImage && image && (
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: image }} style={styles.imagePreview} />
+                  <TouchableOpacity 
+                    style={styles.removeImageButton}
+                    onPress={() => {
+                      setAddImage(false);
+                      setImage(null);
+                    }}
+                  >
+                    <Feather name="x" size={20} color="#666" />
+                  </TouchableOpacity>
                 </View>
-              )}
+          )}
           </View>
 
-          {/* Poll Options */}
-        {addPoll && (
-          <View style={styles.pollContainer}>
-            <PollOptions
-              pollOptions={pollOptions}
-              onOptionsChange={setPollOptions}
-            />
-          </View>
+          {/* Poll Options - Now before forum details */}
+          {addPoll && (
+            <View style={styles.pollContainer}>
+              <PollOptions
+                pollOptions={pollOptions}
+                onOptionsChange={setPollOptions}
+              />
+            </View>
           )}
+
+          {/* Forum Details */}
+          {selectedForum && selectedForum.name !== "General" && (
+            <View style={styles.forumDetailsContainer}>
+              <CreatePostFields 
+                onChange={handleFormChange} 
+                selectedForum={selectedForum.name}
+                onValidationChange={handleValidationChange}
+                />
+            </View>
+          )}
+
+          {/* Extra space after forum details */}
+          <View style={styles.extraSpace} />
         </ScrollView>
             
         {/* Action Bar */}
@@ -448,6 +457,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingBottom: '64px'
   },
   safeArea: {
     flex: 1,
@@ -476,25 +486,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
-  contentContainer: {
+  fixedContentContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  scrollableContainer: {
     flex: 1,
     paddingHorizontal: 16,
+    paddingTop: 8,
   },
   titleInput: {
     fontSize: 18,
     fontWeight: '500',
     paddingVertical: 8,
     marginBottom: 8,
+    maxHeight: 120, // Limit height but allow multiline
   },
   bodyInput: {
     fontSize: 16,
-    minHeight: 120,
+    minHeight: 80,
+    maxHeight: 160, // Limit height but allow multiline
     paddingTop: 8,
   },
   contentExtrasContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 16,
   },
   imageContainer: {
     marginRight: 16,
@@ -513,12 +531,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
   },
-  forumDetailsContainer: {
-    flex: 1,
-    minWidth: 250,
-  },
   pollContainer: {
-    marginTop: 16,
+    marginBottom: 16,
+  },
+  forumDetailsContainer: {
+    marginBottom: 16,
+  },
+  extraSpace: {
+    height: 32, // Extra space after forum details
   },
   actionBarContainer: {
     width: '100%',

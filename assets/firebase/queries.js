@@ -1,5 +1,5 @@
 import { db, collection } from "./firebaseConfig";
-import { doc, getDoc, updateDoc, addDoc, getDocs, query, where, serverTimestamp, getFirestore } from "firebase/firestore";
+import { doc, getDoc, updateDoc, addDoc, getDocs, query,where,serverTimestamp, getFirestore, orderBy, limit, onSnapshot } from "firebase/firestore";
 
 const getCollections = async ({ collectionName }) => {
   try {
@@ -325,6 +325,7 @@ const addRef = async ({ collectionName, data }) => {
   }
 };
 
+
 export async function submitFeedback({ userId = "anonymous", title, description, receiveBy }) {
   return await addDoc(collection(db, "feedback"), {
     userId,
@@ -335,36 +336,304 @@ export async function submitFeedback({ userId = "anonymous", title, description,
   });
 }
 
+export const getUserNotifications = async (userId) => {
+  try {
+    const notificationsRef = collection(db, `users/${userId}/notification`);
+    const q = query(
+      notificationsRef, 
+      orderBy('created_at', 'desc'),
+      limit(50) // Limit to last 50 notifications
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const notifications = [];
+    
+    for (const docSnapshot of querySnapshot.docs) {
+      const notificationData = {
+        id: docSnapshot.id,
+        ...docSnapshot.data()
+      };
+      
+      // If notification has a post_ref, fetch the post data
+      if (notificationData.post_ref) {
+        try {
+          const postDoc = await getDoc(doc(db, notificationData.post_ref));
+          if (postDoc.exists()) {
+            notificationData.postData = {
+              id: postDoc.id,
+              ...postDoc.data()
+            };
+          }
+        } catch (error) {
+          console.error('Error fetching post data:', error);
+          notificationData.postData = null;
+        }
+      }
+      
+      notifications.push(notificationData);
+    }
+    
+    return notifications;
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    throw error;
+  }
+};
+
+// Function to get a single notification with post data
+export const getNotificationWithPost = async (userId, notificationId) => {
+  try {
+    const notificationRef = doc(db, `users/${userId}/notification/${notificationId}`);
+    const notificationDoc = await getDoc(notificationRef);
+    
+    if (!notificationDoc.exists()) {
+      throw new Error('Notification not found');
+    }
+    
+    const notificationData = {
+      id: notificationDoc.id,
+      ...notificationDoc.data()
+    };
+    
+    // Fetch post data if post_ref exists
+    if (notificationData.post_ref) {
+      try {
+        const postDoc = await getDoc(doc(db, notificationData.post_ref));
+        if (postDoc.exists()) {
+          notificationData.postData = {
+            id: postDoc.id,
+            ...postDoc.data()
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching post data:', error);
+        notificationData.postData = null;
+      }
+    }
+    
+    return notificationData;
+  } catch (error) {
+    console.error('Error fetching notification:', error);
+    throw error;
+  }
+};
+
+// Real-time listener for notifications
+export const subscribeToNotifications = (userId, callback) => {
+  const notificationsRef = collection(db, `users/${userId}/notification`);
+  const q = query(
+    notificationsRef, 
+    orderBy('created_at', 'desc'),
+    limit(50)
+  );
+  
+  return onSnapshot(q, async (querySnapshot) => {
+    const notifications = [];
+    
+    for (const docSnapshot of querySnapshot.docs) {
+      const notificationData = {
+        id: docSnapshot.id,
+        ...docSnapshot.data()
+      };
+      
+      // Fetch post data if post_ref exists
+      if (notificationData.post_ref) {
+        try {
+          console.log("Fetching post data for notification:", notificationData.id);
+          console.log("Post reference:", notificationData.post_ref);
+          
+          // Use the DocumentReference directly with getDoc
+          const postDoc = await getDoc(notificationData.post_ref);
+          
+          console.log("Post document fetched:", postDoc.exists());
+          if (postDoc.exists()) {
+            notificationData.postData = {
+              id: postDoc.id,
+              ...postDoc.data()
+            };
+          }
+        } catch (error) {
+          console.error('Error fetching post data:', error);
+          notificationData.postData = null;
+        }
+      }
+      
+      notifications.push(notificationData);
+    }
+    
+    callback(notifications);
+  });
+};
+
+// Function to format notification for display
+export const formatNotificationForDisplay = (notification) => {
+  console.log("Formatting notification for display:", notification);
+  const postTitle = notification.postData?.post_title || 
+                   "your post";
+  
+  let title = "";
+  let type = "default";
+  
+  switch (notification.type) {
+    case 0: // Like notification
+      title = `Likes on your post "${postTitle}"`;
+      type = "like";
+      break;
+    case 1: // Comment notification
+      title = `Comments on your post "${postTitle}"`;
+      type = "comment";
+      break;
+    case 2: // Message notification
+      title = "You have unread messages";
+      type = "message";
+      break;
+    default:
+      title = "New notification";
+      type = "default";
+  }
+  
+  return {
+    id: notification.id,
+    type: type,
+    title: title,
+    timestamp: formatTimestamp(notification.created_at),
+    read: notification.read || false,
+    postId: notification.postData?.id,
+    originalData: notification
+  };
+};
+
+// Helper function to format timestamp
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return 'Just now';
+  
+  // Handle Firestore timestamp
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const now = new Date();
+  const diffInMs = now - date;
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  
+  if (diffInMinutes < 1) return 'Just now';
+  if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+  if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+  if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  
+  return date.toLocaleDateString();
+};
+
+// Function to mark notification as read
+export const markNotificationAsRead = async (userId, notificationId) => {
+  try {
+    const notificationRef = doc(db, `users/${userId}/notification/${notificationId}`);
+    await updateDoc(notificationRef, {
+      read: true
+    });
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    throw error;
+  }
+};
+
 export const startOrGetDirectChat = async ({ currentUserId, otherUserId }) => {
   const currentRef = doc(db, 'users', currentUserId);
   const otherRef = doc(db, 'users', otherUserId);
   const chatsRef = collection(db, 'chats');
 
+  // Check for existing direct chat
   const q = query(chatsRef, where('members', 'array-contains', currentRef));
   const snapshot = await getDocs(q);
-
   for (const chatDoc of snapshot.docs) {
     const data = chatDoc.data();
     const members = data.members || [];
     const hasOther = members.find((m) => m?.path === otherRef.path);
     if (hasOther && members.length === 2) {
-      return { chatId: chatDoc.id, chatRef: chatDoc.ref, created: false, chatData: data };
+      return {
+        chatId: chatDoc.id,
+        chatRef: chatDoc.ref,
+        created: false,
+        chatData: data
+      };
     }
   }
 
+  // Create new direct chat
   const chatData = {
-    group_name: 'Chat',
+    group_name: 'Direct Chat',              // Fixed: Set default group name for direct chats
     description: '',
     isAnonymous: false,
+    isDirect: true,                     // Mark as direct chat
+    memberIds: [currentUserId, otherUserId], // Optional for future use
+    members: [currentRef, otherRef],
     createdAt: serverTimestamp(),
     createdBy: currentRef,
-    members: [currentRef, otherRef],
     lastMessage: '',
     lastMessageTime: null,
   };
 
   const chatDocRef = await addDoc(chatsRef, chatData);
-  return { chatId: chatDocRef.id, chatRef: chatDocRef, created: true, chatData };
+  return {
+    chatId: chatDocRef.id,
+    chatRef: chatDocRef,
+    created: true,
+    chatData
+  };
+};
+
+// Add these two functions to your firebase/queries.js file
+
+// Function to update user profile
+export const updateProfile = async (userId, updateData) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    
+    // Create update object with only the fields that are provided
+    const fieldsToUpdate = {};
+    
+    if (updateData.displayName !== undefined) {
+      fieldsToUpdate.displayName = updateData.displayName;
+    }
+    
+    if (updateData.username !== undefined) {
+      fieldsToUpdate.username = updateData.username;
+    }
+    
+    if (updateData.bio !== undefined) {
+      fieldsToUpdate.bio = updateData.bio;
+    }
+    
+    if (updateData.avatar !== undefined) {
+      fieldsToUpdate.avatar = updateData.avatar;
+    }
+    
+    // Add timestamp for when profile was last updated
+    fieldsToUpdate.updatedAt = serverTimestamp();
+    
+    await updateDoc(userRef, fieldsToUpdate);
+    console.log('Profile updated successfully');
+    
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    throw new Error('Failed to update profile: ' + error.message);
+  }
+};
+
+// Function to check if username already exists
+export const checkUsernameExists = async (username) => {
+  try {
+    // Query the users collection to find any document with the given username
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
+    
+    // If querySnapshot is not empty, username already exists
+    return !querySnapshot.empty;
+    
+  } catch (error) {
+    console.error('Error checking username:', error);
+    throw new Error('Failed to check username availability: ' + error.message);
+  }
 };
   
   

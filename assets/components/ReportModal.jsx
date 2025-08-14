@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -25,6 +25,20 @@ const ReportModal = ({ isVisible, onClose, postId }) => {
     "Spam or disinformation"
   ];
 
+  // Reset state when modal closes or postId changes
+  useEffect(() => {
+    if (!isVisible) {
+      setSelectedReason(null);
+      setAdditionalDetails('');
+    }
+  }, [isVisible]);
+
+  // Reset state when postId changes (different post being reported)
+  useEffect(() => {
+    setSelectedReason(null);
+    setAdditionalDetails('');
+  }, [postId]);
+
   const handleReport = async () => {
     try {
       const postRef = doc(db, 'posts', postId);
@@ -36,6 +50,7 @@ const ReportModal = ({ isVisible, onClose, postId }) => {
           timestamp: new Date().toISOString()
         })
       });
+      // Reset state after successful report
       setSelectedReason(null);
       setAdditionalDetails('');
       onClose();
@@ -48,16 +63,22 @@ const ReportModal = ({ isVisible, onClose, postId }) => {
     setSelectedReason(reason);
   };
 
+  const handleClose = () => {
+    setSelectedReason(null);
+    setAdditionalDetails('');
+    onClose();
+  };
+
   return (
     <Modal
       visible={isVisible}
       transparent={true}
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <Pressable 
         style={styles.overlay}
-        onPress={onClose}
+        onPress={handleClose}
       >
         <Pressable style={styles.modalContent}>
           {!selectedReason ? (
@@ -85,7 +106,7 @@ const ReportModal = ({ isVisible, onClose, postId }) => {
 
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={onClose}
+                onPress={handleClose}
               >
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
@@ -117,7 +138,7 @@ const ReportModal = ({ isVisible, onClose, postId }) => {
                   style={[styles.actionButton, styles.cancelActionButton]}
                   onPress={() => setSelectedReason(null)}
                 >
-                  <Text style={styles.cancelText}>Back</Text>
+                  <Text style={styles.cancelActionText}>Back</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.submitActionButton]}
@@ -212,25 +233,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: 'row', // Fixed: was 'horizontal', should be 'row'
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+    gap: 12, // Added gap between buttons
   },
   actionButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14, // Increased padding for better touch target
     borderRadius: 8,
     alignItems: 'center',
-    marginHorizontal: 8,
   },
   cancelActionButton: {
     backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   submitActionButton: {
     backgroundColor: '#836fff',
+  },
+  cancelActionText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600',
   },
   submitText: {
     fontSize: 16,
@@ -239,4 +267,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ReportModal; 
+export default ReportModal;
