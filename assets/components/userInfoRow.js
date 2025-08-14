@@ -31,6 +31,7 @@ const UserInfoRow = ({
   const [relativeTime, setRelativeTime] = useState('');
   const [loading, setLoading] = useState(true);
   const [profileVisible, setProfileVisible] = useState(false);
+  const isAnon = !!postData?.anonymous;
 
   const handleLike = async () => {
     if (!postData?.id || !userRef) {
@@ -89,7 +90,7 @@ const UserInfoRow = ({
   
 
   const handleProfilePress = () => {
-    if (!postData?.anonymous) {
+    if (!isAnon) {
       setProfileVisible(true);
     }
   };
@@ -137,26 +138,28 @@ const UserInfoRow = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.userInfoLeft}>
-        <TouchableOpacity 
-          onPress={handleProfilePress}
-          disabled={postData?.anonymous}
-          style={styles.imageContainer}
-        >
+      <TouchableOpacity 
+        onPress={handleProfilePress}
+        disabled={isAnon}
+        style={styles.userInfoLeft}
+      >
+        <View style={styles.imageContainer}>
           <Image
             source={
-              postuser?.photo_url
-                ? { uri: user.photo_url }
-                : require('../images/Blankprofile.png')
+              isAnon
+                ? require('../images/Blankprofile.png')
+                : (postuser?.photo_url || postuser?.profileImage || postuser?.avatar
+                    ? { uri: postuser.photo_url || postuser.profileImage || postuser.avatar }
+                    : require('../images/Blankprofile.png'))
             }
             style={styles.userImage}
           />
-        </TouchableOpacity>
+        </View>
         <View style={styles.userTextInfo}>
           <Text style={styles.userName}>{userName}</Text>
           <Text style={styles.postDate}>{relativeTime}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
       
       <View style={styles.actionButtons}>
         <View style={styles.likesContainer}>

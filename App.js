@@ -29,6 +29,7 @@ import NewSearchScreen from './assets/pages/NewSearchScreen';
 import NotificationScreen from './assets/pages/notification';
 import { NativeBaseProvider, Box } from 'native-base';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { CommonActions } from '@react-navigation/native';
 
 
 import { BackHandler } from 'react-native';
@@ -256,7 +257,6 @@ const TabNavigator = () => (
         const currentRouteName = navigationState.routes[navigationState.index].state?.routes?.slice(-1)[0]?.name;
 
         const hideTabBarRoutes = [
-          'Search',
           'Notification',
           'PostDisplay',
           'createPost',
@@ -313,6 +313,38 @@ const TabNavigator = () => (
       name="Home" 
       component={PostStackNavigator}
       options={{ headerShown: false }}
+      listeners={({ navigation }) => ({
+        tabPress: (e) => {
+          console.log('Home tab pressed, currently focused:', navigation.isFocused());
+          if (navigation.isFocused()) {
+            e.preventDefault();
+            
+            // Use reset to go back to the root of the Home stack with parameters
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: 'Home',
+                    state: {
+                      routes: [
+                        {
+                          name: 'MainFeed',
+                          params: {
+                            scrollToTop: true,
+                            refresh: true,
+                            timestamp: Date.now()
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              })
+            );
+          }
+        },
+      })}
     />
     <Tab.Screen 
       name="Chats" 

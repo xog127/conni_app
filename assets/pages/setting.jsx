@@ -66,8 +66,8 @@ export default function UserSettingsScreen({ navigation }) {
             <Avatar
               size="xl"
               source={
-                user?.photo_url
-                  ? { uri: user.photo_url }
+                user?.photo_url || user?.profileImage || user?.avatar
+                  ? { uri: user.photo_url || user.profileImage || user.avatar }
                   : require("../images/Blankprofile.png")
               }
             />

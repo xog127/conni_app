@@ -53,7 +53,7 @@ const UserSummaryModal = ({ visible, onClose, user }) => {
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.container}>
           <Image
-            source={user.photo_url ? { uri: user.photo_url } : require('../images/Blankprofile.png')}
+            source={user.photo_url || user.profileImage || user.avatar ? { uri: user.photo_url || user.profileImage || user.avatar } : require('../images/Blankprofile.png')}
             style={styles.avatar}
           />
           <Text style={styles.name}>{`${user.first_name} ${user.last_name}`}</Text>

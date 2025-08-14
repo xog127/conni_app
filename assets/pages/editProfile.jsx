@@ -20,6 +20,7 @@ import { updateProfile } from "../firebase/queries";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { checkUsernameExists } from "../firebase/queries"; // You may need to implement this
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import theme from '../../theme'; // Make sure path matches
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,7 +38,7 @@ export default function ProfileEditScreen({ navigation }) {
   const [displayName, setDisplayName] = useState(user.displayName ?? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim());
   const [username, setUsername] = useState(user.username ?? "");
   const [bio, setBio] = useState(user.bio || "");
-  const [avatar, setAvatar] = useState(user.avatar || null);
+  const [avatar, setAvatar] = useState(user.avatar || user.photo_url || user.profileImage || null);
   const [course] = useState(user.course || DUMMY_COURSES[0]);
   const [year] = useState(user.year || DUMMY_YEARS[0]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -62,11 +63,27 @@ export default function ProfileEditScreen({ navigation }) {
       }
     }
     try {
+      // Upload image to Firebase if it's a local URI
+      let uploadedImageUrl = avatar;
+      if (avatar && avatar.startsWith('file://')) {
+        try {
+          uploadedImageUrl = await uploadImageToFirebase(avatar);
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          toast.show({ description: "Failed to upload image. Please try again." });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Update profile with all the different field names for compatibility
       await updateProfile(user.uid, {
         displayName,
         username,
         bio,
-        avatar,
+        avatar: uploadedImageUrl,
+        photo_url: uploadedImageUrl,
+        profileImage: uploadedImageUrl,
       });
       toast.show({ description: "Profile updated!" });
       navigation.goBack();
@@ -74,6 +91,23 @@ export default function ProfileEditScreen({ navigation }) {
       toast.show({ description: error.message });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const uploadImageToFirebase = async (uri) => {
+    try {
+      const storage = getStorage();
+      const filename = `user_images/${user.uid}_${Date.now()}`;
+      const storageRef = ref(storage, filename);
+      
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      await uploadBytes(storageRef, blob);
+      return await getDownloadURL(storageRef);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      throw error;
     }
   };
 

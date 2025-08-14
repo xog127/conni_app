@@ -179,9 +179,11 @@ const OnboardingPage = ({ navigation }) => {
         ...formData,
         displayName:`${formData.first_name} ${formData.last_name}`,
         profileImage: profileImage,
+        photo_url: profileImage, // Also save as photo_url for consistency
+        avatar: profileImage, // Also save as avatar for EditProfile compatibility
       });
       await completeOnboarding();
-      navigation.navigate('MainPage');
+      navigation.navigate('MainTabs'); // Navigate to MainTabs instead of MainPage
     } catch (error) {
       console.error('Error submitting profile:', error);
       alert('Failed to submit profile. Please try again.');

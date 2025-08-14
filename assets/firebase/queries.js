@@ -603,9 +603,23 @@ export const updateProfile = async (userId, updateData) => {
       fieldsToUpdate.bio = updateData.bio;
     }
     
+    // Handle all profile image field variations for compatibility
     if (updateData.avatar !== undefined) {
       fieldsToUpdate.avatar = updateData.avatar;
     }
+    if (updateData.photo_url !== undefined) {
+      fieldsToUpdate.photo_url = updateData.photo_url;
+    }
+    if (updateData.profileImage !== undefined) {
+      fieldsToUpdate.profileImage = updateData.profileImage;
+    }
+    
+    // Handle other fields that might be passed
+    Object.keys(updateData).forEach(key => {
+      if (!['displayName', 'username', 'bio', 'avatar', 'photo_url', 'profileImage'].includes(key)) {
+        fieldsToUpdate[key] = updateData[key];
+      }
+    });
     
     // Add timestamp for when profile was last updated
     fieldsToUpdate.updatedAt = serverTimestamp();
