@@ -127,13 +127,26 @@ export default function MainPage({ navigation }) {
   // Improved focus effect - only refresh when coming back from certain screens
   useFocusEffect(
     useCallback(() => {
-      const shouldRefresh = navigation.getState().routes[navigation.getState().index].params?.refresh;
+      const currentRoute = navigation.getState().routes[navigation.getState().index];
+      const shouldRefresh = currentRoute.params?.refresh;
+      const shouldScrollToTop = currentRoute.params?.scrollToTop;
       const timeSinceLastFetch = lastFetchTime ? Date.now() - lastFetchTime : Infinity;
+      
+      // Scroll to top if requested (Home button press)
+      if (shouldScrollToTop) {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        // Clear the scroll parameter
+        navigation.setParams({ scrollToTop: false });
+      }
       
       // Refresh if explicitly requested or if it's been more than 5 minutes
       if (shouldRefresh || timeSinceLastFetch > 300000) {
         console.log('Refreshing due to focus:', { shouldRefresh, timeSinceLastFetch });
         fetchData(true);
+        // Clear the refresh parameter
+        if (shouldRefresh) {
+          navigation.setParams({ refresh: false });
+        }
       }
     }, [lastFetchTime])
   );
@@ -144,17 +157,7 @@ export default function MainPage({ navigation }) {
     fetchData(true);
   }, []);
 
-  // Handle tab press to scroll to top
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("tabPress", (e) => {
-      if (navigation.isFocused()) {
-        // If already on the screen, scroll to top
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-      }
-    });
-
-    return unsubscribe;
-  }, [navigation]);
+  // Handle tab press to scroll to top - this is now handled by the TabNavigator in App.js
 
   // Enhanced market section rendering with better error handling
   const renderMarketSection = () => {

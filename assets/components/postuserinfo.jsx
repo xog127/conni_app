@@ -3,11 +3,13 @@ import { Box, Text, HStack, VStack, Pressable, Icon } from "native-base";
 import { Ionicons } from "@expo/vector-icons";
 import { fetchReferenceData } from "../firebase/queries";
 import { Image } from "expo-image";
+import UserSummaryModal from "../pages/UserSummaryModals";
 
 const postuserinfo = ({ userRef, anonymous, date_posted, forumRef, onMorePress }) => {
   const [postUser, setPostUser] = useState(null);
   const [forum, setForum] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileVisible, setProfileVisible] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -58,62 +60,85 @@ const postuserinfo = ({ userRef, anonymous, date_posted, forumRef, onMorePress }
     userImage = require("../images/Blankprofile.png");
     userName = `${postUser?.course} ${postUser?.graduation_year}`;
   } else {
-    userImage = postUser?.photo_url
-      ? { uri: postUser.photo_url }
+    userImage = postUser?.photo_url || postUser?.profileImage || postUser?.avatar
+      ? { uri: postUser.photo_url || postUser.profileImage || postUser.avatar }
       : require("../images/Blankprofile.png");
     userName = `${postUser.first_name} ${postUser.last_name}`;
   }
 
+  const handleProfilePress = () => {
+    if (!anonymous) {
+      setProfileVisible(true);
+    }
+  };
+
   return (
-    <HStack justifyContent="space-between" alignItems="center" mb={2}>
-      <Box flexGrow={1}>
-        <HStack alignItems="center" mb={2}>
-          <Image
-            source={userImage}
-            style={{ width: 36, height: 36, borderRadius: 18 }}
+    <>
+      <HStack justifyContent="space-between" alignItems="center" mb={2}>
+        <Pressable 
+          flexGrow={1}
+          onPress={handleProfilePress}
+          disabled={anonymous}
+          _pressed={{
+            bg: "gray.50"
+          }}
+          borderRadius="md"
+          p={1}
+        >
+          <HStack alignItems="center" mb={2}>
+            <Image
+              source={userImage}
+              style={{ width: 36, height: 36, borderRadius: 18 }}
+            />
+            <VStack ml={3}>
+              <Text
+                fontSize="14px"
+                color="#464A4D"
+                fontWeight="500"
+                font="normal"
+                lineHeight="16px"
+                letterSpacing="0.5px"
+              >
+                {userName}
+              </Text>
+              <Text
+                fontSize="12px"
+                color="#757B80"
+                fontWeight="500"
+                font="normal"
+                lineHeight="16px"
+                letterSpacing="0.5px"
+              >
+                {date_posted}
+              </Text>
+            </VStack>
+          </HStack>
+        </Pressable>
+        
+        {/* Replace forum name box with report button */}
+        <Pressable
+          onPress={onMorePress}
+          p={2}
+          borderRadius="full"
+          _pressed={{
+            bg: "gray.100"
+          }}
+        >
+          <Icon 
+            as={Ionicons} 
+            name="ellipsis-vertical" 
+            size={5} 
+            color="gray.500" 
           />
-          <VStack ml={3}>
-            <Text
-              fontSize="14px"
-              color="#464A4D"
-              fontWeight="500"
-              font="normal"
-              lineHeight="16px"
-              letterSpacing="0.5px"
-            >
-              {userName}
-            </Text>
-            <Text
-              fontSize="12px"
-              color="#757B80"
-              fontWeight="500"
-              font="normal"
-              lineHeight="16px"
-              letterSpacing="0.5px"
-            >
-              {date_posted}
-            </Text>
-          </VStack>
-        </HStack>
-      </Box>
+        </Pressable>
+      </HStack>
       
-      {/* Replace forum name box with report button */}
-      <Pressable
-        onPress={onMorePress}
-        p={2}
-        borderRadius="full"
-        _pressed={{
-          bg: "gray.100"
-        }}
-      >
-        <Icon 
-          as={Ionicons} 
-          name="ellipsis-vertical" 
-          size={5} 
-          color="gray.500" 
-        />
-      </Pressable>
-    </HStack>
+      <UserSummaryModal
+        visible={profileVisible}
+        onClose={() => setProfileVisible(false)}
+        user={postUser}
+      />
+    </>
   );
 };
 

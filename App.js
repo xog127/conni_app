@@ -256,7 +256,6 @@ const TabNavigator = () => (
         const currentRouteName = navigationState.routes[navigationState.index].state?.routes?.slice(-1)[0]?.name;
 
         const hideTabBarRoutes = [
-          'Search',
           'Notification',
           'PostDisplay',
           'createPost',
@@ -313,6 +312,18 @@ const TabNavigator = () => (
       name="Home" 
       component={PostStackNavigator}
       options={{ headerShown: false }}
+      listeners={({ navigation }) => ({
+        tabPress: (e) => {
+          // If we're already on the Home tab, refresh and scroll to top
+          if (navigation.isFocused()) {
+            e.preventDefault();
+            navigation.navigate('Home', {
+              screen: 'MainFeed',
+              params: { refresh: true, scrollToTop: true }
+            });
+          }
+        },
+      })}
     />
     <Tab.Screen 
       name="Chats" 

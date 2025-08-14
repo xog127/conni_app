@@ -129,26 +129,26 @@ const UserInfoRowComment = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.userInfoLeft}>
-        <TouchableOpacity
-          onPress={handleProfilePress}
-          disabled={postData?.anonymous}
-          style={styles.imageContainer}
-        >
+      <TouchableOpacity
+        onPress={handleProfilePress}
+        disabled={postData?.anonymous}
+        style={styles.userInfoLeft}
+      >
+        <View style={styles.imageContainer}>
           <Image
             source={
-              commentuser?.photo_url
-                ? { uri: commentuser.photo_url }
+              commentuser?.photo_url || commentuser?.profileImage || commentuser?.avatar
+                ? { uri: commentuser.photo_url || commentuser.profileImage || commentuser.avatar }
                 : require('../images/Blankprofile.png')
             }
             style={styles.userImage}
           />
-        </TouchableOpacity>
+        </View>
         <View style={styles.userTextInfo}>
           <Text style={styles.userName}>{userName}</Text>
           <Text style={styles.postDate}>{relativeTime}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
       
       <View style={styles.actionButtons}>
         <TouchableOpacity

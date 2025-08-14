@@ -165,11 +165,16 @@ export const AuthProvider = ({ children }) => {
       }
       
       // Update Firebase Auth profile if display name or photo URL is provided
-      if (updates.displayName || updates.photoURL) {
-        await firebaseUpdateProfile(currentUser, {
-          displayName: updates.displayName || currentUser.displayName,
-          photoURL: updates.photoURL || currentUser.photoURL
-        });
+      const authUpdates = {};
+      if (updates.displayName) {
+        authUpdates.displayName = updates.displayName;
+      }
+      if (updates.profileImage || updates.photo_url || updates.avatar) {
+        authUpdates.photoURL = updates.profileImage || updates.photo_url || updates.avatar;
+      }
+      
+      if (Object.keys(authUpdates).length > 0) {
+        await firebaseUpdateProfile(currentUser, authUpdates);
       }
       
       // Update Firestore document with all updates

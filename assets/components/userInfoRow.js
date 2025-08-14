@@ -137,26 +137,26 @@ const UserInfoRow = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.userInfoLeft}>
-        <TouchableOpacity 
-          onPress={handleProfilePress}
-          disabled={postData?.anonymous}
-          style={styles.imageContainer}
-        >
+      <TouchableOpacity 
+        onPress={handleProfilePress}
+        disabled={postData?.anonymous}
+        style={styles.userInfoLeft}
+      >
+        <View style={styles.imageContainer}>
           <Image
             source={
-              postuser?.photo_url
-                ? { uri: user.photo_url }
+              postuser?.photo_url || postuser?.profileImage || postuser?.avatar
+                ? { uri: postuser.photo_url || postuser.profileImage || postuser.avatar }
                 : require('../images/Blankprofile.png')
             }
             style={styles.userImage}
           />
-        </TouchableOpacity>
+        </View>
         <View style={styles.userTextInfo}>
           <Text style={styles.userName}>{userName}</Text>
           <Text style={styles.postDate}>{relativeTime}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
       
       <View style={styles.actionButtons}>
         <View style={styles.likesContainer}>
