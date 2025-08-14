@@ -99,28 +99,28 @@ const PostCard = ({ item, navigation, onReport }) => {
           </Box>
         )}
 
-        <HStack justifyContent="space-between" mt={2} alignItems="center">
+        <HStack justifyContent="space-between" mt={2} alignItems="center" padding = {2}>
           <HStack alignItems="center">
             <Pressable>
               <HStack alignItems="center">
-                <HeartIcon size={20} color="#FF5963" />
-                <Text fontSize="xs" color="gray.700" ml={1}>
+                <HeartIcon size={24} color="#FF5963" />
+                <Text fontSize="xs" color="gray.700" ml={2}>
                   {item?.num_likes || 0}
                 </Text>
               </HStack>
             </Pressable>
             <Pressable ml={4}>
               <HStack alignItems="center">
-                <CommentIcon size={20} color="#464A4D" />
-                <Text fontSize="xs" color="gray.700" ml={1}>
+                <CommentIcon size={24} color="#464A4D" />
+                <Text fontSize="xs" color="gray.700" ml={2}>
                   {item?.num_comments || 0}
                 </Text>
               </HStack>
             </Pressable>
             <Pressable ml={4}>
               <HStack alignItems="center">
-                <ViewIcon size={20} color="#464A4D" />
-                <Text fontSize="xs" color="gray.700" ml={1}>
+                <ViewIcon size={24} color="#464A4D" />
+                <Text fontSize="xs" color="gray.700" ml={2}>
                   {item?.views || 0}
                 </Text>
               </HStack>
