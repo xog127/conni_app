@@ -560,11 +560,11 @@ export const startOrGetDirectChat = async ({ currentUserId, otherUserId }) => {
 
   // Create new direct chat
   const chatData = {
-    group_name: groupName,              // 🟢 Set meaningful group name
+    group_name: 'Direct Chat',              // Fixed: Set default group name for direct chats
     description: '',
     isAnonymous: false,
-    isDirect: true,                     // 🟢 Mark as direct chat
-    memberIds: [currentUserId, otherUserId], // 🟢 Optional for future use
+    isDirect: true,                     // Mark as direct chat
+    memberIds: [currentUserId, otherUserId], // Optional for future use
     members: [currentRef, otherRef],
     createdAt: serverTimestamp(),
     createdBy: currentRef,
@@ -581,6 +581,60 @@ export const startOrGetDirectChat = async ({ currentUserId, otherUserId }) => {
   };
 };
 
+// Add these two functions to your firebase/queries.js file
+
+// Function to update user profile
+export const updateProfile = async (userId, updateData) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    
+    // Create update object with only the fields that are provided
+    const fieldsToUpdate = {};
+    
+    if (updateData.displayName !== undefined) {
+      fieldsToUpdate.displayName = updateData.displayName;
+    }
+    
+    if (updateData.username !== undefined) {
+      fieldsToUpdate.username = updateData.username;
+    }
+    
+    if (updateData.bio !== undefined) {
+      fieldsToUpdate.bio = updateData.bio;
+    }
+    
+    if (updateData.avatar !== undefined) {
+      fieldsToUpdate.avatar = updateData.avatar;
+    }
+    
+    // Add timestamp for when profile was last updated
+    fieldsToUpdate.updatedAt = serverTimestamp();
+    
+    await updateDoc(userRef, fieldsToUpdate);
+    console.log('Profile updated successfully');
+    
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    throw new Error('Failed to update profile: ' + error.message);
+  }
+};
+
+// Function to check if username already exists
+export const checkUsernameExists = async (username) => {
+  try {
+    // Query the users collection to find any document with the given username
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
+    
+    // If querySnapshot is not empty, username already exists
+    return !querySnapshot.empty;
+    
+  } catch (error) {
+    console.error('Error checking username:', error);
+    throw new Error('Failed to check username availability: ' + error.message);
+  }
+};
   
   
 export {getRef, getSubRef, fetchReferenceData, updateRef, updateSubRef ,addRef, deleteDocument ,getSubRefAll, getCollections, getAnyCollection, fetchUserPosts, getPostsWithPagination, sendPostNotification,};

@@ -6,13 +6,14 @@ import {
   VStack,
   HStack,
   Pressable,
-  NativeBaseProvider,
   Input,
   Button,
   Modal,
   useToast,
   Avatar,
   Spinner,
+  Actionsheet,
+  useDisclose,
 } from "native-base";
 import { useAuth } from "../services/authContext";
 import { updateProfile } from "../firebase/queries";
@@ -46,7 +47,7 @@ export default function ProfileEditScreen({ navigation }) {
   const toast = useToast();
   const insets = useSafeAreaInsets();
   const inputRefs = useRef({});
-
+  const { isOpen, onOpen, onClose } = useDisclose();
   const handleSave = async () => {
     setLoading(true);
     setUsernameError("");
@@ -139,10 +140,11 @@ export default function ProfileEditScreen({ navigation }) {
             Edit Profile
           </Text>
           <Button
-            variant="ghost"
             onPress={handleSave}
             isLoading={loading}
-            _text={{ fontWeight: "bold", fontSize: 16, color: "primary.500" }}
+            bg="#836fff"
+            _pressed={{ bg: "#6f5ce5" }}
+            _text={{ fontWeight: "bold", fontSize: 16, color: "white" }}
           >
             Save
           </Button>
@@ -154,32 +156,36 @@ export default function ProfileEditScreen({ navigation }) {
           keyboardShouldPersistTaps="handled"
         >
           {/* Profile Picture */}
-          <Box alignSelf="center" mb={2}>
+          <Box alignSelf="center" mb={4} position="relative" alignItems="center">
             <Avatar
               size="2xl"
               source={avatar ? { uri: avatar } : require("../images/Blankprofile.png")}
             >
               {displayName ? displayName[0].toUpperCase() : "U"}
             </Avatar>
-            <HStack justifyContent="center" mt={2} space={2}>
-              <Button
-                size="sm"
-                variant="outline"
-                leftIcon={<MaterialIcons name="photo-library" size={18} color="#3182ce" />}
-                onPress={pickImage}
-              >
-                Gallery
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                leftIcon={<MaterialIcons name="photo-camera" size={18} color="#3182ce" />}
-                onPress={takePhoto}
-              >
-                Camera
-              </Button>
-            </HStack>
+            <Pressable
+              position="absolute"
+              bottom={0}
+              right={0}
+              onPress={onOpen}
+            >
+              <Box bg="#836fff" p={2} borderRadius="full">
+                <MaterialIcons name="photo-camera" size={20} color="white" />
+              </Box>
+
+            </Pressable>
           </Box>
+          <Actionsheet isOpen={isOpen} onClose={onClose}>
+            <Actionsheet.Content>
+              <Actionsheet.Item onPress={() => { onClose(); pickImage(); }}>
+                Choose from Gallery
+              </Actionsheet.Item>
+              <Actionsheet.Item onPress={() => { onClose(); takePhoto(); }}>
+                Take Photo
+              </Actionsheet.Item>
+              <Actionsheet.Item onPress={onClose}>Cancel</Actionsheet.Item>
+            </Actionsheet.Content>
+          </Actionsheet>
           {/* Name */}
           <Box mb={4}>
             <Text fontSize={16} fontWeight="bold" mb={1}>

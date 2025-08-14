@@ -56,21 +56,41 @@ function ChatRoom({ route, navigation }) {
   const flatListRef = useRef(null);
   const { user } = useAuth();
   const [title, setTitle] = useState('Chat');
+  
+  // Extract chatId from route parameters
+  const { chatId } = route.params || {};
+  
+  // Check if chatId exists, if not show error and go back
+  useEffect(() => {
+    if (!chatId) {
+      console.error('No chatId provided');
+      Alert.alert('Error', 'Chat ID not found');
+      navigation.goBack();
+      return;
+    }
+  }, [chatId, navigation]);
+
   useEffect(() => {
     const fetchTitle = async () => {
-      if (!chatInfo || !chatInfo.members || chatInfo.members.length !== 2) return;
-  
-      const otherMemberRef = chatInfo.members.find(
-        (ref) => ref?.id !== user.uid && !ref?.path?.includes(user.uid)
-      );
-  
-      if (otherMemberRef) {
-        const snapshot = await getDoc(otherMemberRef);
-        if (snapshot.exists()) {
-          const otherUser = snapshot.data();
-          const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim();
-          if (fullName) setTitle(fullName);
+      if (!chatInfo) return;
+      
+      // For direct chats, show the other person's name
+      if (chatInfo.isDirect && chatInfo.members && chatInfo.members.length === 2) {
+        const otherMemberRef = chatInfo.members.find(
+          (ref) => ref?.id !== user.uid && !ref?.path?.includes(user.uid)
+        );
+      
+        if (otherMemberRef) {
+          const snapshot = await getDoc(otherMemberRef);
+          if (snapshot.exists()) {
+            const otherUser = snapshot.data();
+            const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim();
+            if (fullName) setTitle(fullName);
+          }
         }
+      } else if (chatInfo.group_name) {
+        // For group chats, use the group name
+        setTitle(chatInfo.group_name);
       }
     };
   
@@ -398,11 +418,28 @@ function ChatRoom({ route, navigation }) {
         </TouchableOpacity>
         
         <View style={styles.chatInfoContainer}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {title ? title.charAt(0).toUpperCase() : '?'}
-            </Text>
-          </View>
+          {chatInfo && chatInfo.image ? (
+            // Show actual image (profile picture for direct chats, group image for group chats)
+            <Image 
+              source={{ uri: chatInfo.image }} 
+              style={styles.avatar} 
+              resizeMode="cover"
+            />
+          ) : chatInfo && chatInfo.isDirect ? (
+            // For direct chats without profile picture, show letter avatar
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {title ? title.charAt(0).toUpperCase() : '?'}
+              </Text>
+            </View>
+          ) : (
+            // For group chats without image, show default group chat icon
+            <Image 
+              source={require('../images/default_profile.png')} 
+              style={styles.avatar} 
+              resizeMode="cover"
+            />
+          )}
           <Text style={styles.chatTitle} numberOfLines={1}>
             {title}
           </Text>
@@ -410,7 +447,7 @@ function ChatRoom({ route, navigation }) {
         
         <TouchableOpacity 
           style={styles.infoButton}
-          onPress={() => navigation.navigate('Chatinfo', { chatId})}
+          onPress={() => navigation.navigate('Chatinfo', { chatId: chatId })}
         >
           <Feather name="info" size={24} color="#333" />
         </TouchableOpacity>

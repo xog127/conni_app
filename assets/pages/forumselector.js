@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  ScrollView,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
@@ -56,26 +57,33 @@ export const ForumSelector = ({ forums, selectedForum, onForumSelect, forumData 
         <View style={styles.bottomSheetContainer}>
           <Text style={styles.sheetTitle}>Select Forum Type</Text>
           
-          {forums.map((forum, index) => (
-            <Pressable
-              key={index}
-              style={styles.forumItem}
-              onPress={() => {
-                onForumSelect(forum);
-                setModalVisible(false);
-              }}
-            >
-              <View style={styles.forumHeader}>
-                <Image source={{ uri: forum.photo }} style={styles.icon} />
-                <Text style={styles.forumName}>{forum.name}</Text>
-              </View>
-              <Text style={styles.forumDescription}>
-                {forum.description || "No description provided."}
-              </Text>
-            </Pressable>
-          ))}
+          {/* Scrollable Forum List */}
+          <ScrollView 
+            style={styles.scrollContainer}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {forums.map((forum, index) => (
+              <Pressable
+                key={index}
+                style={styles.forumItem}
+                onPress={() => {
+                  onForumSelect(forum);
+                  setModalVisible(false);
+                }}
+              >
+                <View style={styles.forumHeader}>
+                  <Image source={{ uri: forum.photo }} style={styles.icon} />
+                  <Text style={styles.forumName}>{forum.name}</Text>
+                </View>
+                <Text style={styles.forumDescription}>
+                  {forum.description || "No description provided."}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
 
-          {/* Cancel button at the bottom */}
+          {/* Cancel button at the bottom - outside ScrollView */}
           <Pressable
             style={styles.cancelButton}
             onPress={() => setModalVisible(false)}
@@ -126,15 +134,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    paddingVertical: 16,
+    paddingTop: 16,
     paddingHorizontal: 16,
+    paddingBottom: 16,
     maxHeight: "75%",
+    minHeight: "65%", // Increased minimum height
   },
   sheetTitle: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 16,
     color: "#333",
+    textAlign: "center",
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 8, // Extra padding at bottom of scroll content
   },
   forumItem: {
     paddingVertical: 16,
@@ -161,6 +178,10 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginTop: 16,
     padding: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+    width: "100%",
+    alignItems: "center",
   },
   cancelButtonText: {
     fontSize: 16,
