@@ -1,5 +1,6 @@
 import { db, collection } from "./firebaseConfig";
 import { doc, getDoc, updateDoc, addDoc, getDocs, query,where,serverTimestamp, getFirestore, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { triggerPushNotification } from "../services/pushNotificationService";
 
 
 const getCollections = async ({ collectionName }) => {
@@ -284,9 +285,10 @@ const addRef = async ({ collectionName, data }) => {
   
   };
 
-  const sendPostNotification = async ({ senderId, receiverRef, type, postRef }) => {
-    console.log(senderId, receiverRef, type, postRef)
- try {
+const sendPostNotification = async ({ senderId, receiverRef, type, postRef }) => {
+  console.log(senderId, receiverRef, type, postRef);
+
+  try {
     const senderUserRef = doc(db, "users", senderId);
 
     const receiverSnapshot = await getDoc(receiverRef);
@@ -312,6 +314,7 @@ const addRef = async ({ collectionName, data }) => {
       return;
     }
 
+    // Add in-app notification
     await addDoc(receiverNotificationsRef, {
       read: false,
       type,
@@ -321,6 +324,21 @@ const addRef = async ({ collectionName, data }) => {
     });
 
     console.log("Notification sent successfully.");
+
+    // --- Trigger push notification ---
+    const receiverData = receiverSnapshot.data();
+    const expoPushToken = receiverData?.expoPushToken; // Make sure you store Expo push token in user doc
+
+    if (expoPushToken) {
+      await triggerPushNotification(
+        expoPushToken,
+        "New Notification",
+        `You have a new ${type} notification!`
+      );
+    } else {
+      console.log("No Expo push token found for receiver");
+    }
+
   } catch (error) {
     console.error("Error sending notification:", error);
   }
