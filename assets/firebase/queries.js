@@ -600,8 +600,7 @@ export const startOrGetDirectChat = async ({ currentUserId, otherUserId, groupNa
     chatData
   };
 
-
-// Add these two functions to your firebase/queries.js file
+};
 
 // Function to update user profile
 export const updateProfile = async (userId, updateData) => {
