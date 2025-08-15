@@ -26,7 +26,7 @@ import MarketPreview from "../components/marketPreview";
 import PostCard from "../components/PostCard.jsx";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar, RefreshControl } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useRoute } from "@react-navigation/native";
 import ReportModal from "../components/ReportModal.jsx";
 
 export default function MainPage({ navigation }) {
@@ -41,6 +41,7 @@ export default function MainPage({ navigation }) {
   const [lastFetchTime, setLastFetchTime] = useState(null);
 
   const flatListRef = useRef(null);
+  const route = useRoute();
 
   const handleReport = (postId) => {
     setReportingPostId(postId);
@@ -68,7 +69,6 @@ export default function MainPage({ navigation }) {
               forum: forumData,
             };
           } catch (error) {
-            console.error("Error fetching forum data:", error);
             return post;
           }
         })
@@ -88,15 +88,12 @@ export default function MainPage({ navigation }) {
         setMarketData(marketGenre);
       }
 
-      // Filter market posts - FIXED: Using post_photo instead of post.image
+      // Filter market posts
       const filteredMarketPosts = postsData.filter((post) => {
         if (post.post_genre_ref) {
           const genreRefId = post.post_genre_ref.id || post.post_genre_ref.path;
           const isMarketPost = genreRefId === marketRef;
           const hasImage = post.post_photo && post.post_photo.trim() !== '';
-          
-          console.log(`Post ${post.id}: isMarket=${isMarketPost}, hasImage=${hasImage}, photo=${post.post_photo}`);
-          
           return isMarketPost && hasImage;
         }
         return false;
@@ -106,13 +103,11 @@ export default function MainPage({ navigation }) {
       const sortedMarketPosts = filteredMarketPosts.sort(
         (a, b) => b.time_posted - a.time_posted
       );
-
-      console.log(`Found ${sortedMarketPosts.length} market posts with images`);
       setMarketPosts(sortedMarketPosts);
       setLastFetchTime(Date.now());
 
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -123,19 +118,44 @@ export default function MainPage({ navigation }) {
   useEffect(() => {
     fetchData(false);
   }, []);
-
-  // Improved focus effect - only refresh when coming back from certain screens
+  
+  // Handle route params for scroll to top and refresh
   useFocusEffect(
     useCallback(() => {
-      const shouldRefresh = navigation.getState().routes[navigation.getState().index].params?.refresh;
+      console.log('Focus effect triggered');
+      console.log('Route params:', route.params);
+      
+      const shouldRefresh = route.params?.refresh;
+      const shouldScrollToTop = route.params?.scrollToTop;
       const timeSinceLastFetch = lastFetchTime ? Date.now() - lastFetchTime : Infinity;
+      
+      // Scroll to top if requested (Home button press)
+      if (shouldScrollToTop) {
+        console.log('Scrolling to top...');
+        setTimeout(() => {
+          if (flatListRef.current) {
+            flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+            console.log('Scroll command executed');
+          } else {
+            console.log('FlatList ref is null');
+          }
+        }, 100);
+        
+        // Clear the scroll parameter
+        navigation.setParams({ scrollToTop: undefined });
+      }
       
       // Refresh if explicitly requested or if it's been more than 5 minutes
       if (shouldRefresh || timeSinceLastFetch > 300000) {
         console.log('Refreshing due to focus:', { shouldRefresh, timeSinceLastFetch });
         fetchData(true);
+
+        // Clear the refresh parameter
+        if (shouldRefresh) {
+          navigation.setParams({ refresh: undefined });
+        }
       }
-    }, [lastFetchTime])
+    }, [route.params, lastFetchTime, navigation])
   );
 
   // Handle pull to refresh
@@ -143,18 +163,6 @@ export default function MainPage({ navigation }) {
     setRefreshing(true);
     fetchData(true);
   }, []);
-
-  // Handle tab press to scroll to top
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("tabPress", (e) => {
-      if (navigation.isFocused()) {
-        // If already on the screen, scroll to top
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-      }
-    });
-
-    return unsubscribe;
-  }, [navigation]);
 
   // Enhanced market section rendering with better error handling
   const renderMarketSection = () => {
@@ -166,7 +174,6 @@ export default function MainPage({ navigation }) {
 
       if (marketPosts.length === 0) {
         console.log('No market posts available');
-        // Show empty state instead of hiding completely
         return (
           <Box>
             <VStack pt="36px" pb="36px" space="12px">
@@ -282,7 +289,7 @@ export default function MainPage({ navigation }) {
                     <MarketPreview
                       key={post.id}
                       postRef={post.id}
-                      postData={post} // Pass full post data for better performance
+                      postData={post}
                       navigation={navigation}
                     />
                   );

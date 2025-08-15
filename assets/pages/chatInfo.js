@@ -36,19 +36,25 @@ function ChatInfo({ route, navigation }) {
 
   useEffect(() => {
     const fetchTitle = async (chatInfoData) => {
-      if (!chatInfoData || !chatInfoData.members || chatInfoData.members.length !== 2) return;
-    
-      const otherMemberRef = chatInfoData.members.find(
-        (ref) => ref?.id !== user.uid && !ref?.path?.includes(user.uid)
-      );
-    
-      if (otherMemberRef) {
-        const snapshot = await getDoc(otherMemberRef);
-        if (snapshot.exists()) {
-          const otherUser = snapshot.data();
-          const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim();
-          if (fullName) setTitle(fullName);
+      if (!chatInfoData) return;
+      
+      // For direct chats, show the other person's name
+      if (chatInfoData.isDirect && chatInfoData.members && chatInfoData.members.length === 2) {
+        const otherMemberRef = chatInfoData.members.find(
+          (ref) => ref?.id !== user.uid && !ref?.path?.includes(user.uid)
+        );
+      
+        if (otherMemberRef) {
+          const snapshot = await getDoc(otherMemberRef);
+          if (snapshot.exists()) {
+            const otherUser = snapshot.data();
+            const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim();
+            if (fullName) setTitle(fullName);
+          }
         }
+      } else if (chatInfoData.group_name) {
+        // For group chats, use the group name
+        setTitle(chatInfoData.group_name);
       }
     };
     
@@ -233,11 +239,28 @@ function ChatInfo({ route, navigation }) {
         {/* Chat Details Section */}
         <View style={styles.section}>
           <View style={styles.chatAvatarContainer}>
-            <View style={styles.chatAvatar}>
-              <Text style={styles.chatAvatarText}>
-                {title ? title.charAt(0).toUpperCase() : '?'}
-              </Text>
-            </View>
+            {chatData && chatData.image ? (
+              // Show actual image (profile picture for direct chats, group image for group chats)
+              <Image 
+                source={{ uri: chatData.image }} 
+                style={styles.chatAvatar} 
+                resizeMode="cover"
+              />
+            ) : chatData && chatData.isDirect ? (
+              // For direct chats without profile picture, show letter avatar
+              <View style={styles.chatAvatar}>
+                <Text style={styles.chatAvatarText}>
+                  {title ? title.charAt(0).toUpperCase() : '?'}
+                </Text>
+              </View>
+            ) : (
+              // For group chats without image, show default group chat icon
+              <Image 
+                source={require('../images/default_profile.png')} 
+                style={styles.chatAvatar} 
+                resizeMode="cover"
+              />
+            )}
           </View>
           
           <Text style={styles.chatName}>

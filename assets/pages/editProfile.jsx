@@ -6,19 +6,21 @@ import {
   VStack,
   HStack,
   Pressable,
-  NativeBaseProvider,
   Input,
   Button,
   Modal,
   useToast,
   Avatar,
   Spinner,
+  Actionsheet,
+  useDisclose,
 } from "native-base";
 import { useAuth } from "../services/authContext";
 import { updateProfile } from "../firebase/queries";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { checkUsernameExists } from "../firebase/queries"; // You may need to implement this
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import theme from '../../theme'; // Make sure path matches
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,7 +38,7 @@ export default function ProfileEditScreen({ navigation }) {
   const [displayName, setDisplayName] = useState(user.displayName ?? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim());
   const [username, setUsername] = useState(user.username ?? "");
   const [bio, setBio] = useState(user.bio || "");
-  const [avatar, setAvatar] = useState(user.avatar || null);
+  const [avatar, setAvatar] = useState(user.avatar || user.photo_url || user.profileImage || null);
   const [course] = useState(user.course || DUMMY_COURSES[0]);
   const [year] = useState(user.year || DUMMY_YEARS[0]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -46,7 +48,7 @@ export default function ProfileEditScreen({ navigation }) {
   const toast = useToast();
   const insets = useSafeAreaInsets();
   const inputRefs = useRef({});
-
+  const { isOpen, onOpen, onClose } = useDisclose();
   const handleSave = async () => {
     setLoading(true);
     setUsernameError("");
@@ -61,11 +63,27 @@ export default function ProfileEditScreen({ navigation }) {
       }
     }
     try {
+      // Upload image to Firebase if it's a local URI
+      let uploadedImageUrl = avatar;
+      if (avatar && avatar.startsWith('file://')) {
+        try {
+          uploadedImageUrl = await uploadImageToFirebase(avatar);
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          toast.show({ description: "Failed to upload image. Please try again." });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Update profile with all the different field names for compatibility
       await updateProfile(user.uid, {
         displayName,
         username,
         bio,
-        avatar,
+        avatar: uploadedImageUrl,
+        photo_url: uploadedImageUrl,
+        profileImage: uploadedImageUrl,
       });
       toast.show({ description: "Profile updated!" });
       navigation.goBack();
@@ -73,6 +91,23 @@ export default function ProfileEditScreen({ navigation }) {
       toast.show({ description: error.message });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const uploadImageToFirebase = async (uri) => {
+    try {
+      const storage = getStorage();
+      const filename = `user_images/${user.uid}_${Date.now()}`;
+      const storageRef = ref(storage, filename);
+      
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      await uploadBytes(storageRef, blob);
+      return await getDownloadURL(storageRef);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      throw error;
     }
   };
 
@@ -139,10 +174,11 @@ export default function ProfileEditScreen({ navigation }) {
             Edit Profile
           </Text>
           <Button
-            variant="ghost"
             onPress={handleSave}
             isLoading={loading}
-            _text={{ fontWeight: "bold", fontSize: 16, color: "primary.500" }}
+            bg="#836fff"
+            _pressed={{ bg: "#6f5ce5" }}
+            _text={{ fontWeight: "bold", fontSize: 16, color: "white" }}
           >
             Save
           </Button>
@@ -154,31 +190,53 @@ export default function ProfileEditScreen({ navigation }) {
           keyboardShouldPersistTaps="handled"
         >
           {/* Profile Picture */}
-          <Box alignSelf="center" mb={2}>
+          <Box alignSelf="center" mb={4} position="relative" alignItems="center">
             <Avatar
               size="2xl"
               source={avatar ? { uri: avatar } : require("../images/Blankprofile.png")}
             >
               {displayName ? displayName[0].toUpperCase() : "U"}
             </Avatar>
-            <HStack justifyContent="center" mt={2} space={2}>
-              <Button
-                size="sm"
-                variant="outline"
-                leftIcon={<MaterialIcons name="photo-library" size={18} color="#3182ce" />}
-                onPress={pickImage}
-              >
-                Gallery
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                leftIcon={<MaterialIcons name="photo-camera" size={18} color="#3182ce" />}
-                onPress={takePhoto}
-              >
-                Camera
-              </Button>
-            </HStack>
+            <Pressable
+              position="absolute"
+              bottom={0}
+              right={0}
+              onPress={onOpen}
+            >
+              <Box bg="#836fff" p={2} borderRadius="full">
+                <MaterialIcons name="photo-camera" size={20} color="white" />
+              </Box>
+
+            </Pressable>
+          </Box>
+          <Actionsheet isOpen={isOpen} onClose={onClose}>
+            <Actionsheet.Content>
+              <Actionsheet.Item onPress={() => { onClose(); pickImage(); }}>
+                Choose from Gallery
+              </Actionsheet.Item>
+              <Actionsheet.Item onPress={() => { onClose(); takePhoto(); }}>
+                Take Photo
+              </Actionsheet.Item>
+              <Actionsheet.Item onPress={onClose}>Cancel</Actionsheet.Item>
+            </Actionsheet.Content>
+          </Actionsheet>
+          {/* Name */}
+          <Box mb={4}>
+            <Text fontSize={16} fontWeight="bold" mb={1}>
+              Name
+            </Text>
+            <TextInput
+              value={displayName}
+              onChangeText={setDisplayName}
+              placeholder="Name"
+              style={{
+                borderWidth: 1,
+                borderColor: '#ccc',
+                padding: 12,
+                borderRadius: 10,
+                fontSize: 16,
+              }}
+            />
           </Box>
           {/* Name */}
           <Box mb={4}>

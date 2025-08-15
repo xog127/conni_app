@@ -98,6 +98,7 @@ const CreateChat = () => {
         group_name: groupName,
         description: description,
         isAnonymous: isAnonymous,
+        isDirect: false, // This is a group chat, not a direct chat
         image: image || null,
         createdAt: serverTimestamp(),
         createdBy: userRef,
@@ -108,9 +109,9 @@ const CreateChat = () => {
       
       console.log("made chat data", chatData)
 
-      chatdoc = await addDoc(collection(db, "chats"), chatData);
+      const chatdoc = await addDoc(collection(db, "chats"), chatData);
       console.log("chat created is", chatdoc)
-      updateProfile({chatRefs : arrayUnion(chatdoc)})
+      await updateProfile({chatRefs : arrayUnion(chatdoc)})
    
       
       // Successfully created chat

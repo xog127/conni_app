@@ -144,6 +144,7 @@ const ForumDetails = ({ forumType, forumDetails }) => {
 const styles = StyleSheet.create({
   forumDetailsBox: {
     marginTop: 12,
+    marginBottom: 12,
     padding: 16,
     backgroundColor: "#FFFFFF",
     borderRadius: 12,

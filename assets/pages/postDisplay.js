@@ -212,7 +212,10 @@ const PostDisplay = () => {
     <KeyboardAvoidingView behavior="padding" style={styles.safeArea}>
       {/* Header with Genre and Back Button */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={navigation.goBack} style={styles.backButton}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() =>navigation.goBack()}
+        >
           <Feather name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.genreText}>{genre?.name || 'Loading...'}</Text>
