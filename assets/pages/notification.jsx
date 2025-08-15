@@ -17,7 +17,6 @@ import {
   formatNotificationForDisplay,
   markNotificationAsRead,
 } from "../firebase/queries"; // Adjust path as needed
-
 export default function NotificationScreen({ navigation }) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
@@ -49,13 +48,18 @@ export default function NotificationScreen({ navigation }) {
       if (!notification.read) {
         await markNotificationAsRead(user.uid, notification.id);
       }
-
       // Handle navigation based on notification type
       switch (notification.type) {
         case "comment":
         case "like":
+          console.log("Navigating to post:", notification);
+          console.log("Post ID:", notification.postId);
+          // Use postId from the notification (it's at the top level)
           if (notification.postId) {
-            navigation.navigate("PostDetails", { postId: notification.postId });
+            navigation.navigate("PostDisplay", {
+              postRef: notification.postId,
+              navigation,
+            });
           }
           break;
         case "message":

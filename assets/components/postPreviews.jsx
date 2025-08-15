@@ -1,12 +1,5 @@
 import React, { useCallback, useState, useEffect } from "react";
-import {
-  Box,
-  FlatList,
-  HStack,
-  VStack,
-  Text,
-  Pressable,
-} from "native-base";
+import { Box, FlatList, HStack, VStack, Text, Pressable } from "native-base";
 import { Image } from "expo-image";
 import { ScrollView } from "native-base";
 import PostWidget from "../components/postwidget";

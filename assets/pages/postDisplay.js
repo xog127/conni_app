@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import UserInfoRow from '../components/userInfoRow';
-import { getRef, fetchReferenceData, getSubRefAll, addRef, updateRef } from '../firebase/queries';
+import { getRef, fetchReferenceData, getSubRefAll, addRef, updateRef,sendPostNotification } from '../firebase/queries';
 import CommentCard from '../components/commentCard.js';
 import { addDoc, db } from '../firebase/firebaseConfig';
 import { Timestamp, doc, collection, arrayUnion, increment} from 'firebase/firestore';
@@ -113,6 +113,12 @@ const PostDisplay = () => {
             "commented_posts_ref": arrayUnion(postDoc)
           },
         });
+      sendPostNotification({
+        senderId: user.uid,
+        receiverRef: post.post_user,
+        type: 1,
+        postRef : postDoc
+      });
       setNewComment('');
       setReplyingTo(null);
       inputRef.current?.clear();

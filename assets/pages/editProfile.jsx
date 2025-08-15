@@ -238,6 +238,24 @@ export default function ProfileEditScreen({ navigation }) {
               }}
             />
           </Box>
+          {/* Name */}
+          <Box mb={4}>
+            <Text fontSize={16} fontWeight="bold" mb={1}>
+              Name
+            </Text>
+            <TextInput
+              value={displayName}
+              onChangeText={setDisplayName}
+              placeholder="Name"
+              style={{
+                borderWidth: 1,
+                borderColor: '#ccc',
+                padding: 12,
+                borderRadius: 10,
+                fontSize: 16,
+              }}
+            />
+          </Box>
           {/* Username */}
           <Box mb={4}>
             <Text fontSize={16} fontWeight="bold" mb={1}>

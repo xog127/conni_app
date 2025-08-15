@@ -50,8 +50,11 @@ export default function MainPage({ navigation }) {
 
   const fetchData = async (isRefresh = false) => {
     try {
+      console.log('Fetching data...', isRefresh ? '(refresh)' : '(initial)');
+      
       // Fetch all posts
       const postsData = await getAnyCollection("posts");
+      console.log(`Fetched ${postsData.length} total posts`);
 
       // Fetch forum data for each post
       const postsWithForumData = await Promise.all(
@@ -100,7 +103,6 @@ export default function MainPage({ navigation }) {
       const sortedMarketPosts = filteredMarketPosts.sort(
         (a, b) => b.time_posted - a.time_posted
       );
-
       setMarketPosts(sortedMarketPosts);
       setLastFetchTime(Date.now());
 
@@ -147,7 +149,7 @@ export default function MainPage({ navigation }) {
       if (shouldRefresh || timeSinceLastFetch > 300000) {
         console.log('Refreshing due to focus:', { shouldRefresh, timeSinceLastFetch });
         fetchData(true);
-        
+
         // Clear the refresh parameter
         if (shouldRefresh) {
           navigation.setParams({ refresh: undefined });
