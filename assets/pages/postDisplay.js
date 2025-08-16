@@ -7,24 +7,25 @@ import {
   ActivityIndicator,
   FlatList,
   Keyboard,
-  KeyboardAvoidingView,
+  Platform,
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
 import UserInfoRow from '../components/userInfoRow';
-import { getRef, fetchReferenceData, getSubRefAll, addRef, updateRef,sendPostNotification } from '../firebase/queries';
+import { getRef, fetchReferenceData, getSubRefAll, addRef, updateRef, sendPostNotification } from '../firebase/queries';
 import CommentCard from '../components/commentCard.js';
 import { addDoc, db } from '../firebase/firebaseConfig';
-import { Timestamp, doc, collection, arrayUnion, increment} from 'firebase/firestore';
+import { Timestamp, doc, collection, arrayUnion, increment } from 'firebase/firestore';
 import PollOption from '../components/PollOption';
 import { useRoute } from '@react-navigation/native';
 import { Box } from 'native-base';
 import { useAuth } from '../services/authContext';
 import ReportModal from '../components/ReportModal';
 import ForumDetails from "../components/ForumDetails";
-
 
 const PostDisplay = () => {
   const { user } = useAuth();
@@ -38,6 +39,7 @@ const PostDisplay = () => {
   const [replyingTo, setReplyingTo] = useState(null);
   const route = useRoute();
   const { postRef, navigation } = route.params || {};
+
   const handleReply = (comment) => {
     setReplyingTo(comment);
     inputRef.current?.focus();
@@ -46,9 +48,8 @@ const PostDisplay = () => {
   const cancelReply = () => {
     setReplyingTo(null);
   };
-  
+
   const renderCommentInput = () => (
-    
     <View style={styles.commentInputWrapper}>
       {replyingTo && (
         <View style={styles.replyingToContainer}>
@@ -77,7 +78,6 @@ const PostDisplay = () => {
         </TouchableOpacity>
       </View>
     </View>
-
   );
 
   const handleAddComment = async () => {
@@ -89,67 +89,120 @@ const PostDisplay = () => {
         content: newComment,
         num_likes: 0,
         date_created: Timestamp.now(),
+        created_by_uid: user.uid,
         createdby_ref: doc(db, 'users', user.uid),
       };
 
-      // If replying to a comment, add the reply_to field
+      let newDocRef;
       if (replyingTo) {
         commentsRef = collection(db, 'posts', postRef, 'comments', replyingTo.id, 'reply');
+        newDocRef = await addDoc(commentsRef, commentData);
+
+        const newReply = { 
+          id: newDocRef.id, 
+          ...commentData,
+          createdby_ref: {
+            id: user.uid,
+            first_name: user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'You',
+            last_name: user.displayName?.split(' ')[1] || '',
+            photo_url: user.photoURL,
+            username: user.email,
+          },
+          liked_by: [],
+        };
+
+        setComments((prev) =>
+          prev.map((c) =>
+            c.id === replyingTo.id
+              ? { ...c, replies: [...(c.replies || []), newReply] }
+              : c
+          )
+        );
+      } else {
+        newDocRef = await addDoc(commentsRef, commentData);
+
+        const newTopLevel = { 
+          id: newDocRef.id, 
+          ...commentData, 
+          replies: [],
+          createdby_ref: {
+            id: user.uid,
+            first_name: user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'You',
+            last_name: user.displayName?.split(' ')[1] || '',
+            photo_url: user.photoURL,
+            username: user.email,
+          },
+          liked_by: [],
+        };
+        setComments((prev) => [newTopLevel, ...prev]);
       }
 
-      await addDoc(commentsRef, commentData);
-      const postDoc = doc(db, 'posts', post.id);
-        await updateRef({
-          id: post.id,
-          collectionName: "posts",
-          updateFields: {
-            "num_comments": increment(1),
-          },
-        });
-        await updateRef({
-          id: user.uid,
-          collectionName: "users",
-          updateFields: {
-            "commented_posts_ref": arrayUnion(postDoc)
-          },
-        });
+      const postDocRef = doc(db, 'posts', post.id);
+      await updateRef({
+        id: post.id,
+        collectionName: 'posts',
+        updateFields: { num_comments: increment(1) },
+      });
+      
+      await updateRef({
+        id: user.uid,
+        collectionName: 'users',
+        updateFields: { commented_posts_ref: arrayUnion(postDocRef) },
+      });
+
       sendPostNotification({
         senderId: user.uid,
         receiverRef: post.post_user,
         type: 1,
-        postRef : postDoc
+        postRef: postDocRef,
       });
+
       setNewComment('');
       setReplyingTo(null);
       inputRef.current?.clear();
-      getComments();
       Keyboard.dismiss();
+
+      setPost(prev => ({
+        ...prev,
+        num_comments: (prev.num_comments || 0) + 1
+      }));
+
     } catch (error) {
       console.error('Error adding comment:', error);
+      getComments();
     }
   };
 
   const getComments = async () => {
     try {
-      const commentsData = await getSubRefAll({collection: collection(db, 'posts', postRef, 'comments')});
-      
-      setComments(commentsData);
-  
+      const commentsData = await getSubRefAll({
+        collection: collection(db, 'posts', postRef, 'comments'),
+      });
+
+      const withReplies = await Promise.all(
+        commentsData.map(async (c) => {
+          const replies = await getSubRefAll({
+            collection: collection(db, 'posts', postRef, 'comments', c.id, 'reply'),
+          });
+          return { ...c, replies };
+        })
+      );
+
+      setComments(withReplies);
     } catch (error) {
       console.error('Error fetching comments:', error);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const handleSelectPoll = async (index) => {
     try {
-      // Make a copy of current options
       const updatedOptions = [...post.pollOptions.options];
       updatedOptions[index].votes += 1;
-  
+
       const updatedVoters = [...(post.pollOptions.voters || []), user.uid];
-  
+
       await updateRef({
         id: post.id,
         collectionName: "posts",
@@ -160,21 +213,18 @@ const PostDisplay = () => {
           }
         }
       });
-  
-      // Refresh the post
+
       const updatedPost = await getRef({ id: postRef, collectionName: "posts" });
       setPost(updatedPost);
     } catch (error) {
       console.error('Error updating poll:', error);
     }
   };
-  
 
   const handleReport = () => {
     setShowReportModal(true);
   };
 
-  // Pass this to UserInfoRow as a prop
   const onMorePress = () => {
     handleReport();
   };
@@ -184,17 +234,17 @@ const PostDisplay = () => {
       try {
         const postData = await getRef({ id: postRef, collectionName: "posts" });
         setPost(postData);
-    
+
         const genreData = await fetchReferenceData(postData.post_genre_ref);
         setGenre(genreData);
 
         getComments();
-    
+
         updateRef({
           id: postData.id,
           collectionName: "posts",
           updateFields: {
-          views: increment(1),
+            views: increment(1),
           },
         });
       } catch (error) {
@@ -207,116 +257,132 @@ const PostDisplay = () => {
     fetchPostData();
   }, []);
 
-
   return (
-    <KeyboardAvoidingView behavior="padding" style={styles.safeArea}>
-      {/* Header with Genre and Back Button */}
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() =>navigation.goBack()}
+          onPress={() => navigation.goBack()}
         >
           <Feather name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.genreText}>{genre?.name || 'Loading...'}</Text>
       </View>
 
-      <FlatList
-        data={comments}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <>
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#836fff" />
-              </View>
-            ) : post ? (
-              <>
-                <UserInfoRow 
-                  userRef={post.post_user} 
-                  postData={post} 
-                  onMorePress={onMorePress}
-                />
-
-                {/* Post Content */}
-                <View style={styles.postContent}>
-                  <Text style={styles.postTitle}>{post.post_title}</Text>
-                  <Text style={styles.postDescription}>{post.post_data}</Text>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        extraScrollHeight={Platform.OS === 'android' ? 100 : 50} // Extra space for Samsung toolbar
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        keyboardOpeningTime={250}
+        showsVerticalScrollIndicator={false}
+      >
+        <FlatList
+          data={comments}
+          keyExtractor={(item) => item.id}
+          extraData={comments} 
+          ListHeaderComponent={
+            <>
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#836fff" />
                 </View>
+              ) : post ? (
+                <>
+                  <UserInfoRow 
+                    userRef={post.post_user} 
+                    postData={post} 
+                    onMorePress={onMorePress}
+                  />
 
-                {/* Forum Requirements */}
-                {post.forum_type && post.forum_details && post.forum_type !== "General" && (
-                  <Box mt={2} px ={4}>
-                    <ForumDetails
-                      forumType={post.forum_type}
-                      forumDetails={post.forum_details}
-                    />
-                  </Box>
-                )}
+                  <View style={styles.postContent}>
+                    <Text style={styles.postTitle}>{post.post_title}</Text>
+                    <Text style={styles.postDescription}>{post.post_data}</Text>
+                  </View>
 
-                {/* Polls Content */}
-                {Array.isArray(post.pollOptions?.options) && post.addPoll && (
-                  <Box mt={4} px={4}>
-                    {post.pollOptions.options.map((pollOption, index) => {
-                      const hasVoted = post.pollOptions?.voters?.includes(user.uid);
-                      const isSelected = hasVoted && user.uid && post.pollOptions.voters?.includes(user.uid) && index ===
-                        post.pollOptions.options.findIndex(opt => opt.votes > pollOption.votes - 1); 
+                  {post.forum_type && post.forum_details && post.forum_type !== "General" && (
+                    <Box mt={2} px={4}>
+                      <ForumDetails
+                        forumType={post.forum_type}
+                        forumDetails={post.forum_details}
+                      />
+                    </Box>
+                  )}
 
-                      return (
-                        <PollOption
-                          key={index}
-                          pollOption={pollOption}
-                          hasVoted={hasVoted}
-                          isSelected={isSelected}
-                          onChoose={() => handleSelectPoll(index)}
-                        />
-                      );
-                    })}
-                  </Box>
-                )}
+                  {Array.isArray(post.pollOptions?.options) && post.addPoll && (
+                    <Box mt={4} px={4}>
+                      {post.pollOptions.options.map((pollOption, index) => {
+                        const hasVoted = post.pollOptions?.voters?.includes(user.uid);
+                        const isSelected = hasVoted && user.uid && post.pollOptions.voters?.includes(user.uid) && index ===
+                          post.pollOptions.options.findIndex(opt => opt.votes > pollOption.votes - 1); 
 
-                {/* Post Image */}
-                {post.post_photo && (
-                  <Box mt={4} px = {4}>
-                    <Image
-                      source={{ uri: post.post_photo}}
-                      style={{
-                        width: "100%",
-                        height: 400,
-                        borderRadius: 8,
-                      }}
-                      contentFit="cover"
-                      transition={200}
-                    />
-                  </Box>
-                )}
+                        return (
+                          <PollOption
+                            key={index}
+                            pollOption={pollOption}
+                            hasVoted={hasVoted}
+                            isSelected={isSelected}
+                            onChoose={() => handleSelectPoll(index)}
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
 
-                {/* Post View */}
-                <View style={styles.statsContainer}>
-                  <Text style={styles.statsText}>
-                   {post.views || 0} views
-                  </Text>
+                  {post.post_photo && (
+                    <Box mt={4} px={4}>
+                      <Image
+                        source={{ uri: post.post_photo}}
+                        style={{
+                          width: "100%",
+                          height: 400,
+                          borderRadius: 8,
+                        }}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    </Box>
+                  )}
+
+                  <View style={styles.statsContainer}>
+                    <Text style={styles.statsText}>
+                     {post.views || 0} views
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.userSafetyInfoContainer}>
+                    <Text style={styles.userSafetyInfoText}>
+                      - Any comments that violate the guideline can be deleted without notice{'\n'}
+                      - If you find certain comments to be disturbing, please report through Dashboard {'>'} Setting {'>'} Feedback.
+                    </Text>
+                  </View>
+
+                  <Text style={styles.commentsHeader}>Comments {post.num_comments}</Text>
+                </>
+              ) : (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>Post not found</Text>
                 </View>
-                
-                <View style={styles.userSafetyInfoContainer}>
-                  <Text style={styles.userSafetyInfoText}>
-                    - Any comments that violate the guideline can be deleted without notice{'\n'}
-                    - If you find certain comments to be disturbing, please report through Dashboard {'>'} Setting {'>'} Feedback.
-                  </Text>
-                </View>
-
-                <Text style={styles.commentsHeader}>Comments {post.num_comments}</Text>
-              </>
-            ) : (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>Post not found</Text>
-              </View>
-            )}
-          </>
-        }
-        renderItem={({ item }) => <CommentCard onReply={handleReply} comment={item} postData={post} onTrigger = {getComments} docu={doc(db, 'posts', post.id, 'comments', item.id)}/>}
-        contentContainerStyle={styles.flatListContent}
-      />
+              )}
+            </>
+          }
+          renderItem={({ item }) => (
+            <CommentCard
+              onReply={handleReply}
+              comment={item}
+              replies={item.replies || []}
+              postData={post}
+              onTrigger={getComments}
+              docu={doc(db, 'posts', post.id, 'comments', item.id)}
+            />
+          )}
+          contentContainerStyle={styles.flatListContent}
+          scrollEnabled={false} // Let KeyboardAwareScrollView handle scrolling
+          nestedScrollEnabled={true}
+        />
+      </KeyboardAwareScrollView>
       
       {renderCommentInput()}
 
@@ -325,7 +391,7 @@ const PostDisplay = () => {
         onClose={() => setShowReportModal(false)}
         postId={postRef}
       />
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
@@ -357,6 +423,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    backgroundColor: '#fff', // Ensure header has background
   },
   backButton: {
     marginRight: 16,
@@ -410,7 +477,7 @@ const styles = StyleSheet.create({
     paddingBottom: 5,
   },
   flatListContent: {
-    paddingBottom: 50,
+    paddingBottom: Platform.OS === 'android' ? 100 : 50, // Extra padding for keyboard toolbar
   },
   commentInputContainer: {
     flexDirection: 'row',
@@ -464,6 +531,5 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 });
-
 
 export default PostDisplay;

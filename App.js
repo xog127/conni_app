@@ -356,10 +356,29 @@ const TabNavigator = () => (
         },
       })}
     />
-    <Tab.Screen 
-      name="Chats" 
+    <Tab.Screen
+      name="Chats"
       component={ChatStackNavigator}
-      options={{ headerShown: false }}
+      options={{ headerShown: false, unmountOnBlur: true }}   // 👈 unmount to reset when leaving the tab
+      listeners={({ navigation }) => ({
+        tabPress: (e) => {
+          // Always reset Chats to AllChats when the tab button is pressed
+          e.preventDefault();
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'Chats',
+                  state: {
+                    routes: [{ name: 'AllChats' }],   
+                  },
+                },
+              ],
+            })
+          );
+        },
+      })}
     />
     <Tab.Screen 
       name="Create" 

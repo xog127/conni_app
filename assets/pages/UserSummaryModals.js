@@ -29,17 +29,16 @@ const UserSummaryModal = ({ visible, onClose, user }) => {
       }
 
       onClose();
-      onClose();
       navigation.navigate('MainTabs', {
-        screen: 'Chats',
+        screen: 'Chats',                // tab
         params: {
-          screen: 'Chatroom',
+          screen: 'Chatroom',           // stack screen inside the tab
           params: {
             chatId,
             title: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Chat',
-            fromUserModal: true // optional flag
-          }
-        }
+            fromUserModal: true,
+          },
+        },
       });
       
       

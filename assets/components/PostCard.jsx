@@ -8,6 +8,7 @@ import ViewIcon from "../customIcon/ViewIcon.js";
 import { timeAgo } from "../customFunctions/time.js";
 import { StyleSheet, View } from "react-native";
 import ForumDetails from "../components/ForumDetails";
+import PostLike from "../components/PostLike.jsx";
 
 // Convert timestamp to relative time
 const getTimeAgo = (timestamp) => {
@@ -99,19 +100,25 @@ const PostCard = ({ item, navigation, onReport }) => {
           </Box>
         )}
 
-        <HStack justifyContent="space-between" mt={2} alignItems="center">
+        <HStack justifyContent="space-between" mt={4} alignItems="center">
           <HStack alignItems="center">
             <Pressable>
-              <HStack alignItems="center">
-                <HeartIcon size={20} color="#FF5963" />
-                <Text fontSize="xs" color="gray.700" ml={1}>
-                  {item?.num_likes || 0}
-                </Text>
-              </HStack>
+              <PostLike
+                post={item}
+                onLocalUpdate={(postId, delta, isLikedNow) => {
+                  setPosts(prev =>
+                    prev.map(p =>
+                      p.id === postId
+                        ? { ...p, num_likes: (p.num_likes || 0) + delta, likedByMe: isLikedNow }
+                        : p
+                    )
+                  );
+                }}
+              />
             </Pressable>
             <Pressable ml={4}>
               <HStack alignItems="center">
-                <CommentIcon size={20} color="#464A4D" />
+                <CommentIcon size={24} color="#464A4D" />
                 <Text fontSize="xs" color="gray.700" ml={1}>
                   {item?.num_comments || 0}
                 </Text>
@@ -119,7 +126,7 @@ const PostCard = ({ item, navigation, onReport }) => {
             </Pressable>
             <Pressable ml={4}>
               <HStack alignItems="center">
-                <ViewIcon size={20} color="#464A4D" />
+                <ViewIcon size={24} color="#464A4D" />
                 <Text fontSize="xs" color="gray.700" ml={1}>
                   {item?.views || 0}
                 </Text>

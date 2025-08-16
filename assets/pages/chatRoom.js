@@ -31,7 +31,8 @@ import {
   where,
   startAfter,
   getDocs,
-  Timestamp
+  Timestamp,
+  writeBatch
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/firebaseConfig';
@@ -191,41 +192,46 @@ function ChatRoom({ route, navigation }) {
 
   const handleSend = async () => {
     if ((!newMessage.trim() && !imageUri) || uploadingImage) return;
-    
-    
+  
     const messageText = newMessage.trim();
-    setNewMessage('');
+    setNewMessage('');  // clear input immediately
+  
     try {
-      // If there's an image, upload it first
       if (imageUri) {
-        await uploadImageAndSend();
+        await uploadImageAndSend(messageText); // pass the caption text you just captured
         return;
       }
-      
-      // Prepare message data
-      const messageData = {
-        text: newMessage.trim(),
+  
+      // Atomically: add message + update chat last activity
+      const batch = writeBatch(db);
+  
+      const messagesCol = collection(db, 'chats', chatId, 'messages');
+      const msgRef = doc(messagesCol); // pre-create id
+  
+      batch.set(msgRef, {
+        text: messageText,
         senderId: user.uid,
         senderName: user.displayName || 'Unknown User',
-        timestamp: Timestamp.now(),
-      };
-
-      // Add message to messages subcollection
-      await addDoc(collection(db, 'chats', chatId, 'messages'), messageData);
-      
-      // Update chat document with latest message info
-      await updateDoc(doc(db, 'chats', chatId), {
-        lastMessage: newMessage.trim(),
-        lastMessageTime: Timestamp.now(),
-        lastSenderId: user.uid
+        timestamp: serverTimestamp(),   // <-- server time
+        type: 'text',
       });
-      
-      // Reset input fields
+  
+      batch.update(doc(db, 'chats', chatId), {
+        lastMessage: messageText || 'Message',
+        lastMessageTime: serverTimestamp(),   // <-- server time
+        lastSenderId: user.uid,
+      });
+  
+      await batch.commit();
+  
+      // keep the latest in view (inverted list => offset 0 is bottom)
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
     } catch (error) {
       console.error('Error sending message:', error);
       Alert.alert('Error', 'Failed to send message. Please try again.');
     }
   };
+  
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -248,57 +254,45 @@ function ChatRoom({ route, navigation }) {
     }
   };
 
-  const uploadImageAndSend = async () => {
+  const uploadImageAndSend = async (captionText = '') => {
     if (!imageUri) return;
-    
+  
     try {
       setUploadingImage(true);
-      
-      // Generate a unique file name
+  
+      // upload to Storage
       const fileName = `${Date.now()}-${user.uid}`;
       const storageRef = ref(storage, `chat_images/${chatId}/${fileName}`);
-      
-      console.log("Preparing to upload image:", imageUri);
-      
-      // Fetch the image and convert to blob
       const response = await fetch(imageUri);
       const blob = await response.blob();
-      
-      console.log("Image blob created, size:", blob.size);
-      
-      // Upload to Firebase Storage
-      const uploadResult = await uploadBytes(storageRef, blob);
-      console.log("Image uploaded successfully:", uploadResult.metadata.fullPath);
-      
-      // Get download URL
+      await uploadBytes(storageRef, blob);
       const downloadURL = await getDownloadURL(storageRef);
-      console.log("Image download URL:", downloadURL);
-      
-      // Create message with image
-      const messageData = {
-        text: newMessage.trim(),
-        imageUrl: downloadURL, // Make sure the field name matches what your render function expects
+  
+      // Atomically: add message + update chat last activity
+      const batch = writeBatch(db);
+  
+      const messagesCol = collection(db, 'chats', chatId, 'messages');
+      const msgRef = doc(messagesCol);
+  
+      batch.set(msgRef, {
+        text: captionText,                  // caption (can be empty)
+        imageUrl: downloadURL,
         senderId: user.uid,
         senderName: user.displayName || 'Unknown User',
-        timestamp: Timestamp.now(),
-      };
-      
-      console.log("Sending message with image:", messageData);
-      
-      // Add message to messages subcollection
-      const messageRef = await addDoc(collection(db, 'chats', chatId, 'messages'), messageData);
-      console.log("Message with image added:", messageRef.id);
-      
-      // Update chat document with latest message info
-      await updateDoc(doc(db, 'chats', chatId), {
-        lastMessage: newMessage.trim() || 'Image',
-        lastMessageTime: Timestamp.now(),
-        lastSenderId: user.uid
+        timestamp: serverTimestamp(),       // <-- server time
+        type: 'image',
       });
-      
-      // Reset input fields
-      setNewMessage('');
+  
+      batch.update(doc(db, 'chats', chatId), {
+        lastMessage: captionText || 'Image',
+        lastMessageTime: serverTimestamp(), // <-- server time
+        lastSenderId: user.uid,
+      });
+  
+      await batch.commit();
+  
       setImageUri(null);
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
     } catch (error) {
       console.error('Error uploading image:', error);
       Alert.alert('Error', 'Failed to upload image. Please try again.');
@@ -306,6 +300,7 @@ function ChatRoom({ route, navigation }) {
       setUploadingImage(false);
     }
   };
+  
 
   const showImagePreview = (imageUrl) => {
     console.log("Opening image preview:", imageUrl);

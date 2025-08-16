@@ -31,6 +31,7 @@ import ReportModal from "../components/ReportModal.jsx";
 import { registerForPushNotificationsAsync } from '../services/pushNotificationService';
 import { TouchableOpacity } from "react-native";
 
+
 export default function MainPage({ navigation }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);

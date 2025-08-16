@@ -28,9 +28,9 @@ import {
 } from "native-base";
 import {KeyboardAwareScrollView} from "react-native-keyboard-aware-scroll-view"
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { addRef, getCollections } from "../firebase/queries";
+import { addRef, getCollections, updateRef } from "../firebase/queries";
 import * as ImagePicker from 'expo-image-picker';
-import { doc, Timestamp } from "firebase/firestore";
+import { doc, Timestamp, arrayUnion } from "firebase/firestore";
 import CreatePostFields from "./createPostFields";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "../firebase/firebaseConfig";
@@ -285,11 +285,18 @@ const CreatePost = ({ navigation }) => {
         collectionName: "posts", 
         data: postData 
       });
-      console.log("pollOptions before saving:", pollOptions);
-      console.log("Type of pollOptions:", typeof pollOptions);
-      console.log("IsArray:", Array.isArray(pollOptions));
+      const postDocRef =
+        typeof postRef?.id === "string"
+          ? doc(db, "posts", postRef.id)
+          : doc(db, "posts", postRef); // if addRef returns an id string
 
-      console.log("Post created successfully:", postRef);
+      await updateRef({
+        id: user.uid,
+        collectionName: "users",
+        updateFields: {
+          posts_ref: arrayUnion(postDocRef), // <- this creates the field if missing
+        },
+      });
       navigation.goBack();
     } catch (error) {
       console.error("Error adding post:", error);

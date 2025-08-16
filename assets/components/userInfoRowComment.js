@@ -38,6 +38,11 @@ const UserInfoRowComment = ({
   const [loading, setLoading] = useState(true);
   const [profileVisible, setProfileVisible] = useState(false);
   const isAnon = !!postData?.anonymous;
+  const authorUid =
+    commentData?.created_by_uid ??
+    commentData?.createdby_ref?.id ?? // Firestore doc ref id (users/<uid>)
+    null;
+  const canDelete = !!user && user.uid === authorUid;
 
   const handleLike = async () => {
     try {
@@ -68,6 +73,18 @@ const UserInfoRowComment = ({
   const handleDelete = async () => {
     try {
       setOptionsVisible(false);
+  
+      // Double-check on the client (UI can be tampered with)
+      const currentAuthorUid =
+        commentData?.created_by_uid ??
+        commentData?.createdby_ref?.id ??
+        null;
+  
+      if (!user || user.uid !== currentAuthorUid) {
+        console.warn('User not allowed to delete this comment.');
+        return;
+      }
+  
       await deleteDoc(docu);
       onDeletePress?.();
     } catch (error) {
@@ -186,7 +203,7 @@ const UserInfoRowComment = ({
                 <Text style={styles.optionText}>Report</Text>
               </TouchableOpacity>
 
-              {(commentData.createdby_ref == commentData.createdby_ref) && (
+              {canDelete && (
                 <TouchableOpacity
                   style={[styles.optionItem, styles.deleteOption]}
                   onPress={handleDelete}

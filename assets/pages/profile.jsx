@@ -4,10 +4,10 @@ import {
   Box,
   Text,
   Icon,
-  ScrollView,
   HStack,
   VStack,
   Pressable,
+  FlatList,
 } from "native-base";
 import { AnimatePresence, MotiView } from "moti";
 import { Image } from "expo-image";
@@ -65,122 +65,129 @@ export default function ProfileScreen({ navigation }) {
       : selectedOption === "Liked"
       ? likedPosts
       : commentedPosts;
+
   console.log("🔍 displayedPosts for", selectedOption, ":", displayedPosts);
+  
   return (
     <NativeBaseProvider>
-      <Box
-        bg="white"
-        h={"12%"}
-        justifyContent="space-between"
-        alignItems="center"
-        flexDirection="row"
-        px={4}
-        pt={"10%"}
-      >
-        <Text
-          fontSize="28"
-          fontWeight="medium"
-          color="#836fff"
-          fontFamily={"Roboto Serif"}
+      <Box flex={1} bg="white">
+        {/* Fixed Header Section - This won't scroll */}
+        <Box
+          bg="white"
+          h={"12%"}
+          justifyContent="space-between"
+          alignItems="center"
+          flexDirection="row"
+          px={4}
+          pt={"10%"}
         >
-          {user?.first_name + " " + user?.last_name}
-        </Text>
-      </Box>
-      <Box bg="white" pt="8px">
-        <VStack>
-          <HStack
-            justifyContent="space-between"
-            space="24px"
-            px="16px"
-            pb="16px"
+          <Text
+            fontSize="28"
+            fontWeight="medium"
+            color="#836fff"
+            fontFamily={"Roboto Serif"}
           >
-            <Image
-              source={
-                user?.photo_url
-                  ? { uri: user.photo_url }
-                  : require("../images/Blankprofile.png")
-              }
-              style={{ width: 68, height: 68, borderRadius: 68 }}
-            />
-            <VStack flex={1} justifyContent="center">
-              <Text
-                fontSize="16px"
-                fontWeight="500"
-                color="#000"
-                lineHeight="24px"
-                letterSpacing="0.15px"
-              >
-                {user?.first_name + " " + user?.last_name}
-              </Text>
-              <Text
-                fontSize="16px"
-                color="#000"
-                fontWeight="500"
-                lineHeight="24px"
-                letterSpacing="0.15px"
-              >
-                {user?.course}
-              </Text>
-              <Text
-                fontSize="16px"
-                color="#000"
-                fontWeight="500"
-                lineHeight="24px"
-                letterSpacing="0.15px"
-              >
-                Year : {user?.graduation_year}
-              </Text>
-            </VStack>
-          </HStack>
-          <HStack px="24px" justifyContent="center" space="24px" pb="24px">
-            <Pressable onPress={() => navigation.navigate("EditProfile")}>
-              <Box
-                px="36px"
-                py="4px"
-                borderColor="#78767F"
-                borderWidth="1px"
-                borderRadius="8px"
-              >
+            {user?.first_name + " " + user?.last_name}
+          </Text>
+        </Box>
+
+        {/* Fixed Profile Info Section - This won't scroll */}
+        <Box bg="white" pt="8px">
+          <VStack>
+            <HStack
+              justifyContent="space-between"
+              space="24px"
+              px="16px"
+              pb="16px"
+            >
+              <Image
+                source={
+                  user?.photo_url
+                    ? { uri: user.photo_url }
+                    : require("../images/Blankprofile.png")
+                }
+                style={{ width: 68, height: 68, borderRadius: 68 }}
+              />
+              <VStack flex={1} justifyContent="center">
                 <Text
+                  fontSize="16px"
                   fontWeight="500"
-                  fontStyle="normal"
-                  lineHeight="20px"
-                  letterSpacing="0.14px"
-                  fontSize="14px"
+                  color="#000"
+                  lineHeight="24px"
+                  letterSpacing="0.15px"
                 >
-                  Edit Profile
+                  {user?.first_name + " " + user?.last_name}
                 </Text>
-              </Box>
-            </Pressable>
-            <Pressable onPress={() => navigation.navigate("Setting")}>
-              <Box
-                px="47px"
-                py="4px"
-                borderColor="#78767F"
-                borderWidth="1px"
-                borderRadius="8px"
-              >
                 <Text
+                  fontSize="16px"
+                  color="#000"
                   fontWeight="500"
-                  fontStyle="normal"
-                  lineHeight="20px"
-                  letterSpacing="0.14px"
-                  fontSize="14px"
+                  lineHeight="24px"
+                  letterSpacing="0.15px"
                 >
-                  Setting
+                  {user?.course}
                 </Text>
-              </Box>
-            </Pressable>
-          </HStack>
-        </VStack>
-      </Box>
-      <ScrollView backgroundColor="white" >
+                <Text
+                  fontSize="16px"
+                  color="#000"
+                  fontWeight="500"
+                  lineHeight="24px"
+                  letterSpacing="0.15px"
+                >
+                  Year : {user?.graduation_year}
+                </Text>
+              </VStack>
+            </HStack>
+            <HStack px="24px" justifyContent="center" space="24px" pb="24px">
+              <Pressable onPress={() => navigation.navigate("EditProfile")}>
+                <Box
+                  px="36px"
+                  py="4px"
+                  borderColor="#78767F"
+                  borderWidth="1px"
+                  borderRadius="8px"
+                >
+                  <Text
+                    fontWeight="500"
+                    fontStyle="normal"
+                    lineHeight="20px"
+                    letterSpacing="0.14px"
+                    fontSize="14px"
+                  >
+                    Edit Profile
+                  </Text>
+                </Box>
+              </Pressable>
+              <Pressable onPress={() => navigation.navigate("Setting")}>
+                <Box
+                  px="47px"
+                  py="4px"
+                  borderColor="#78767F"
+                  borderWidth="1px"
+                  borderRadius="8px"
+                >
+                  <Text
+                    fontWeight="500"
+                    fontStyle="normal"
+                    lineHeight="20px"
+                    letterSpacing="0.14px"
+                    fontSize="14px"
+                  >
+                    Setting
+                  </Text>
+                </Box>
+              </Pressable>
+            </HStack>
+          </VStack>
+        </Box>
+
+        {/* Fixed Tab Section - This won't scroll */}
         <Box bg="white" pt="8px">
           <HStack justifyContent="space-between" px="16px">
             {options.map((option, index) => (
               <Pressable
                 key={index}
-                flex={1} //
+                flex={1}
                 alignItems="center"
                 onPress={() => setSelectedOption(option)}
                 onLayout={(event) => {
@@ -237,18 +244,23 @@ export default function ProfileScreen({ navigation }) {
           </HStack>
         </Box>
 
-        {displayedPosts.length > 0 ? (
-          <PostPreviews
-            data={displayedPosts}
-            navigation={navigation}
-            isMarketView={false}
-          />
-        ) : (
-          <Text textAlign="center" mt={4} color="gray.500">
-            No posts found.
-          </Text>
-        )}
-      </ScrollView>
+        {/* Scrollable Posts Section - Only this part scrolls */}
+        <Box flex={1}>
+          {displayedPosts.length > 0 ? (
+            <PostPreviews
+              data={displayedPosts}
+              navigation={navigation}
+              isMarketView={false}
+            />
+          ) : (
+            <Box flex={1} justifyContent="center" alignItems="center">
+              <Text textAlign="center" mt={4} color="gray.500">
+                No posts found.
+              </Text>
+            </Box>
+          )}
+        </Box>
+      </Box>
     </NativeBaseProvider>
   );
 }

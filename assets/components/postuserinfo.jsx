@@ -74,7 +74,7 @@ const PostUserInfo = ({ userRef, anonymous, date_posted, forumRef, onMorePress }
 
   return (
     <>
-      <HStack justifyContent="space-between" alignItems="center" mb={2}>
+      <HStack justifyContent="space-between" alignItems="center" mb={1}>
         <Pressable
           flexGrow={1}
           onPress={handleProfilePress}
