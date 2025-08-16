@@ -28,6 +28,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar, RefreshControl } from "react-native";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import ReportModal from "../components/ReportModal.jsx";
+import { registerForPushNotificationsAsync } from '../services/pushNotificationService';
+import { TouchableOpacity } from "react-native";
 
 export default function MainPage({ navigation }) {
   const [posts, setPosts] = useState([]);
@@ -374,6 +376,24 @@ export default function MainPage({ navigation }) {
             />
           </Pressable>
         </HStack>
+        <TouchableOpacity 
+          style={{
+            backgroundColor: '#836FFF',
+            padding: 15,
+            borderRadius: 8,
+            margin: 20,
+            alignItems: 'center'
+          }}
+          onPress={registerForPushNotificationsAsync}
+        >
+          <Text style={{ 
+            color: 'white', 
+            fontWeight: 'bold',
+            fontSize: 16 
+          }}>
+            🧪 Test Push Notifications
+          </Text>
+        </TouchableOpacity>
 
         <FlatList
           ref={flatListRef}

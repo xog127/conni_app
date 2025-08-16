@@ -8,7 +8,6 @@ import Constants from 'expo-constants';
 
 
 
-
 // Initialize Firebase
 const firebaseConfig = {
   apiKey: Constants.expoConfig.extra.FIREBASE_API_KEY,

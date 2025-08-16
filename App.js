@@ -30,16 +30,26 @@ import NotificationScreen from './assets/pages/notification';
 import { NativeBaseProvider, Box } from 'native-base';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonActions } from '@react-navigation/native';
+import React, { useEffect } from 'react';
 
 
 import { BackHandler } from 'react-native';
+import * as Notifications from 'expo-notifications';
+
+// Set notification handler
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 
 // Patch to prevent crash on deprecated usage
 if (!BackHandler.removeEventListener) {
   BackHandler.removeEventListener = () => {};
 }
-import React from 'react';
-import theme from './theme'; // Make sure path matches
 
 // Create navigation stacks
 const Stack = createStackNavigator();
@@ -402,6 +412,23 @@ const styles = StyleSheet.create({
 // Root Navigator - Handles authentication flow
 const RootNavigator = () => {
   const { login, user, isAuthenticated } = useAuth();
+
+    
+  // Add notification listeners
+  useEffect(() => {
+    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+      console.log('Notification received:', notification);
+    });
+
+    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('Notification response:', response);
+    });
+
+    return () => {
+      Notifications.removeNotificationSubscription(notificationListener);
+      Notifications.removeNotificationSubscription(responseListener);
+    };
+  }, []);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
