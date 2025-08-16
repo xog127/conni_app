@@ -7,19 +7,18 @@ import {
   ActivityIndicator,
   FlatList,
   Keyboard,
+  KeyboardAvoidingView,
   Platform,
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
 import UserInfoRow from '../components/userInfoRow';
-import { getRef, fetchReferenceData, getSubRefAll, addRef, updateRef, sendPostNotification } from '../firebase/queries';
+import { getRef, fetchReferenceData, getSubRefAll, addRef, updateRef,sendPostNotification } from '../firebase/queries';
 import CommentCard from '../components/commentCard.js';
 import { addDoc, db } from '../firebase/firebaseConfig';
-import { Timestamp, doc, collection, arrayUnion, increment } from 'firebase/firestore';
+import { Timestamp, doc, collection, arrayUnion, increment} from 'firebase/firestore';
 import PollOption from '../components/PollOption';
 import { useRoute } from '@react-navigation/native';
 import { Box } from 'native-base';
@@ -35,10 +34,29 @@ const PostDisplay = () => {
   const [genre, setGenre] = useState(null);
   const [newComment, setNewComment] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const inputRef = useRef(null);
   const [replyingTo, setReplyingTo] = useState(null);
   const route = useRoute();
   const { postRef, navigation } = route.params || {};
+
+  // Add keyboard listeners with height tracking
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardVisible(true);
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, []);
 
   const handleReply = (comment) => {
     setReplyingTo(comment);
@@ -48,9 +66,19 @@ const PostDisplay = () => {
   const cancelReply = () => {
     setReplyingTo(null);
   };
-
+  
   const renderCommentInput = () => (
-    <View style={styles.commentInputWrapper}>
+    <View style={[
+      styles.commentInputWrapper,
+      // Dynamic positioning based on keyboard state
+      Platform.OS === 'android' && {
+        position: keyboardVisible ? 'absolute' : 'relative',
+        bottom: keyboardVisible ? keyboardHeight : 0,
+        left: 0,
+        right: 0,
+        zIndex: keyboardVisible ? 1000 : 1,
+      }
+    ]}>
       {replyingTo && (
         <View style={styles.replyingToContainer}>
           <Text style={styles.replyingToText}>
@@ -82,7 +110,7 @@ const PostDisplay = () => {
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
-
+  
     try {
       let commentsRef = collection(db, 'posts', postRef, 'comments');
       const commentData = {
@@ -92,25 +120,19 @@ const PostDisplay = () => {
         created_by_uid: user.uid,
         createdby_ref: doc(db, 'users', user.uid),
       };
-
+  
       let newDocRef;
       if (replyingTo) {
         commentsRef = collection(db, 'posts', postRef, 'comments', replyingTo.id, 'reply');
         newDocRef = await addDoc(commentsRef, commentData);
-
+  
         const newReply = { 
           id: newDocRef.id, 
           ...commentData,
-          createdby_ref: {
-            id: user.uid,
-            first_name: user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'You',
-            last_name: user.displayName?.split(' ')[1] || '',
-            photo_url: user.photoURL,
-            username: user.email,
-          },
+          createdby_ref: doc(db, 'users', user.uid),
           liked_by: [],
         };
-
+  
         setComments((prev) =>
           prev.map((c) =>
             c.id === replyingTo.id
@@ -120,23 +142,17 @@ const PostDisplay = () => {
         );
       } else {
         newDocRef = await addDoc(commentsRef, commentData);
-
+  
         const newTopLevel = { 
           id: newDocRef.id, 
           ...commentData, 
           replies: [],
-          createdby_ref: {
-            id: user.uid,
-            first_name: user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'You',
-            last_name: user.displayName?.split(' ')[1] || '',
-            photo_url: user.photoURL,
-            username: user.email,
-          },
+          createdby_ref: doc(db, 'users', user.uid),
           liked_by: [],
         };
         setComments((prev) => [newTopLevel, ...prev]);
       }
-
+  
       const postDocRef = doc(db, 'posts', post.id);
       await updateRef({
         id: post.id,
@@ -149,24 +165,24 @@ const PostDisplay = () => {
         collectionName: 'users',
         updateFields: { commented_posts_ref: arrayUnion(postDocRef) },
       });
-
+  
       sendPostNotification({
         senderId: user.uid,
         receiverRef: post.post_user,
         type: 1,
         postRef: postDocRef,
       });
-
+  
       setNewComment('');
       setReplyingTo(null);
       inputRef.current?.clear();
       Keyboard.dismiss();
-
+  
       setPost(prev => ({
         ...prev,
         num_comments: (prev.num_comments || 0) + 1
       }));
-
+  
     } catch (error) {
       console.error('Error adding comment:', error);
       getComments();
@@ -178,7 +194,7 @@ const PostDisplay = () => {
       const commentsData = await getSubRefAll({
         collection: collection(db, 'posts', postRef, 'comments'),
       });
-
+  
       const withReplies = await Promise.all(
         commentsData.map(async (c) => {
           const replies = await getSubRefAll({
@@ -187,7 +203,7 @@ const PostDisplay = () => {
           return { ...c, replies };
         })
       );
-
+  
       setComments(withReplies);
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -200,9 +216,9 @@ const PostDisplay = () => {
     try {
       const updatedOptions = [...post.pollOptions.options];
       updatedOptions[index].votes += 1;
-
+  
       const updatedVoters = [...(post.pollOptions.voters || []), user.uid];
-
+  
       await updateRef({
         id: post.id,
         collectionName: "posts",
@@ -213,7 +229,7 @@ const PostDisplay = () => {
           }
         }
       });
-
+  
       const updatedPost = await getRef({ id: postRef, collectionName: "posts" });
       setPost(updatedPost);
     } catch (error) {
@@ -234,17 +250,17 @@ const PostDisplay = () => {
       try {
         const postData = await getRef({ id: postRef, collectionName: "posts" });
         setPost(postData);
-
+    
         const genreData = await fetchReferenceData(postData.post_genre_ref);
         setGenre(genreData);
 
         getComments();
-
+    
         updateRef({
           id: postData.id,
           collectionName: "posts",
           updateFields: {
-            views: increment(1),
+          views: increment(1),
           },
         });
       } catch (error) {
@@ -258,8 +274,8 @@ const PostDisplay = () => {
   }, []);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Header */}
+    <View style={styles.container}>
+      {/* Header with Genre and Back Button */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -270,19 +286,16 @@ const PostDisplay = () => {
         <Text style={styles.genreText}>{genre?.name || 'Loading...'}</Text>
       </View>
 
-      <KeyboardAwareScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
-        extraScrollHeight={Platform.OS === 'android' ? 100 : 50} // Extra space for Samsung toolbar
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
-        keyboardOpeningTime={250}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.keyboardAvoidingView}>
         <FlatList
           data={comments}
           keyExtractor={(item) => item.id}
           extraData={comments} 
+          contentContainerStyle={[
+            styles.flatListContent,
+            // Add bottom padding when keyboard is visible on Android to prevent overlap
+            Platform.OS === 'android' && keyboardVisible && { paddingBottom: keyboardHeight + 80 }
+          ]}
           ListHeaderComponent={
             <>
               {loading ? (
@@ -295,6 +308,9 @@ const PostDisplay = () => {
                     userRef={post.post_user} 
                     postData={post} 
                     onMorePress={onMorePress}
+                    onPostDeleted={(id) => {
+                      navigation.goBack();
+                    }}
                   />
 
                   <View style={styles.postContent}>
@@ -378,27 +394,28 @@ const PostDisplay = () => {
               docu={doc(db, 'posts', post.id, 'comments', item.id)}
             />
           )}
-          contentContainerStyle={styles.flatListContent}
-          scrollEnabled={false} // Let KeyboardAwareScrollView handle scrolling
-          nestedScrollEnabled={true}
         />
-      </KeyboardAwareScrollView>
-      
-      {renderCommentInput()}
+        
+        {/* Always render comment input - positioning handled by dynamic styles */}
+        {renderCommentInput()}
+      </View>
 
       <ReportModal
         isVisible={showReportModal}
         onClose={() => setShowReportModal(false)}
         postId={postRef}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -423,7 +440,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    backgroundColor: '#fff', // Ensure header has background
   },
   backButton: {
     marginRight: 16,
@@ -477,13 +493,16 @@ const styles = StyleSheet.create({
     paddingBottom: 5,
   },
   flatListContent: {
-    paddingBottom: Platform.OS === 'android' ? 100 : 50, // Extra padding for keyboard toolbar
+    paddingBottom: 50,
+  },
+  commentInputWrapper: {
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff',
   },
   commentInputContainer: {
     flexDirection: 'row',
     padding: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
     backgroundColor: '#fff'
   },
   input: {
@@ -505,11 +524,6 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: '#fff',
     fontWeight: '600'
-  },
-  commentInputWrapper: {
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#fff',
   },
   replyingToContainer: {
     flexDirection: 'row',

@@ -2,7 +2,7 @@ import React, { useCallback, useState, useEffect } from "react";
 import { Box, FlatList, HStack, VStack, Text, Pressable } from "native-base";
 import { Image } from "expo-image";
 import { ScrollView } from "native-base";
-import PostWidget from "../components/postwidget";
+import PostCard from "./PostCard";
 import MarketPreview from "../components/marketPreview";
 import { getRef } from "../firebase/queries";
 
@@ -59,7 +59,7 @@ const PostPreviews = ({
   const renderItem = useCallback(
     ({ item, index }) => (
       <>
-        <PostWidget key={item.id} postRef={item.id} navigation={navigation} />
+        <PostCard item = {item} navigation={navigation} />
         {index === 0 && isMarketView && marketData?.photo && (
           <Box>
             <VStack pt="36px" pb="36px" space="12px">

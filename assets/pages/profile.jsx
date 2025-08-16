@@ -8,6 +8,8 @@ import {
   VStack,
   Pressable,
   FlatList,
+  Spinner,
+  Center,
 } from "native-base";
 import { AnimatePresence, MotiView } from "moti";
 import { Image } from "expo-image";
@@ -27,10 +29,12 @@ export default function ProfileScreen({ navigation }) {
   const options = ["Posts", "Liked", "Commented"];
   const [tabLayouts, setTabLayouts] = useState([]);
   const selectedIndex = options.indexOf(selectedOption);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPostRefs = async () => {
       try {
+        setLoading(true);
         if (currentUser) {
           const userData = await getRef({
             id: currentUser.uid,
@@ -53,11 +57,13 @@ export default function ProfileScreen({ navigation }) {
         }
       } catch (error) {
         console.error("Error fetching post references:", error.message);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchPostRefs();
-  }, [selectedOption]);
+  }, []);
 
   const displayedPosts =
     selectedOption === "Posts"
@@ -246,7 +252,11 @@ export default function ProfileScreen({ navigation }) {
 
         {/* Scrollable Posts Section - Only this part scrolls */}
         <Box flex={1}>
-          {displayedPosts.length > 0 ? (
+          {loading ? (
+              <Center flex={1}>
+                <Spinner size="lg" color="#836fff" />
+              </Center>
+            ) : displayedPosts.length > 0 ? (
             <PostPreviews
               data={displayedPosts}
               navigation={navigation}

@@ -12,14 +12,16 @@ import { Feather, AntDesign } from '@expo/vector-icons';
 import { fetchReferenceData, sendPostNotification } from '../firebase/queries';
 import { timeAgo } from '../customFunctions/time';
 import { db } from '../firebase/firebaseConfig';
-import { doc, increment, arrayRemove, arrayUnion } from 'firebase/firestore';
+import { doc, increment, arrayRemove, arrayUnion, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { updateRef } from '../firebase/queries';
 import { useAuth } from '../services/authContext';
 import UserSummaryModal from '../pages/UserSummaryModals';
 
+
 const UserInfoRow = ({ 
   userRef, postData,
-  onMorePress
+  onMorePress,
+  onPostDeleted,
 }) => {
   const { user } = useAuth();
   const postDoc = doc(db, 'posts', postData.id);
@@ -32,6 +34,43 @@ const UserInfoRow = ({
   const [loading, setLoading] = useState(true);
   const [profileVisible, setProfileVisible] = useState(false);
   const isAnon = !!postData?.anonymous;
+  const authorUid =
+  postData?.created_by_uid ??
+  postData?.createdby_ref?.id ??
+  postData?.post_user?.id ??
+  null;
+
+  const canDelete = !!user && user.uid === authorUid;
+
+  const handleDeletePost = async () => {
+    try {
+      setOptionsVisible(false);
+  
+      // client-side guard (rules still enforce this on server)
+      const currentAuthorUid =
+        postData?.created_by_uid ??
+        postData?.createdby_ref?.id ??
+        postData?.post_user?.id ??
+        null;
+      const deletePostWithChildren = async (postId) => {
+        const commentsSnap = await getDocs(collection(db, 'posts', postId, 'comments'));
+        await Promise.all(commentsSnap.docs.map(d => deleteDoc(d.ref)));
+        await deleteDoc(doc(db, 'posts', postId));
+      };
+      if (!user || user.uid !== currentAuthorUid) return;
+  
+      // NOTE: this deletes only the post doc. If you also need to
+      // remove comments/subcollections, see "recursive delete" note below.
+      // Delete post + comments (or swap for deleteDoc if you only want the post gone)
+      await deletePostWithChildren(postData.id);
+      onPostDeleted?.(postData.id);
+    } catch (err) {
+      console.error('Error deleting post:', err);
+    }
+  };
+  
+  
+  
 
   const handleLike = async () => {
     if (!postData?.id || !userRef) {
@@ -195,7 +234,7 @@ const UserInfoRow = ({
             onPress={() => setOptionsVisible(false)}
           >
             <View style={styles.optionsContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.optionItem}
                 onPress={() => {
                   setOptionsVisible(false);
@@ -205,6 +244,16 @@ const UserInfoRow = ({
                 <Feather name="flag" size={20} color="#FF3B30" />
                 <Text style={styles.optionText}>Report</Text>
               </TouchableOpacity>
+
+              {canDelete && (
+                <TouchableOpacity
+                  style={[styles.optionItem, styles.deleteOption]}
+                  onPress={handleDeletePost}
+                >
+                  <Feather name="trash-2" size={20} color="#ff4444" />
+                  <Text style={[styles.optionText, styles.deleteText]}>Delete</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </Pressable>
         </Modal>

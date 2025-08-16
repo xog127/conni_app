@@ -16,6 +16,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "../services/authContext";
 import { getAuth, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
+import { CommonActions } from "@react-navigation/native";
 
 
 export default function UserSettingsScreen({ navigation }) {
@@ -38,13 +39,18 @@ export default function UserSettingsScreen({ navigation }) {
   const handleConfirmDelete = async () => {
     const auth = getAuth();
     const currentUser = auth.currentUser;
-
     try {
       const credential = EmailAuthProvider.credential(currentUser.email, password);
       await reauthenticateWithCredential(currentUser, credential);
       await deleteUser(currentUser);
-      setPasswordPromptVisible(false);
-      navigation.navigate("Login");
+      await logout(); // make sure context cleans up
+  
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "Login" }],
+        })
+      );
     } catch (error) {
       console.error("Delete account error:", error);
       Alert.alert("Error", error.message);
