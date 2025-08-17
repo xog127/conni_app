@@ -6,13 +6,20 @@ import { app } from "../firebase/firebaseConfig.js";
 
 const functions = getFunctions(app);
 
-export async function triggerPushNotification(token, title, body) {
+export async function triggerPushNotification(token, title, body, data = {}) {
   const sendPushNotification = httpsCallable(functions, "sendPushNotification");
   try {
-    const res = await sendPushNotification({ expoPushToken: token, title, body });
-    console.log("Notification result:", res.data);
+    const res = await sendPushNotification({ 
+      expoPushToken: token, 
+      title, 
+      body,
+      data
+    });
+    console.log("✅ Push notification result:", res.data);
+    return res.data;
   } catch (error) {
-    console.error("Error triggering push notification:", error);
+    console.error("❌ Error triggering push notification:", error);
+    throw error;
   }
 }
 

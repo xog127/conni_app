@@ -284,66 +284,187 @@ const addRef = async ({ collectionName, data }) => {
     };
   
   };
-
-const sendPostNotification = async ({ senderId, receiverRef, type, postRef }) => {
-  console.log(senderId, receiverRef, type, postRef);
-
-  try {
-    const senderUserRef = doc(db, "users", senderId);
-
-    const receiverSnapshot = await getDoc(receiverRef);
-    if (!receiverSnapshot.exists()) {
-      console.error("Receiver user does not exist:", receiverRef.path);
-      return;
-    }
-
-    const receiverNotificationsRef = collection(receiverRef, "notification");
-
-    // Step 1: Query for existing matching notification
-    const q = query(
-      receiverNotificationsRef,
-      where("user_sent_ref", "==", senderUserRef),
-      where("post_ref", "==", postRef),
-      where("type", "==", type)
-    );
-
-    const existingNotifications = await getDocs(q);
-
-    if (!existingNotifications.empty) {
-      console.log("Duplicate notification exists. Skipping addDoc.");
-      return;
-    }
-
-    // Add in-app notification
-    await addDoc(receiverNotificationsRef, {
-      read: false,
-      type,
-      user_sent_ref: senderUserRef,
-      post_ref: postRef,
-      created_at: serverTimestamp(),
-    });
-
-    console.log("Notification sent successfully.");
-
-    // --- Trigger push notification ---
-    const receiverData = receiverSnapshot.data();
-    const expoPushToken = receiverData?.expoPushToken; // Make sure you store Expo push token in user doc
-
-    if (expoPushToken) {
+  const sendPostNotification = async ({ senderId, receiverRef, type, postRef }) => {
+    console.log("📨 Sending notification:", { senderId, receiverRef: receiverRef.id, type });
+  
+    try {
+      // Don't send notification to yourself
+      if (senderId === receiverRef.id) {
+        console.log("⏭️ Skipping self-notification");
+        return;
+      }
+  
+      const senderUserRef = doc(db, "users", senderId);
+  
+      const receiverSnapshot = await getDoc(receiverRef);
+      if (!receiverSnapshot.exists()) {
+        console.error("❌ Receiver user does not exist:", receiverRef.path);
+        return;
+      }
+  
+      const receiverNotificationsRef = collection(receiverRef, "notification");
+  
+      // Check for existing matching notification to prevent duplicates
+      const q = query(
+        receiverNotificationsRef,
+        where("user_sent_ref", "==", senderUserRef),
+        where("post_ref", "==", postRef),
+        where("type", "==", type)
+      );
+  
+      const existingNotifications = await getDocs(q);
+  
+      if (!existingNotifications.empty) {
+        console.log("⚠️ Duplicate notification exists. Skipping.");
+        return;
+      }
+  
+      // Add in-app notification
+      await addDoc(receiverNotificationsRef, {
+        read: false,
+        type,
+        user_sent_ref: senderUserRef,
+        post_ref: postRef,
+        created_at: serverTimestamp(),
+      });
+  
+      console.log("✅ In-app notification created.");
+  
+      // Get receiver's push token
+      const receiverData = receiverSnapshot.data();
+      const expoPushToken = receiverData?.expoPushToken;
+  
+      if (!expoPushToken) {
+        console.log("⚠️ No Expo push token found for receiver");
+        return;
+      }
+  
+      // Get sender and post data for personalized notifications
+      const [senderDoc, postDoc] = await Promise.all([
+        getDoc(senderUserRef),
+        getDoc(postRef)
+      ]);
+  
+      const senderName = senderDoc.exists() ? 
+        (senderDoc.data().username || senderDoc.data().displayName || "Someone") : 
+        "Someone";
+      
+      const postTitle = postDoc.exists() ? 
+        (postDoc.data().post_title || "your post") : 
+        "your post";
+  
+      // Create personalized notification content
+      let pushTitle = "";
+      let pushBody = "";
+      const truncatedTitle = postTitle.length > 30 ? 
+        postTitle.substring(0, 30) + "..." : 
+        postTitle;
+  
+      switch (type) {
+        case 0: // Like
+          pushTitle = "❤️ New Like!";
+          pushBody = `${senderName} liked "${truncatedTitle}"`;
+          break;
+        case 1: // Comment
+          pushTitle = "💬 New Comment!";
+          pushBody = `${senderName} commented on "${truncatedTitle}"`;
+          break;
+        default:
+          pushTitle = "🔔 New Notification";
+          pushBody = `${senderName} interacted with your post`;
+      }
+  
+      // Send push notification with navigation data
       await triggerPushNotification(
         expoPushToken,
-        "New Notification",
-        `You have a new ${type} notification!`
+        pushTitle,
+        pushBody,
+        {
+          type: 'post_interaction',
+          postId: postDoc.id,
+          senderId: senderId,
+          notificationType: type,
+          screen: 'PostDisplay'
+        }
       );
-    } else {
-      console.log("No Expo push token found for receiver");
+  
+    } catch (error) {
+      console.error("❌ Error sending notification:", error);
     }
+  };
 
-  } catch (error) {
-    console.error("Error sending notification:", error);
-  }
-};
-
+  const sendMessageNotification = async ({ 
+    senderId, 
+    receiverId, 
+    messageText, 
+    chatId 
+  }) => {
+    try {
+      // Don't send notification to yourself
+      if (senderId === receiverId) {
+        console.log("⏭️ Skipping self-message notification");
+        return;
+      }
+  
+      // Get receiver and sender data
+      const [receiverDoc, senderDoc] = await Promise.all([
+        getDoc(doc(db, "users", receiverId)),
+        getDoc(doc(db, "users", senderId))
+      ]);
+  
+      if (!receiverDoc.exists()) {
+        console.error("❌ Receiver does not exist");
+        return;
+      }
+  
+      const receiverData = receiverDoc.data();
+      const expoPushToken = receiverData?.expoPushToken;
+  
+      if (!expoPushToken) {
+        console.log("⚠️ No push token for message receiver");
+        return;
+      }
+  
+      const senderName = senderDoc.exists() ? 
+        (senderDoc.data().username || senderDoc.data().displayName || "Someone") : 
+        "Someone";
+  
+      // Create in-app notification
+      const receiverNotificationsRef = collection(doc(db, "users", receiverId), "notification");
+      await addDoc(receiverNotificationsRef, {
+        read: false,
+        type: 2, // Message type
+        user_sent_ref: doc(db, "users", senderId),
+        created_at: serverTimestamp(),
+        message_preview: messageText.substring(0, 50),
+        chat_id: chatId
+      });
+  
+      // Create message preview
+      const messagePreview = messageText.length > 50 ? 
+        messageText.substring(0, 50) + "..." : 
+        messageText;
+  
+      // Send push notification
+      await triggerPushNotification(
+        expoPushToken,
+        `💌 Message from ${senderName}`,
+        messagePreview,
+        {
+          type: 'message',
+          senderId: senderId,
+          senderName: senderName,
+          chatId: chatId,
+          screen: 'Messages'
+        }
+      );
+  
+      console.log("✅ Message notification sent");
+  
+    } catch (error) {
+      console.error("❌ Error sending message notification:", error);
+    }
+  };
 
 export async function submitFeedback({ userId = "anonymous", title, description, receiveBy }) {
   return await addDoc(collection(db, "feedback"), {

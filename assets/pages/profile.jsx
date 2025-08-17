@@ -71,8 +71,6 @@ export default function ProfileScreen({ navigation }) {
       : selectedOption === "Liked"
       ? likedPosts
       : commentedPosts;
-
-  console.log("🔍 displayedPosts for", selectedOption, ":", displayedPosts);
   
   return (
     <NativeBaseProvider>

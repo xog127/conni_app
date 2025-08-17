@@ -30,8 +30,7 @@ import NotificationScreen from './assets/pages/notification';
 import { NativeBaseProvider, Box } from 'native-base';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonActions } from '@react-navigation/native';
-import React, { useEffect } from 'react';
-
+import React, { useEffect, useRef } from 'react';
 
 import { BackHandler } from 'react-native';
 import * as Notifications from 'expo-notifications';
@@ -41,10 +40,9 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
-    shouldSetBadge: false,
+    shouldSetBadge: true, // Changed to true for badge support
   }),
 });
-
 
 // Patch to prevent crash on deprecated usage
 if (!BackHandler.removeEventListener) {
@@ -69,7 +67,6 @@ const ProfileStackNavigator = () => (
       component={ProfileScreen} 
       options={{ headerShown: false }}
     />
-
      <ProfileStack.Screen 
       name="EditProfile" 
       component={ProfileEditScreen}
@@ -96,6 +93,7 @@ const ProfileStackNavigator = () => (
     />
   </ProfileStack.Navigator>
 );
+
 const DrawerNavigator = () => (
   <Drawer.Navigator drawerContent={(props) => <CustomDrawerContent {...props} />}>
       <Drawer.Screen name="MainPage" component={MainPage} options={{ headerShown: false }}  />
@@ -118,7 +116,7 @@ const ForumStackNavigator = () => (
         tabBarStyle: { display: 'none' }
       }}
     />
-        <ForumStack.Screen 
+    <ForumStack.Screen 
       name="PostDisplay" 
       component={PostDisplay}
       options={{ 
@@ -180,8 +178,7 @@ const PostStackNavigator = () => (
       options={{ 
         headerShown: false,
         tabBarVisible: false
-      } 
-      }
+      }}
     />
     <PostStack.Screen 
       name="PostDisplay" 
@@ -224,12 +221,7 @@ const AuthNavigator = () => (
       name = "Setting"
       component = {UserSettingsScreen}
       options = {{headerShown: true}}
-      />
-    {/* <AuthStack.Screen 
-      name="ForgotPassword" 
-      component={ForgotPasswordScreen} 
-      options={{ headerShown: false }}
-    /> */}
+    />
   </AuthStack.Navigator>
 );
 
@@ -308,7 +300,7 @@ const TabNavigator = () => (
         } else if (route.name === 'Chats') {
           iconName = focused ? 'chatbubble' : 'chatbubble-outline';
         } else if (route.name === 'Create') {
-          return null; // Custom create button will be rendered separately
+          return null;
         } else if (route.name === 'Search') {
           return <Ionicons name={focused ? 'search' : 'search-outline'} size={24} color={color} />;
         } else if (route.name === 'Profile') {
@@ -329,7 +321,6 @@ const TabNavigator = () => (
           if (navigation.isFocused()) {
             e.preventDefault();
             
-            // Use reset to go back to the root of the Home stack with parameters
             navigation.dispatch(
               CommonActions.reset({
                 index: 0,
@@ -359,10 +350,9 @@ const TabNavigator = () => (
     <Tab.Screen
       name="Chats"
       component={ChatStackNavigator}
-      options={{ headerShown: false, unmountOnBlur: true }}   // 👈 unmount to reset when leaving the tab
+      options={{ headerShown: false, unmountOnBlur: true }}
       listeners={({ navigation }) => ({
         tabPress: (e) => {
-          // Always reset Chats to AllChats when the tab button is pressed
           e.preventDefault();
           navigation.dispatch(
             CommonActions.reset({
@@ -428,83 +418,230 @@ const styles = StyleSheet.create({
   },
 });
 
-// Root Navigator - Handles authentication flow
+// Push notification functions
+const registerForPushNotificationsAsync = async (userId) => {
+  try {
+    console.log('🔍 Getting push notification permissions...');
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    
+    if (finalStatus !== 'granted') {
+      console.log('❌ Push notification permission denied');
+      return null;
+    }
+    
+    console.log('🎫 Getting Expo push token...');
+    const tokenData = await Notifications.getExpoPushTokenAsync({
+      projectId: '080aeb66-6827-48e4-b7bc-8035d863a5cb'
+    });
+    
+    const token = tokenData.data;
+    console.log('✅ Expo Push Token obtained:', token.substring(0, 50) + '...');
+    
+    // Store the token in Firestore
+    if (userId && token) {
+      await savePushTokenToFirestore(userId, token);
+    }
+    
+    return token;
+    
+  } catch (error) {
+    console.error('❌ Error getting push token:', error);
+    return null;
+  }
+};
+
+const savePushTokenToFirestore = async (userId, pushToken) => {
+  try {
+    const { doc, setDoc } = require('firebase/firestore');
+    const { db } = require('./assets/firebase/firebaseConfig');
+    
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, {
+      expoPushToken: pushToken,
+      tokenUpdatedAt: new Date()
+    }, { merge: true });
+    
+    console.log('✅ Push token saved to Firestore');
+  } catch (error) {
+    console.error('❌ Error saving push token:', error);
+  }
+};
+
+
+// Root Navigator - Fixed push notification handling
 const RootNavigator = () => {
   const { login, user, isAuthenticated } = useAuth();
-
-    
-  // Add notification listeners
+  const navigationRef = useRef(null);
+  const tokenRegistered = useRef(false); // Track if token is already registered
+  
+  // Enhanced notification handling with proper dependency management
   useEffect(() => {
-    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
+    let notificationListener;
+    let responseListener;
+
+    // Register for push notifications only once when user is authenticated
+    if (isAuthenticated && user?.uid && !tokenRegistered.current) {
+      console.log('🔄 Registering for push notifications (first time)...');
+      registerForPushNotificationsAsync(user.uid)
+        .then(() => {
+          tokenRegistered.current = true; // Mark as registered
+          console.log('✅ Push notification registration complete');
+        })
+        .catch((error) => {
+          console.error('❌ Failed to register for push notifications:', error);
+        });
+    }
+
+    // Listen for notifications received while app is running
+    notificationListener = Notifications.addNotificationReceivedListener(notification => {
+      console.log('🔔 Notification received while app is open:', notification);
+      
+      // You can add custom logic here for in-app notification display
+      // For example, showing a banner or updating badge count
     });
 
-    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification response:', response);
+    // Listen for user tapping on notifications
+    responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('🔔 User tapped notification:', response);
+      handleNotificationResponse(response);
     });
 
     return () => {
-      Notifications.removeNotificationSubscription(notificationListener);
-      Notifications.removeNotificationSubscription(responseListener);
+      if (notificationListener) {
+        // Use the new method to avoid deprecation warning
+        notificationListener.remove();
+      }
+      if (responseListener) {
+        // Use the new method to avoid deprecation warning
+        responseListener.remove();
+      }
     };
-  }, []);
+  }, [isAuthenticated, user?.uid]); // Only depend on authentication state and user ID
+
+  // Reset token registration flag when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      tokenRegistered.current = false;
+    }
+  }, [isAuthenticated]);
+
+  const handleNotificationResponse = (response) => {
+    const data = response.notification.request.content.data;
+    console.log('📱 Handling notification tap with data:', data);
+    
+    if (!navigationRef.current) {
+      console.log('❌ Navigation ref not available');
+      return;
+    }
+
+    // Handle different notification types
+    switch (data.type) {
+      case 'post_interaction':
+        if (data.postId) {
+          console.log('📍 Navigating to post:', data.postId);
+          navigationRef.current.navigate('MainTabs', {
+            screen: 'Home',
+            params: {
+              screen: 'PostDisplay',
+              params: {
+                postRef: data.postId,
+              }
+            }
+          });
+        }
+        break;
+        
+      case 'message':
+        console.log('📍 Navigating to messages');
+        if (data.chatId) {
+          navigationRef.current.navigate('MainTabs', {
+            screen: 'Chats',
+            params: {
+              screen: 'Chatroom',
+              params: {
+                chatId: data.chatId,
+                recipientId: data.senderId,
+              }
+            }
+          });
+        } else {
+          navigationRef.current.navigate('MainTabs', {
+            screen: 'Chats'
+          });
+        }
+        break;
+        
+      default:
+        console.log('📍 Navigating to notifications screen');
+        navigationRef.current.navigate('MainTabs', {
+          screen: 'Home',
+          params: {
+            screen: 'Notification'
+          }
+        });
+    }
+  };
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isAuthenticated && user ? (
-        // Check if user needs onboarding
-        user.isOnboarded ? (
-          <>
-          <Stack.Screen name="MainTabs" component={TabNavigator} />
-          <Stack.Screen name="MainPage" component={MainPage} />
-          <Stack.Screen 
-          name="Feedback" 
-          component={Feedback} 
-          options={{ headerShown: true, title: "Feedback" }}
-        />
+    <NavigationContainer ref={navigationRef}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated && user ? (
+          user.isOnboarded ? (
+            <>
+              <Stack.Screen name="MainTabs" component={TabNavigator} />
+              <Stack.Screen name="MainPage" component={MainPage} />
+              <Stack.Screen 
+                name="Feedback" 
+                component={Feedback} 
+                options={{ headerShown: true, title: "Feedback" }}
+              />
+              <Stack.Screen 
+                name="IndividualForum" 
+                component={ForumScreen}
+                options={{ 
+                  headerShown: false,
+                  tabBarStyle: { display: 'none' }
+                }}
+              />
+              <Stack.Screen 
+                name="PostDisplay" 
+                component={PostDisplay}
+                options={{ 
+                  headerShown: false,
+                  tabBarStyle: { display: 'none' }
+                }}
+              />
+            </>
+          ) : (
             <Stack.Screen 
-      name="IndividualForum" 
-      component={ForumScreen}
-      options={{ 
-        headerShown: false,
-        tabBarStyle: { display: 'none' }
-      }}
-    />
-        <Stack.Screen 
-      name="PostDisplay" 
-      component={PostDisplay}
-      options={{ 
-        headerShown: false,
-        tabBarStyle: { display: 'none' }
-      }}
-    />
-        </>
+              name="Onboarding" 
+              component={OnboardingPage} 
+              options={{ gestureEnabled: false }}
+            />
+          )
         ) : (
-          <Stack.Screen 
-            name="Onboarding" 
-            component={OnboardingPage} 
-            options={{ gestureEnabled: false }}
-          />
-        )
-      ) : (
-        <Stack.Screen name="Auth" component={AuthNavigator} />
-      )}
-    </Stack.Navigator>
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 
 // Main App component
 export default function App() {
   return (
-  <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-    <NativeBaseProvider>
-      <AuthProvider>
-        <NavigationContainer>
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+      <NativeBaseProvider>
+        <AuthProvider>
           <RootNavigator />
-        </NavigationContainer>
-      </AuthProvider>
-    </NativeBaseProvider>
-  </SafeAreaView>
-
+        </AuthProvider>
+      </NativeBaseProvider>
+    </SafeAreaView>
   );
 }
